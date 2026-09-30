@@ -1,0 +1,9 @@
+# Asset credits
+
+- **Baku City Circuit:** supplied by the user under `levels/baku`. The level metadata credits a port of an Assetto Corsa track. Further original authorship and redistribution terms were not included with the source.
+- **Ferrari 458 Italia car model:** [vicent091036 on Sketchfab](https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6), licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), distributed in the [three.js example assets](https://github.com/mrdoob/three.js/blob/dev/examples/models/gltf/ferrari.glb). This project recolors its body, glass, and wheels and animates its separate wheel groups.
+- **Elantra/Avante sedan:** extracted from the user-supplied `C:/Users/Fuad/Desktop/car showcase/elantra.html`. That showroom credits Sergey Shamarin / alix999 and links to a [Hyundai Elantra 2015 HQ community model](https://www.gtainside.com/sanandreas/cars/124063-hyundai-elantra-2015-hq). The original body, interior, lights, and textures are reused here; the tires and alloy wheels are reconstructed for the game. The showroom describes it as an early fifth-generation Elantra used as a visual stand-in for a 2012 sedan. Its original model rights remain with their respective owners; redistribution terms were not supplied.
+- **Draco decoder:** distributed with [three.js](https://github.com/mrdoob/three.js), MIT license. Included locally so the vehicle loads without an external decoder service.
+- **Engine audio:** CC0 racing-car recordings by domasx2 and CC BY-SA 4.0 V8 load/overrun recordings by DerMeehdrescher / Meehdrescher Studios. See the [per-file source and license details](../public/assets/audio/engines/SOURCES.md).
+
+This is a local fan-made project and is not affiliated with Forza, Ferrari, Hyundai, Formula 1, or the circuit's rights holders.

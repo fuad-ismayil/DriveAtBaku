@@ -1,0 +1,62 @@
+[
+  {
+    "source": "levels/baku/art/baku/baku.dae",
+    "output": "public/generated/baku.glb",
+    "triangles": 1182806,
+    "materials": 263,
+    "textured_materials": 263,
+    "alpha_cutout_materials": 76,
+    "size_mb": 136.63,
+    "bounds": [
+      [
+        -3584.0,
+        -3584.0,
+        -19.257
+      ],
+      [
+        3584.0,
+        3584.0,
+        170.378
+      ]
+    ]
+  },
+  {
+    "source": "levels/baku/art/baku/buildings.dae",
+    "output": "public/generated/buildings.glb",
+    "triangles": 1202598,
+    "materials": 370,
+    "textured_materials": 370,
+    "alpha_cutout_materials": 125,
+    "size_mb": 150.87,
+    "bounds": [
+      [
+        -3581.963,
+        -3582.357,
+        -71.812
+      ],
+      [
+        3584.0,
+        3584.797,
+        422.263
+      ]
+    ]
+  },
+  {
+    "source": "levels/baku/art/baku/collision.dae",
+    "output": "public/generated/collision.glb",
+    "triangles": 167361,
+    "size_mb": 6.8,
+    "bounds": [
+      [
+        -1383.924,
+        -960.0,
+        -4.952
+      ],
+      [
+        1427.164,
+        1168.448,
+        40.0
+      ]
+    ]
+  }
+]

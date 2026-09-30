@@ -1,0 +1,26 @@
+{
+  "name": "driveatbaku",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "convert-map": "python scripts/convert_map.py",
+    "pack-assets": "node scripts/pack_assets.mjs --clean",
+    "extract-elantra": "python scripts/extract_elantra.py",
+    "verify-handling": "node scripts/verify_handling.mjs",
+    "verify-camera": "node scripts/verify_camera.mjs",
+    "verify-drive-camera": "node scripts/verify_drive_camera.mjs",
+    "verify-engine-audio": "node scripts/verify_engine_audio.mjs",
+    "verify-minimap": "node scripts/verify_minimap.mjs"
+  },
+  "dependencies": {
+    "three": "^0.180.0",
+    "three-mesh-bvh": "^0.9.2"
+  },
+  "devDependencies": {
+    "vite": "^7.1.7"
+  }
+}

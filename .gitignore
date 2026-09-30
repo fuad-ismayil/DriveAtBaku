@@ -1,0 +1,28 @@
+# Installed dependencies and build output
+node_modules/
+dist/
+.vite/
+
+# Local previews, temporary exports, and Python cache
+artifacts/
+*.log
+*.pyc
+__pycache__/
+.DS_Store
+Thumbs.db
+
+# Machine-specific settings and secrets
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+
+# Original source level is not needed by the deployed game and its
+# redistribution terms must be verified before it is published.
+levels/
+
+# Unpacked conversion intermediates are regenerated/packed locally.
+public/generated/baku.glb
+public/generated/buildings.glb
+public/generated/textures/

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#081520" />
+    <meta name="description" content="DriveAtBAku — a fan-made driving experience through the streets of Baku." />
+    <title>DriveAtBAku — Drive the city</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game" aria-label="DriveAtBAku game view"></canvas>
+      <div id="loading" class="screen">
+        <div class="loading-card">
+          <p class="eyebrow">AZERBAIJAN / CASPIAN COAST</p>
+          <h1>DriveAt<span>BAku</span></h1>
+          <div class="progress"><i id="progress-bar"></i></div>
+          <p id="loading-copy">Preparing the festival…</p>
+        </div>
+      </div>
+      <main id="menu" class="screen hidden">
+        <div class="menu-topline"><span class="brand-icon" aria-hidden="true">D<span>·</span>B</span><span>DriveAtBAku <small>FREE ROAM / AZERBAIJAN</small></span></div>
+        <section class="hero-copy">
+          <p class="eyebrow">THE CITY IS YOURS</p>
+          <h1>DriveAt<span>BAku</span></h1>
+          <p class="lede">Your car. Your route. Baku after every turn.</p>
+          <div class="menu-actions">
+            <button id="drive-button" class="primary">START DRIVING <b aria-hidden="true">↗</b></button>
+            <button id="garage-button" class="secondary">YOUR GARAGE <b aria-hidden="true">→</b></button>
+          </div>
+          <div class="menu-settings">
+            <button id="time-toggle" class="setting-button" type="button" aria-pressed="false">☀ DAY MODE</button>
+            <button id="controls-button" class="setting-button" type="button">⌨ CONTROLS</button>
+          </div>
+        </section>
+        <aside class="location-card">
+          <span class="location-index">01 <i></i> 01</span>
+          <div><small>FEATURED DRIVE</small><strong>BAKU CITY CIRCUIT</strong><em id="route-time">6.003 KM · DAY</em></div>
+          <span class="location-arrow" aria-hidden="true">↗</span>
+        </aside>
+        <p class="menu-footer">AN OPEN ROAD DRIVING EXPERIENCE <span>© DriveAtBAku</span></p>
+      </main>
+      <section id="garage" class="screen hidden" aria-label="Garage">
+        <div class="garage-panel">
+          <p class="eyebrow">DriveAtBAku / GARAGE</p>
+          <h2>YOUR GARAGE</h2>
+          <p class="garage-intro">Choose your ride, pick a finish, and own the city.</p>
+          <div class="garage-choices">
+            <button id="garage-ferrari" class="garage-choice selected" data-vehicle="ferrari"><small>SUPERCAR</small><strong>FERRARI 458 ITALIA</strong><span>Rear-wheel drive · V8</span></button>
+            <button id="garage-elantra" class="garage-choice" data-vehicle="elantra" disabled><small>2012 CITY SEDAN</small><strong>ELANTRA / AVANTE MD</strong><span id="elantra-availability">Preparing showroom model…</span></button>
+          </div>
+          <div class="paint-picker" aria-label="Car paint color">
+            <p>PAINT COLOR <span id="paint-name">ROSSO CORSA</span></p>
+            <div class="paint-swatches" role="group" aria-label="Paint presets">
+              <button type="button" class="paint-swatch" data-paint="#a80719" data-name="ROSSO CORSA" style="--swatch:#a80719" aria-label="Rosso Corsa red"></button>
+              <button type="button" class="paint-swatch" data-paint="#b9c3ca" data-name="PEARL SILVER" style="--swatch:#b9c3ca" aria-label="Pearl silver"></button>
+              <button type="button" class="paint-swatch" data-paint="#f4f1e9" data-name="IVORY WHITE" style="--swatch:#f4f1e9" aria-label="Ivory white"></button>
+              <button type="button" class="paint-swatch" data-paint="#101b28" data-name="MIDNIGHT BLACK" style="--swatch:#101b28" aria-label="Midnight black"></button>
+              <button type="button" class="paint-swatch" data-paint="#123a79" data-name="CASPIAN BLUE" style="--swatch:#123a79" aria-label="Caspian blue"></button>
+              <button type="button" class="paint-swatch" data-paint="#f1bd18" data-name="SUNBURST YELLOW" style="--swatch:#f1bd18" aria-label="Sunburst yellow"></button>
+              <label class="custom-paint">CUSTOM <input id="custom-paint" type="color" value="#a80719" aria-label="Custom paint color" /></label>
+            </div>
+          </div>
+          <p id="garage-status" class="garage-status" aria-live="polite"></p>
+          <button id="garage-back" class="primary">BACK</button>
+        </div>
+      </section>
+      <section id="controls" class="modal hidden" aria-modal="true" role="dialog">
+        <div class="modal-card">
+          <p class="eyebrow">DRIVER BRIEFING / 01</p><h2>CONTROLS</h2>
+          <div class="key-grid"><kbd>W / S</kbd><span>Throttle / brake and reverse</span><kbd>A / D</kbd><span>Steer</span><kbd>SPACE</kbd><span>Handbrake</span><kbd>T</kbd><span>Automatic / manual gearbox</span><kbd>Q / E</kbd><span>Shift down / up</span><kbd>1 / 2 / 3</kbd><span>ABS / traction / stability aids</span><kbd>H / M</kbd><span>Horn / mute</span><kbd>L</kbd><span>Low beams / high beams / off</span><kbd>C</kbd><span>Follow / hood camera</span><kbd>MOUSE</kbd><span>Look around; cursor captured while driving</span><kbd>MIDDLE MOUSE</kbd><span>Hold to look back</span><kbd>R</kbd><span>Recover here</span><kbd>SHIFT + R</kbd><span>Return to start</span><kbd>ESC</kbd><span>Pause</span></div>
+          <button id="close-controls" class="primary">BACK <b aria-hidden="true">↗</b></button>
+        </div>
+      </section>
+      <section id="pause" class="modal hidden" aria-modal="true" role="dialog">
+        <div class="modal-card pause-card">
+          <p class="eyebrow">DriveAtBAku / PAUSED</p>
+          <h2>TAKE A BREATH.</h2>
+          <p class="pause-copy">The city will be here when you're ready.</p>
+          <button id="resume" class="primary">BACK TO THE ROAD <b aria-hidden="true">↗</b></button>
+          <div class="pause-actions">
+            <button id="pause-garage" class="secondary">GARAGE</button>
+            <button id="restart" class="secondary">RECOVER CAR</button>
+            <button id="pause-controls" class="secondary">CONTROLS</button>
+            <button id="pause-time-toggle" class="secondary" type="button" aria-pressed="false">☀ DAY MODE</button>
+          </div>
+          <label class="volume-control">ENGINE VOLUME <input id="engine-volume" type="range" min="0" max="0.65" step="0.01" value="0.32" /></label>
+          <button id="exit" class="text-button">EXIT TO MAIN MENU <span aria-hidden="true">→</span></button>
+        </div>
+      </section>
+      <div id="hud" class="hidden">
+        <div class="event-chip"><span class="event-signal" aria-hidden="true"></span><div><small>FREE ROAM <i>●</i> LIVE</small><strong>BAKU CITY CIRCUIT</strong></div></div>
+        <div class="map-panel"><div class="map-heading"><span>ROUTE MAP</span><span>HEADING UP ↗</span></div><canvas id="minimap" width="256" height="256" aria-label="Moving route map centred on your car"></canvas><div class="map-footer"><span>BAKU / AZE</span><span>6.003 KM</span></div></div>
+        <div class="telemetry-panel"><div class="speed"><strong id="speed">0</strong><span>KM/H</span><em id="gear">N</em></div><div class="engine-readout"><small>ENGINE</small><strong><span id="rpm">900</span> <em>RPM</em></strong><span id="transmission">AUTO</span><span id="headlight-mode">LIGHTS OFF</span></div></div>
+        <div class="dynamics-panel"><small>CHASSIS / ASSISTS</small><div class="suspension-bars"><i id="susp-0"></i><i id="susp-1"></i><i id="susp-2"></i><i id="susp-3"></i></div><div class="aid-buttons"><button id="aid-abs" type="button">ABS</button><button id="aid-tcs" type="button">TCS</button><button id="aid-esc" type="button">ESC</button></div></div>
+      </div>
+      <div id="toast" aria-live="polite"></div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "assets": {
+    "baku": {
+      "encoding": "gzip",
+      "originalBytes": 143262144,
+      "compressedBytes": 102032580,
+      "parts": [
+        "baku.glb.gz.part0",
+        "baku.glb.gz.part1",
+        "baku.glb.gz.part2"
+      ]
+    },
+    "buildings": {
+      "encoding": "gzip",
+      "originalBytes": 158195864,
+      "compressedBytes": 113628917,
+      "parts": [
+        "buildings.glb.gz.part0",
+        "buildings.glb.gz.part1",
+        "buildings.glb.gz.part2"
+      ]
+    }
+  }
+}
