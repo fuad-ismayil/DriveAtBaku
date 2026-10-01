@@ -1,5 +1,13 @@
 import * as THREE from 'three';
 
+export function setHeadlightBulbs(vehicle, mode) {
+  for (const material of vehicle.userData.headlightMaterials ?? []) {
+    const enabled = mode > 0 && (!material.userData.highBeamOnly || mode === 2);
+    material.emissiveIntensity = enabled ? (mode === 1 ? 3.2 : 5.2)
+      * (material.userData.headlightScale ?? 1) : 0;
+  }
+}
+
 export function createCarModel(gltf) {
   const vehicle = new THREE.Group();
   vehicle.rotation.order = 'ZXY';
@@ -69,6 +77,18 @@ export function createCarModel(gltf) {
         `);
     };
     vehicle.userData.reverseLightMaterials = [rearLights.material];
+  }
+  // The supplied Ferrari exports its circular red lenses as "brakes",
+  // separately from "lights_red" (the smaller markers/reflectors).
+  const circularRearLights = visual.getObjectByName('brakes');
+  if (circularRearLights?.isMesh) {
+    circularRearLights.material = new THREE.MeshStandardMaterial({
+      color: 0xae1620, emissive: 0xff1722, emissiveIntensity: 0.3,
+      roughness: 0.28, side: THREE.DoubleSide, toneMapped: false,
+    });
+    vehicle.userData.brakeLights = [
+      ...(rearLights ? [rearLights.material] : []), circularRearLights.material,
+    ];
   }
   const projector = visual.getObjectByName('lights');
   if (projector) {

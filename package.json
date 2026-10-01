@@ -20,7 +20,9 @@
     "verify-barriers": "node scripts/verify_barriers.mjs",
     "verify-world-graphics": "node scripts/verify_world_graphics.mjs",
     "verify-realism": "node scripts/verify_realism.mjs",
-    "verify-tire-effects": "node scripts/verify_tire_effects.mjs"
+    "verify-tire-effects": "node scripts/verify_tire_effects.mjs",
+    "verify-garage-vehicles": "node scripts/verify_garage_vehicles.mjs",
+    "verify-loading": "node scripts/verify_loading.mjs"
   },
   "dependencies": {
     "three": "^0.180.0",

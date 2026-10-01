@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, unlinkSync, existsSync, readdirSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync, gunzipSync } from 'node:zlib';
@@ -25,7 +25,12 @@ for (const name of ['baku', 'buildings']) {
   console.log(`${name}: ${(raw.length / 1048576).toFixed(1)} MiB → ${parts.length} upload-safe parts (${(zipped.length / 1048576).toFixed(1)} MiB total)`);
 }
 
-writeFileSync(join(output, 'asset-manifest.json'), JSON.stringify({ assets }, null, 2) + '\n');
+// File sizes let startup report actual aggregate download progress before fetching.
+const files = {};
+for (const relative of ['generated/route.json', 'generated/collision.glb', ...readdirSync(join(root, 'public', 'assets', 'vehicles')).filter(name => /\.(glb|bin)$/.test(name)).map(name => `assets/vehicles/${name}`)]) {
+  files[`/${relative}`] = statSync(join(root, 'public', relative)).size;
+}
+writeFileSync(join(output, 'asset-manifest.json'), JSON.stringify({ assets, files }, null, 2) + '\n');
 const currentParts = new Set(Object.values(assets).flatMap(asset => asset.parts));
 for (const filename of readdirSync(output)) {
   if (/^(baku|buildings)\.glb\.gz\.part\d+$/.test(filename) && !currentParts.has(filename)) {

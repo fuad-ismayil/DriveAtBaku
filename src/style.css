@@ -34,13 +34,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .secondary { display: flex; justify-content: space-between; align-items: center; min-height: 3.6rem; padding: 1rem 1.25rem; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.18); color: #eff8fa; font-size: .74rem; font-weight: 700; letter-spacing: .13em; }
 .secondary:hover { background: rgba(121,225,237,.13); border-color: var(--accent); }
 
-#loading { display: grid; place-items: end start; padding: clamp(2rem, 6vw, 6rem); background: radial-gradient(circle at 74% 35%, transparent 0 16%, rgba(3,14,23,.62) 68%), linear-gradient(100deg, #06131bed, #0b263a45); }
-.loading-card { width: min(720px, 94vw); }
-.loading-card h1 { font-size: clamp(4rem, 8vw, 8rem); }
-.progress { margin-top: 2.5rem; height: 3px; background: #ffffff35; overflow: hidden; }
-.progress i { display: block; width: 4%; height: 100%; background: var(--accent); box-shadow: 0 0 18px var(--accent); transition: width .25s; }
-#loading-copy { color: #c5d7df; font-size: .7rem; font-weight: 600; letter-spacing: .17em; text-transform: uppercase; }
-
 #menu { display: flex; align-items: center; padding: clamp(2rem, 6vw, 6rem); background: linear-gradient(90deg, #05111beF 0%, #071722e8 37%, #07172283 65%, transparent 100%), linear-gradient(0deg, #05121aa6, transparent 38%); }
 .menu-topline { position: absolute; top: 2.4rem; left: clamp(2rem, 6vw, 6rem); display: flex; align-items: center; gap: .75rem; font-size: .71rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .menu-topline > span:last-child { display: grid; gap: .28rem; }
@@ -68,7 +61,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 #garage { display: flex; align-items: center; padding: clamp(1.5rem, 5vw, 5rem); background: linear-gradient(90deg, #071621f3, #071621d9 40%, #07162112 78%); }
 .garage-panel { width: min(100%, 550px); max-height: 94vh; overflow-y: auto; padding: 1.1rem 1.3rem 1.1rem 0; scrollbar-color: var(--accent) transparent; }
 .garage-intro { margin: 1.3rem 0 1.7rem; color: #c2d5dd; font-size: .88rem; }
-.garage-choices { display: grid; gap: .65rem; margin-bottom: 1rem; }
+.garage-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; margin-bottom: 1rem; }
 .garage-choice { display: grid; gap: .12rem; width: 100%; padding: .9rem 1.1rem; text-align: left; background: #071a25da; border: 1px solid var(--edge); border-left: 3px solid #ffffff45; }
 .garage-choice:hover { border-color: var(--accent); }
 .garage-choice.selected { border-left-color: var(--warm); background: #12313df0; }
@@ -177,6 +170,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   .dynamics-panel { left: .8rem; bottom: .8rem; width: 135px; padding: .55rem; }
 }
 @media (max-width: 480px) {
+  .garage-choices { grid-template-columns: 1fr; }
   .hero-copy h1 { font-size: 12vw; }
   .menu-actions { display: grid; }
   .menu-actions button { width: min(100%, 260px); }

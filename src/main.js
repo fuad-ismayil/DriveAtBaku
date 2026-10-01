@@ -4,8 +4,9 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
-import { createCarModel, animateCarModel } from './carModel.js';
+import { createCarModel, animateCarModel, setHeadlightBulbs } from './carModel.js';
 import { loadElantraModel } from './elantraModel.js';
+import { loadImportedVehicle } from './importedVehicleModel.js';
 import { createDynamicsState, stepDynamics, GEAR_LABELS } from './vehicleDynamics.js';
 import { VEHICLES } from './vehicleCatalog.js';
 import { EngineAudio } from './engineAudio.js';
@@ -22,6 +23,8 @@ import { createLocalReflections } from './localReflections.js';
 import { createGraphicsDiagnostics } from './graphicsDiagnostics.js';
 import { createWeather } from './weather.js';
 import { createTireEffects } from './tireEffects.js';
+import { loadingScreen } from './loadingScreen.js';
+import { fetchAssetBytes } from './assetTransfer.js';
 import './style.css';
 
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
@@ -29,7 +32,9 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 
 const ui = Object.fromEntries(['loading','menu','garage','controls','pause','hud','progress-bar','loading-copy','drive-button','garage-button','time-toggle','pause-time-toggle','route-time','garage-ferrari','garage-elantra','elantra-availability','garage-status','garage-back','paint-name','custom-paint','pause-garage','pause-controls','engine-volume','controls-button','close-controls','resume','restart','exit','speed','gear','rpm','transmission','headlight-mode','aid-abs','aid-tcs','aid-esc','susp-0','susp-1','susp-2','susp-3','minimap','toast'].map(id => [id, document.getElementById(id)]));
+const garageChoices = new Map([...document.querySelectorAll('[data-vehicle]')].map(button => [button.dataset.vehicle, button]));
 const canvas = document.getElementById('game');
+loadingScreen.stage('Preparing your graphics…', 'STARTING UP', 'Setting the scene for your drive.');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
 renderer.setSize(innerWidth, innerHeight);
@@ -67,6 +72,7 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setDRACOLoader
 const keys = new Set();
 let route, car, handling, collisionMeshes = [], mode = 'loading', cameraMode = 0, lastSafe;
 let packedAssets = {};
+let assetFileBytes = {};
 let physicsAccumulator = 0, safeTimer = 0;
 let physicsPosition, previousBodyPosition, previousBodyQuaternion;
 const interpolatedBody = new THREE.Vector3(), interpolatedQuaternion = new THREE.Quaternion();
@@ -93,7 +99,7 @@ let pointerEdgeX = 0, pointerEdgeY = 0;
 const driveCamera = new DriveCameraControls();
 let audioMuted = false, headlightMode = 0;
 let nightMode = false, shadowUpdateTimer = 0;
-const DEFAULT_PAINT = { ferrari: '#a80719', elantra: '#b9c3ca' };
+const DEFAULT_PAINT = { ferrari: '#a80719', elantra: '#b9c3ca', amg: '#b9c3ca', prado: '#f4f1e9' };
 const paintSelections = { ...DEFAULT_PAINT };
 for (const vehicleId of Object.keys(DEFAULT_PAINT)) {
   try {
@@ -169,7 +175,7 @@ function addHeadlights(vehicle) {
   const nose = activeVehicle.dims.length * 0.43;
   for (const x of [-0.55, 0.55]) {
     const lamp = new THREE.SpotLight(0xe8f2ff, 0, 28, 0.42, 0.75, 1.35);
-    lamp.position.set(x, nose, activeVehicle.id === 'elantra' ? 0.77 : 0.6);
+    lamp.position.set(x, nose, activeVehicle.headlightHeight ?? (activeVehicle.id === 'elantra' ? 0.77 : 0.6));
     lamp.castShadow = false;
     const target = new THREE.Object3D();
     target.position.set(x * 0.4, 22, 0.04);
@@ -197,10 +203,7 @@ function applyHeadlightMode(vehicle) {
     lamp.target.position.y = headlightMode === 2 ? 60 : 18;
     lamp.target.position.z = headlightMode === 2 ? -0.8 : -1.5;
   }
-  for (const material of vehicle.userData.headlightMaterials ?? []) {
-    material.emissiveIntensity = (headlightMode === 0 ? 0 : headlightMode === 1 ? 3.2 : 5.2)
-      * (material.userData.headlightScale ?? 1);
-  }
+  setHeadlightBulbs(vehicle, headlightMode);
 }
 
 function cycleHeadlights() {
@@ -274,31 +277,47 @@ function setWeather(value, save = true) {
   if (save) try { localStorage.setItem('baku-weather', weather.mode); } catch { /* storage is optional */ }
 }
 
-function progress(value, copy) { ui['progress-bar'].style.width = `${value}%`; ui['loading-copy'].textContent = copy; }
+const nextPaint = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+function reportAsset(url, event) {
+  loadingScreen.bytes(url, event.loaded, event.total);
+  if (event.complete) loadingScreen.downloaded(url, event.loaded);
+}
 async function loadGLB(url, onProgress) {
   const name = url.match(/\/generated\/(baku|buildings)\.glb$/)?.[1];
   const packed = name && packedAssets[name];
-  if (!packed) return new Promise((resolve, reject) => loader.load(url, resolve, onProgress, reject));
-  let loaded = 0;
-  const chunks = await Promise.all(packed.parts.map(async filename => {
-    const response = await fetch(`/generated/${filename}`);
-    if (!response.ok) throw new Error(`Map asset ${filename} could not be loaded (${response.status}).`);
-    const chunk = await response.arrayBuffer();
-    loaded += chunk.byteLength;
-    onProgress?.({ loaded, total: packed.compressedBytes });
-    return chunk;
-  }));
-  const stream = new Blob(chunks).stream().pipeThrough(new DecompressionStream('gzip'));
-  const buffer = await new Response(stream).arrayBuffer();
-  if (buffer.byteLength !== packed.originalBytes) throw new Error(`Map asset ${name} was incomplete.`);
-  return new Promise((resolve, reject) => loader.parse(buffer, '/generated/', resolve, reject));
+  let buffer;
+  if (!packed) {
+    const bytes = await fetchAssetBytes(url, event => { reportAsset(url, event); onProgress?.(event); }, { expectedBytes: assetFileBytes[url] });
+    buffer = bytes.buffer;
+  } else {
+    const controller = new AbortController();
+    const partBytes = packed.parts.map(() => 0);
+    let chunks;
+    try {
+      chunks = await Promise.all(packed.parts.map((filename, index) => fetchAssetBytes(`/generated/${filename}`, event => {
+        partBytes[index] = event.loaded;
+        const combined = { loaded: partBytes.reduce((sum, bytes) => sum + bytes, 0), total: packed.compressedBytes };
+        reportAsset(url, combined); onProgress?.(combined);
+      }, { signal: controller.signal })));
+    } catch (error) { controller.abort(); throw error; }
+    const received = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+    if (received !== packed.compressedBytes) throw new Error(`Map asset ${name} was incomplete.`);
+    loadingScreen.downloaded(url, received);
+    loadingScreen.stage(name === 'baku' ? 'Unpacking Baku streets…' : 'Unpacking the city skyline…', name === 'baku' ? '01 / 05 · THE STREETS' : '02 / 05 · THE SKYLINE', 'Preparing geometry and textures for the city.');
+    await nextPaint();
+    const stream = new Blob(chunks).stream().pipeThrough(new DecompressionStream('gzip'));
+    buffer = await new Response(stream).arrayBuffer();
+    if (buffer.byteLength !== packed.originalBytes) throw new Error(`Map asset ${name} was incomplete.`);
+  }
+  return loader.parseAsync(buffer, url.slice(0, url.lastIndexOf('/') + 1));
 }
 
-function tuneMap(root) {
+async function tuneMap(root) {
   scene.add(root);
   root.updateMatrixWorld(true);
   const meshes = [], backfaceMaterials = new Map();
   root.traverse(o => { if (o.isMesh) meshes.push(o); });
+  let yieldedAt = performance.now();
   for (const o of meshes) {
     o.receiveShadow = true;
     o.castShadow = false;
@@ -320,6 +339,7 @@ function tuneMap(root) {
       for (const tex of [m.map, m.normalMap, m.roughnessMap]) if (tex) tex.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy());
     }
     if (!Array.isArray(o.material)) backfaceMaterials.set(o.material, (backfaceMaterials.get(o.material) ?? true) && canCullBackfaces(o));
+    if (performance.now() - yieldedAt > 20) { await nextPaint(); yieldedAt = performance.now(); }
   }
   for (const [material, eligible] of backfaceMaterials) {
     if (eligible) {
@@ -344,6 +364,7 @@ function tuneMap(root) {
       const candidate = createShadowCandidate(chunk);
       if (candidate) shadowCandidates.push(candidate);
     }
+    if (performance.now() - yieldedAt > 20) { await nextPaint(); yieldedAt = performance.now(); }
   }
   freezeStaticWorld(root);
 }
@@ -352,33 +373,75 @@ async function boot() {
   try {
     try { setNightMode(localStorage.getItem('baku-night-mode') === 'true', false); } catch { setNightMode(false, false); }
     const packedResponse = await fetch('/generated/asset-manifest.json');
-    if (packedResponse.ok) packedAssets = (await packedResponse.json()).assets ?? {};
-    progress(8, 'Reading the circuit route…'); route = await fetch('/generated/route.json').then(r => { if(!r.ok) throw new Error('Converted route not found'); return r.json(); });
-    progress(16, 'Loading Baku streets…'); const map = await loadGLB('/generated/baku.glb', e => e.total && progress(16 + (e.loaded/e.total)*38, 'Loading Baku streets…')); tuneMap(map.scene);
-    progress(58, 'Loading the city skyline…'); const buildings = await loadGLB('/generated/buildings.glb', e => e.total && progress(58 + (e.loaded/e.total)*25, 'Loading the city skyline…')); tuneMap(buildings.scene);
-    progress(85, 'Preparing road contact…'); const collision = await loadGLB('/generated/collision.glb'); collision.scene.traverse(o=>{if(o.isMesh){o.visible=false;o.geometry.computeBoundsTree({targetLeafSize:20});collisionMeshes.push(o);}}); scene.add(collision.scene);
-    collision.scene.updateMatrixWorld(true);
-    for (const mesh of collisionMeshes) barrierCollision.addMesh(mesh);
-    freezeStaticWorld(collision.scene);
-    progress(93, 'Preparing your car…');
-    const carAsset = await loadGLB('/assets/vehicles/ferrari-458.glb');
-    car = createCarModel(carAsset); carCache.set('ferrari', car); scene.add(car); addHeadlights(car); applyPaint(car, 'ferrari'); updatePaintUI(); scene.updateMatrixWorld(true); resetCar(false, false);
-    const elantraResponse = await fetch(VEHICLES.elantra.asset, { method: 'HEAD' });
-    if (elantraResponse.ok) {
-      availableVehicles.add('elantra');
-      ui['garage-elantra'].disabled = false;
-      ui['elantra-availability'].textContent = 'Front-wheel drive · four-cylinder';
+    if (packedResponse.ok) {
+      const manifest = await packedResponse.json();
+      packedAssets = manifest.assets ?? {};
+      assetFileBytes = manifest.files ?? {};
     }
     let savedVehicle;
     try { savedVehicle = localStorage.getItem('baku-selected-car'); } catch { /* storage is optional */ }
+    const savedSettings = VEHICLES[savedVehicle];
+    const vehicleFiles = savedSettings && savedVehicle !== 'ferrari' ? [savedSettings.asset, savedSettings.wheelAsset ?? (savedVehicle === 'elantra' ? '/assets/vehicles/elantra-wheel.glb' : null)].filter(Boolean) : [];
+    loadingScreen.plan(Object.fromEntries([
+      ['/generated/route.json', assetFileBytes['/generated/route.json']],
+      ['/generated/baku.glb', packedAssets.baku?.compressedBytes],
+      ['/generated/buildings.glb', packedAssets.buildings?.compressedBytes],
+      ['/generated/collision.glb', assetFileBytes['/generated/collision.glb']],
+      [VEHICLES.ferrari.asset, assetFileBytes[VEHICLES.ferrari.asset]],
+      ...vehicleFiles.map(file => [file, assetFileBytes[file]]),
+    ]));
+    loadingScreen.stage('Reading your route…', '01 / 05 · THE STREETS', 'Finding your starting point.');
+    const routeBytes = await fetchAssetBytes('/generated/route.json', event => reportAsset('/generated/route.json', event), { expectedBytes: assetFileBytes['/generated/route.json'] });
+    route = JSON.parse(new TextDecoder().decode(routeBytes));
+    loadingScreen.stage('Loading Baku streets…', '01 / 05 · THE STREETS', 'Downloading the streets and their textures.', true);
+    const map = await loadGLB('/generated/baku.glb'); await tuneMap(map.scene);
+    loadingScreen.stage('Loading the city skyline…', '02 / 05 · THE SKYLINE', 'Bringing the city into view.', true);
+    const buildings = await loadGLB('/generated/buildings.glb'); await tuneMap(buildings.scene);
+    loadingScreen.stage('Preparing road contact…', '03 / 05 · THE ROAD', 'Downloading the road surface.', true);
+    const collision = await loadGLB('/generated/collision.glb');
+    loadingScreen.stage('Preparing road contact…', '03 / 05 · THE ROAD', 'Building the surfaces your tires will meet.');
+    const roadMeshes = [];
+    collision.scene.traverse(o => { if (o.isMesh) roadMeshes.push(o); });
+    await nextPaint();
+    let roadYieldedAt = performance.now();
+    for (const o of roadMeshes) {
+      o.visible = false; o.geometry.computeBoundsTree({ targetLeafSize: 20 }); collisionMeshes.push(o);
+      if (performance.now() - roadYieldedAt > 20) { await nextPaint(); roadYieldedAt = performance.now(); }
+    }
+    scene.add(collision.scene);
+    collision.scene.updateMatrixWorld(true);
+    for (const mesh of collisionMeshes) barrierCollision.addMesh(mesh);
+    freezeStaticWorld(collision.scene);
+    loadingScreen.stage('Preparing your car…', '04 / 05 · YOUR CAR', 'Downloading your first ride.', true);
+    const carAsset = await loadGLB('/assets/vehicles/ferrari-458.glb');
+    car = createCarModel(carAsset); carCache.set('ferrari', car); scene.add(car); addHeadlights(car); applyPaint(car, 'ferrari'); updatePaintUI(); scene.updateMatrixWorld(true); resetCar(false, false);
+    await Promise.all(Object.values(VEHICLES).filter(vehicle => vehicle.id !== 'ferrari').map(async vehicle => {
+      const files = [vehicle.asset, vehicle.wheelAsset].filter(Boolean);
+      const responses = await Promise.allSettled(files.map(file => fetch(file, { method: 'HEAD' })));
+      const available = responses.every(response => response.status === 'fulfilled' && response.value.ok);
+      const choice = garageChoices.get(vehicle.id);
+      choice.disabled = !available;
+      choice.querySelector('span').textContent = available ? vehicle.subtitle : 'Model unavailable';
+      if (available) availableVehicles.add(vehicle.id);
+    }));
     if (savedVehicle && availableVehicles.has(savedVehicle)) {
-      progress(96, 'Loading your garage car…');
+      loadingScreen.stage('Loading your garage car…', '04 / 05 · YOUR CAR', 'Bringing your saved ride back to the city.', true);
       await selectVehicle(savedVehicle);
     }
-    progress(98, 'Preparing city lighting…');
+    if (activeVehicle.id !== savedVehicle) for (const file of vehicleFiles) loadingScreen.omit(file);
+    loadingScreen.stage('Preparing city lighting…', '05 / 05 · THE ATMOSPHERE', 'Finishing shaders, reflections, and the first view.');
+    await nextPaint();
+    updateCamera(1 / 60); scene.updateMatrixWorld(true); updateSceneLighting(1 / 60); worldOptimization.update();
     await renderer.compileAsync(scene, camera);
-    progress(100, 'Welcome to Baku'); await new Promise(r=>setTimeout(r,450)); ui.loading.classList.add('hidden'); ui.menu.classList.remove('hidden'); mode='menu';
-  } catch(err) { progress(100, 'Map conversion required — run npm run convert-map'); console.error(err); }
+    ui.menu.inert = true;
+    ui.menu.classList.remove('hidden'); mode = 'menu';
+    // Two presented frames warm the post-processing targets before the dissolve.
+    await nextPaint();
+    const loadingHadFocus = ui.loading.contains(document.activeElement);
+    await loadingScreen.finish();
+    ui.menu.inert = false;
+    if (loadingHadFocus) ui['drive-button'].focus({ preventScroll: true });
+  } catch(err) { loadingScreen.fail(err); console.error(err); }
 }
 
 const groundRay = new THREE.Raycaster();
@@ -490,7 +553,10 @@ async function selectVehicle(id){
     ui['garage-status'].textContent = 'Preparing your car…';
     try {
       const marker = { position: physicsPosition.clone(), heading: handling.heading };
-      const newCar = carCache.get(id) ?? (id === 'elantra' ? await loadElantraModel() : createCarModel(await loadGLB(VEHICLES[id].asset)));
+      const settings = VEHICLES[id];
+      const newCar = carCache.get(id) ?? (id === 'elantra' ? await loadElantraModel((url, event) => reportAsset(url, event))
+        : settings.wheelAsset ? await loadImportedVehicle(settings, loadGLB)
+        : createCarModel(await loadGLB(settings.asset)));
       carCache.set(id, newCar);
       scene.remove(car);
       car = newCar;
@@ -509,7 +575,7 @@ async function selectVehicle(id){
       selectingVehicle = false;
     }
   }
-  for (const vehicleId of ['ferrari', 'elantra']) ui[`garage-${vehicleId}`].classList.toggle('selected', vehicleId === id);
+  for (const [vehicleId, button] of garageChoices) button.classList.toggle('selected', vehicleId === id);
   updatePaintUI();
   ui['garage-status'].textContent = activeVehicle.description;
 }
@@ -694,7 +760,7 @@ function updateCamera(dt) {
   }
 
   // The hood rig is fixed to the body. It never uses speed or acceleration pullback.
-  const hood = activeVehicle.id === 'elantra' ? { height: 1.15, forward: 1.3 } : { height: 0.88, forward: 1.22 };
+  const hood = activeVehicle.hoodCamera ?? (activeVehicle.id === 'elantra' ? { height: 1.15, forward: 1.3 } : { height: 0.88, forward: 1.22 });
   const bodyForward = new THREE.Vector3(0, 1, 0).applyQuaternion(car.quaternion);
   const bodyUp = new THREE.Vector3(0, 0, 1).applyQuaternion(car.quaternion);
   const hoodPosition = car.position.clone().addScaledVector(bodyForward, hood.forward).addScaledVector(bodyUp, hood.height);
@@ -793,13 +859,16 @@ document.addEventListener('mouseup', e => {
   driveCamera.setRearHeld(false);
 }, { capture: true });
 document.addEventListener('auxclick', e => { if (mode === 'drive' && e.button === 1) e.preventDefault(); });
-ui['drive-button'].onclick=startDrive;ui['garage-button'].onclick=openGarage;ui['time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-garage'].onclick=openGarage;ui['garage-back'].onclick=closeGarage;ui['garage-ferrari'].onclick=()=>selectVehicle('ferrari');ui['garage-elantra'].onclick=()=>selectVehicle('elantra');ui['controls-button'].onclick=openControls;ui['pause-controls'].onclick=openControls;ui['close-controls'].onclick=closeControls;ui.resume.onclick=resume;ui.restart.onclick=()=>{recoverInPlace();resume()};ui.exit.onclick=exitToMenu;ui['engine-volume'].oninput=e=>engineAudio.setVolume(e.target.value);
+ui['drive-button'].onclick=startDrive;ui['garage-button'].onclick=openGarage;ui['time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-garage'].onclick=openGarage;ui['garage-back'].onclick=closeGarage;ui['controls-button'].onclick=openControls;ui['pause-controls'].onclick=openControls;ui['close-controls'].onclick=closeControls;ui.resume.onclick=resume;ui.restart.onclick=()=>{recoverInPlace();resume()};ui.exit.onclick=exitToMenu;ui['engine-volume'].oninput=e=>engineAudio.setVolume(e.target.value);
+for (const [id, button] of garageChoices) button.onclick = () => selectVehicle(id);
 for (const swatch of document.querySelectorAll('.paint-swatch')) swatch.onclick=()=>choosePaint(swatch.dataset.paint);
 ui['custom-paint'].oninput=e=>choosePaint(e.target.value);
 for (const aid of ['abs','tcs','esc']) ui[`aid-${aid}`].onclick=()=>toggleAid(aid);
 
 function frame() {
   requestAnimationFrame(frame);
+  // The introduction has its own lightweight motion; don't render an unfinished city.
+  if (mode === 'loading') return;
   graphicsDiagnostics.begin();
   const dt = Math.min(clock.getDelta(), 0.1);
   updateCar(dt); updateCamera(dt); updateSceneLighting(dt);

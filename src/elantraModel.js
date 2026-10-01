@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createElantraCaliper } from './elantraAlloys.js';
 import { loadElantraWheel } from './elantraWheel.js';
+import { fetchAssetBytes } from './assetTransfer.js';
 
 export function repairMissingNormals(geometry) {
   const authoredNormals = geometry.getAttribute('normal');
@@ -28,10 +29,10 @@ function decodeArray(encoded, Type) {
   return new Type(bytes.buffer);
 }
 
-async function loadData() {
-  const response = await fetch('/assets/vehicles/elantra-showroom.bin');
-  if (!response.ok) throw new Error('Elantra model asset is unavailable');
-  const decompressed = response.body.pipeThrough(new DecompressionStream('gzip'));
+async function loadData(onProgress) {
+  const url = '/assets/vehicles/elantra-showroom.bin';
+  const bytes = await fetchAssetBytes(url, event => onProgress?.(url, event));
+  const decompressed = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
   return JSON.parse(await new Response(decompressed).text());
 }
 
@@ -142,8 +143,8 @@ function materialFor(part, entry, index, textures, brakeMaterials, paintMaterial
   return result;
 }
 
-export async function loadElantraModel() {
-  const [data, wheelGeometry] = await Promise.all([loadData(), loadElantraWheel()]);
+export async function loadElantraModel(onProgress) {
+  const [data, wheelGeometry] = await Promise.all([loadData(onProgress), loadElantraWheel(onProgress)]);
   const loader = new THREE.TextureLoader();
   const textures = {};
   await Promise.all(Object.entries(data.textures).map(async ([name, encoded]) => {

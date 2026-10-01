@@ -4,7 +4,7 @@ import { createElantraCaliper } from '../src/elantraAlloys.js';
 import { prepareElantraWheel } from '../src/elantraWheel.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { readFileSync } from 'node:fs';
-import { createCarModel } from '../src/carModel.js';
+import { createCarModel, animateCarModel } from '../src/carModel.js';
 import { createSky } from '../src/sky.js';
 import { createSurfaceDetail } from '../src/surfaceDetail.js';
 import { createWeather, WEATHER_PRESETS } from '../src/weather.js';
@@ -37,6 +37,27 @@ windowMesh.name = 'glass'; glassFixture.add(windowMesh);
 createCarModel({ scene: glassFixture });
 assert.equal(windowMesh.material.depthWrite, false, 'Ferrari glass does not become an opaque AO occluder');
 assert.equal(windowMesh.castShadow, false, 'transparent Ferrari glass does not cast a solid shadow');
+
+// The real GLB uses a separate "brakes" mesh for the two circular rear lenses.
+const ferrariBytes = readFileSync(new URL('../public/assets/vehicles/ferrari-458.glb', import.meta.url));
+const ferrariJson = JSON.parse(ferrariBytes.subarray(20, 20 + ferrariBytes.readUInt32LE(12)));
+const circleNode = ferrariJson.nodes.find(n => n.name === 'brakes');
+assert.ok(circleNode && ferrariJson.meshes[circleNode.mesh].primitives.every(p => ferrariJson.materials[p.material].name === 'Taillight_Glass'));
+const lampFixture = new THREE.Group();
+const circle = new THREE.Mesh(new THREE.SphereGeometry(), new THREE.MeshStandardMaterial()); circle.name = 'brakes';
+const markers = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()); markers.name = 'lights_red';
+const trim = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()); trim.name = 'unchanged trim';
+const trimMaterial = trim.material; lampFixture.add(circle, markers, trim);
+const litFerrari = createCarModel({ scene: lampFixture });
+assert.equal(trim.material, trimMaterial, 'adding circular brake lights preserves other finishes');
+assert.ok(litFerrari.userData.brakeLights.includes(circle.material));
+assert.ok(!litFerrari.userData.reverseLightMaterials.includes(circle.material), 'red circles remain separate from the existing reverse markers');
+const lampState = { wheels: [], staticCompression: 0, gear: 1, brakeForceInput: 1, handbrake: false };
+animateCarModel(litFerrari, lampState, 1);
+assert.ok(circle.material.emissiveIntensity > 3.59, 'circular rear lenses illuminate under braking');
+lampState.brakeForceInput = 0; lampState.gear = 0; animateCarModel(litFerrari, lampState, 1);
+assert.ok(Math.abs(circle.material.emissiveIntensity - .3) < .00001, 'circles return to their red resting level after braking');
+assert.equal(circle.material.emissive.getHex(), 0xff1722);
 
 const scene = new THREE.Scene(), sky = createSky(), camera = new THREE.PerspectiveCamera();
 const weather = createWeather(scene, sky), detail = createSurfaceDetail();

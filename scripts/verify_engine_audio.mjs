@@ -57,4 +57,12 @@ audioState.wheels[0].slideSpeed = 100; audio.update(audioState, VEHICLES.elantra
 assert.equal(audio.skid.gain.gain.value, .16, 'extreme squeal has a lower ceiling');
 audio.update(audioState, VEHICLES.elantra, false);
 assert.equal(audio.skid.gain.gain.value, 0); assert.equal(audio.banks.get('elantra').bus.gain.value, 0);
+for (const vehicle of Object.values(VEHICLES)) {
+  audio.update({ ...audioState, rpm: vehicle.idleRpm, gear: 1 }, vehicle, true);
+  for (const [id, bank] of audio.banks) {
+    assert.ok(id === vehicle.id ? bank.bus.gain.value > 0 : bank.bus.gain.value === 0, `${vehicle.id}: only the selected engine plays`);
+  }
+  audio.update(audioState, vehicle, false);
+  assert.ok([...audio.banks.values()].every(bank => bank.bus.gain.value === 0), 'garage/pause mutes every engine');
+}
 console.log('Audio: recorded assets, RPM crossfades, continuous presence, load/coast/shift mix, Elantra presence, restrained slip and pause muting passed.');

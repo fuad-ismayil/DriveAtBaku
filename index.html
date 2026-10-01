@@ -3,26 +3,64 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#081520" />
-    <meta name="description" content="DriveAtBAku — a fan-made driving experience through the streets of Baku." />
-    <title>DriveAtBAku — Drive the city</title>
+    <meta name="theme-color" content="#111516" />
+    <meta name="description" content="DriveAtBaku — a fan-made driving experience through the streets of Baku." />
+    <title>DriveAtBaku — Drive the city</title>
+    <style>html,body{margin:0;background:#111516}#loading{position:fixed;inset:0;z-index:100;background:#111516;color:#f3f1e9}.hidden{display:none!important}</style>
+    <link rel="preload" href="/assets/loading/city.webp" as="image" fetchpriority="high" />
+    <link rel="stylesheet" href="/src/loading.css" />
   </head>
   <body>
     <div id="app">
-      <canvas id="game" aria-label="DriveAtBAku game view"></canvas>
-      <div id="loading" class="screen">
-        <div class="loading-card">
-          <p class="eyebrow">AZERBAIJAN / CASPIAN COAST</p>
-          <h1>DriveAt<span>BAku</span></h1>
-          <div class="progress"><i id="progress-bar"></i></div>
-          <p id="loading-copy">Preparing the festival…</p>
+      <canvas id="game" aria-label="DriveAtBaku game view"></canvas>
+      <section id="loading" aria-label="Welcome to DriveAtBaku" aria-busy="true">
+        <div class="loading-scenes" aria-hidden="true">
+          <img class="loading-scene is-active" src="/assets/loading/city.webp" alt="" fetchpriority="high" />
+          <img class="loading-scene" alt="" />
         </div>
-      </div>
+        <div class="loading-shade" aria-hidden="true"></div>
+        <header class="loading-header">
+          <span class="loading-wordmark">DriveAt<span>Baku</span><i aria-hidden="true">↗</i></span>
+          <span class="loading-place">AZERBAIJAN <i></i> CASPIAN COAST</span>
+        </header>
+        <div class="loading-editorial">
+          <p class="loading-kicker"><span class="loading-rule" aria-hidden="true"></span> POSTCARDS FROM BAKU <span id="loading-chapter">/ 01</span></p>
+          <div class="loading-story" id="loading-story">
+            <h1 id="loading-title">One city.<br /><span>Endless drives.</span></h1>
+            <p id="loading-description">From the old city's tight corners to the open boulevard.<br class="loading-desktop-break" /> Find your own rhythm on the streets of Baku.</p>
+          </div>
+          <div class="loading-facts"><span id="loading-fact">6.003 KM OF CITY STREETS</span><i></i><span id="loading-mood">YOUR ROUTE. YOUR PACE.</span></div>
+        </div>
+        <aside class="loading-scene-note" aria-label="Featured scene">
+          <span class="loading-scene-mark" aria-hidden="true">↗</span>
+          <div><span id="loading-scene-label">THE CITY COLLECTION</span><strong id="loading-scene-name">Baku, behind the wheel.</strong><small>CAPTURED IN GAME</small></div>
+        </aside>
+        <footer class="loading-footer">
+          <div class="loading-discover">
+            <ol class="loading-chapters" aria-label="Slideshow chapters">
+              <li class="loading-chapter is-current" data-chapter="0" aria-current="true"><span>01</span> THE CITY</li>
+              <li class="loading-chapter" data-chapter="1"><span>02</span> AFTER HOURS</li>
+              <li class="loading-chapter" data-chapter="2"><span>03</span> THE ELEMENTS</li>
+              <li class="loading-chapter" data-chapter="3"><span>04</span> YOUR DRIVE</li>
+            </ol>
+            <button type="button" id="loading-motion" class="loading-motion" aria-label="Pause slideshow" aria-pressed="false"><span aria-hidden="true">Ⅱ</span></button>
+          </div>
+          <div class="loading-progress-head">
+            <div class="loading-status"><span class="loading-status-dot" aria-hidden="true"></span><p id="loading-copy" role="status" aria-live="polite">Connecting to the city…</p></div>
+            <span id="loading-progress-value">GETTING READY</span>
+          </div>
+          <div id="loading-progress" class="loading-progress" role="progressbar" aria-label="Game asset download" aria-valuemin="0" aria-valuemax="100" aria-valuetext="Connecting to the city"><i id="progress-bar"></i></div>
+          <div class="loading-progress-meta"><span id="loading-detail">A little anticipation. A whole city ahead.</span><span id="loading-phase">PREPARING YOUR DRIVE</span></div>
+          <div class="loading-bottomline"><p id="loading-tip"><span>DRIVER'S NOTE</span> Smooth steering. Clean exits. Let the city come to you.</p><span class="loading-signature">THE CITY IS YOURS.</span></div>
+          <button id="loading-retry" class="loading-retry" type="button" hidden>TRY AGAIN <span aria-hidden="true">↗</span></button>
+          <noscript><p class="loading-noscript">Enable JavaScript to load the game.</p></noscript>
+        </footer>
+      </section>
       <main id="menu" class="screen hidden">
-        <div class="menu-topline"><span class="brand-icon" aria-hidden="true">D<span>·</span>B</span><span>DriveAtBAku <small>FREE ROAM / AZERBAIJAN</small></span></div>
+        <div class="menu-topline"><span class="brand-icon" aria-hidden="true">D<span>·</span>B</span><span>DriveAtBaku <small>FREE ROAM / AZERBAIJAN</small></span></div>
         <section class="hero-copy">
           <p class="eyebrow">THE CITY IS YOURS</p>
-          <h1>DriveAt<span>BAku</span></h1>
+          <h1>DriveAt<span>Baku</span></h1>
           <p class="lede">Your car. Your route. Baku after every turn.</p>
           <div class="menu-actions">
             <button id="drive-button" class="primary">START DRIVING <b aria-hidden="true">↗</b></button>
@@ -44,16 +82,18 @@
           <div><small>FEATURED DRIVE</small><strong>BAKU CITY CIRCUIT</strong><em id="route-time">6.003 KM · DAY</em></div>
           <span class="location-arrow" aria-hidden="true">↗</span>
         </aside>
-        <p class="menu-footer">AN OPEN ROAD DRIVING EXPERIENCE <span>© DriveAtBAku</span></p>
+        <p class="menu-footer">AN OPEN ROAD DRIVING EXPERIENCE <span>© DriveAtBaku</span></p>
       </main>
       <section id="garage" class="screen hidden" aria-label="Garage">
         <div class="garage-panel">
-          <p class="eyebrow">DriveAtBAku / GARAGE</p>
+          <p class="eyebrow">DriveAtBaku / GARAGE</p>
           <h2>YOUR GARAGE</h2>
           <p class="garage-intro">Choose your ride, pick a finish, and own the city.</p>
           <div class="garage-choices">
             <button id="garage-ferrari" class="garage-choice selected" data-vehicle="ferrari"><small>SUPERCAR</small><strong>FERRARI 458 ITALIA</strong><span>Rear-wheel drive · V8</span></button>
             <button id="garage-elantra" class="garage-choice" data-vehicle="elantra" disabled><small>2012 CITY SEDAN</small><strong>ELANTRA / AVANTE MD</strong><span id="elantra-availability">Preparing showroom model…</span></button>
+            <button id="garage-amg" class="garage-choice" data-vehicle="amg" disabled><small>PERFORMANCE</small><strong>MERCEDES-AMG</strong><span>Preparing model…</span></button>
+            <button id="garage-prado" class="garage-choice" data-vehicle="prado" disabled><small>SUV</small><strong>TOYOTA PRADO</strong><span>Preparing model…</span></button>
           </div>
           <div class="paint-picker" aria-label="Car paint color">
             <p>PAINT COLOR <span id="paint-name">ROSSO CORSA</span></p>
@@ -80,7 +120,7 @@
       </section>
       <section id="pause" class="modal hidden" aria-modal="true" role="dialog">
         <div class="modal-card pause-card">
-          <p class="eyebrow">DriveAtBAku / PAUSED</p>
+          <p class="eyebrow">DriveAtBaku / PAUSED</p>
           <h2>TAKE A BREATH.</h2>
           <p class="pause-copy">The city will be here when you're ready.</p>
           <button id="resume" class="primary">BACK TO THE ROAD <b aria-hidden="true">↗</b></button>
@@ -122,6 +162,6 @@
       </div>
       <div id="toast" aria-live="polite"></div>
     </div>
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/startup.js"></script>
   </body>
 </html>

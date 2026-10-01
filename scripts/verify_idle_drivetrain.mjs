@@ -67,4 +67,4 @@ for (const vehicle of Object.values(VEHICLES)) {
   run(downhill, vehicle, 3, {}, slope);
   assert.ok(downhill.position.y < -.01, 'neutral car can still roll downhill');
 }
-console.log('Idle drivetrain: both cars, reset/60s N/R/1st idle, residual wheel spin, opposite-gear coasting, powered directions, airborne spin, burnout and downhill roll passed.');
+console.log(`Idle drivetrain: ${Object.keys(VEHICLES).length} cars, reset/60s N/R/1st idle, residual wheel spin, opposite-gear coasting, powered directions, airborne spin, burnout and downhill roll passed.`);

@@ -32,6 +32,19 @@ export const ENGINE_BANKS = {
     brightness: 0.95,
     cutoffFloor: 1100,
   },
+  amg: {
+    idle: { file: 'car-rpm-0.wav', rpm: 750, level: 1.6 },
+    on: [{ file: 'car-rpm-1.wav', rpm: 1600 }, { file: 'car-rpm-3.wav', rpm: 3500 }, { file: 'v8-load-5570.wav', rpm: 5570, level: 1.12 }],
+    off: [{ file: 'car-rpm-2.wav', rpm: 2200 }, { file: 'v8-overrun-5580.wav', rpm: 5580, level: 1.12 }],
+    character: { file: 'v8-load-5570.wav', rpm: 5570, level: .6 },
+    brightness: .95, cutoffFloor: 1100,
+  },
+  prado: {
+    idle: { file: 'car-rpm-0.wav', rpm: 700, level: 1.5 },
+    on: [{ file: 'car-rpm-1.wav', rpm: 1400 }, { file: 'car-rpm-3.wav', rpm: 3000 }, { file: 'car-rpm-5.wav', rpm: 5500 }],
+    off: [{ file: 'car-rpm-2.wav', rpm: 1900 }, { file: 'car-rpm-4.wav', rpm: 4400 }],
+    brightness: .8, cutoffFloor: 950,
+  },
 };
 
 function smoothBuffer(context, original) {

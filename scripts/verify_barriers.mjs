@@ -139,4 +139,4 @@ for (const vehicle of Object.values(VEHICLES)) {
   }
   assert.ok(contacts > 0, `${vehicle.id}: actual driving reaches and collides with trackside wall`);
 }
-console.log(`Barriers: side/corner/reverse/speed/sliding/spin/opening/transform and real driving checks passed for both cars. ${barriers.length} real boundary batches; ${missingSections} uncovered samples found, ${verifiedSections} verified; nearby safety fences cast shadows.`);
+console.log(`Barriers: side/corner/reverse/speed/sliding/spin/opening/transform and real driving checks passed for ${Object.keys(VEHICLES).length} cars. ${barriers.length} real boundary batches; ${missingSections} uncovered samples found, ${verifiedSections} verified; nearby safety fences cast shadows.`);

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { fetchAssetBytes } from './assetTransfer.js';
 
 // The supplied complete wheel has an X-axis axle and nested export transforms.
 // Bake those transforms once, then share the four finished primitives per car.
@@ -29,8 +30,10 @@ export function prepareElantraWheel(source) {
   return wheel;
 }
 
-export async function loadElantraWheel() {
-  const asset = await new GLTFLoader().loadAsync('/assets/vehicles/elantra-wheel.glb');
+export async function loadElantraWheel(onProgress) {
+  const url = '/assets/vehicles/elantra-wheel.glb';
+  const bytes = await fetchAssetBytes(url, event => onProgress?.(url, event));
+  const asset = await new GLTFLoader().parseAsync(bytes.buffer, '/assets/vehicles/');
   const wheel = prepareElantraWheel(asset.scene);
   asset.scene.traverse(mesh => { if (mesh.isMesh) { mesh.geometry.dispose(); mesh.material.dispose(); } });
   return wheel;

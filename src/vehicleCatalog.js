@@ -1,5 +1,4 @@
-export const VEHICLES = Object.freeze({
-  ferrari: {
+const ferrari = {
     id: 'ferrari',
     name: 'Ferrari 458 Italia',
     subtitle: 'Mid-engine · rear-wheel drive',
@@ -57,8 +56,8 @@ export const VEHICLES = Object.freeze({
     maxSteer: 0.54,
     steerHighSpeed: 0.16,
     description: 'Fast response, strong grip, and a high-revving V8.',
-  },
-  elantra: {
+  };
+const elantra = {
     id: 'elantra',
     name: 'Hyundai Elantra / Avante MD',
     subtitle: '2012 · front-wheel drive',
@@ -116,5 +115,50 @@ export const VEHICLES = Object.freeze({
     maxSteer: 0.59,
     steerHighSpeed: 0.18,
     description: 'A familiar city sedan with gentle front-drive handling.',
+  };
+
+// New gameplay profiles keep the original Ferrari/Elantra tuning intact.
+// Dimensions and axle placement are fitted to the supplied visual models.
+export const VEHICLES = Object.freeze({
+  ferrari, elantra,
+  amg: {
+    ...ferrari,
+    id: 'amg', name: 'Mercedes-AMG', subtitle: 'Rear-wheel drive · V8', year: '',
+    asset: '/assets/vehicles/amg.glb', wheelAsset: '/assets/vehicles/amg-wheel.glb',
+    massKg: 1720, wheelbaseM: 2.75, trackM: 1.64,
+    dims: { width: 2.02, height: 1.35, length: 4.75 },
+    wheelRadius: .35, wheelWidth: .27, wheelInertia: 1.65,
+    idleRpm: 750, redlineRpm: 7000, soundVol: 1.0,
+    torqueCurve: [[750, 300], [1500, 450], [2500, 580], [4000, 650], [5500, 620], [6500, 550], [7000, 440]],
+    gears: [-3.1, 0, 3.65, 2.3, 1.65, 1.25, 1.0, .82, .68], finalDrive: 3.3,
+    suspK: 38000, suspCComp: 2800, suspCReb: 3600,
+    tireGrip: 1.08, dragCoef: .47, liftCoef: -.8,
+    modelFit: {
+      bodyHeightOffset: .03, bodyLongitudinalOffset: .075,
+      // Exact fitting-page values: body transforms are additional to the baked
+      // normalization above; axle values are absolute, in metres. Visual only.
+      adjustments: { bodyHeight: 0, wheelbaseM: 2.75, trackM: 1.74, bodyLongitudinalOffset: -.015 },
+    },
+    hoodCamera: { height: 1.05, forward: 1.4 }, headlightHeight: .65,
+    description: 'A powerful rear-drive AMG with a strong V8 and planted road manners.',
+  },
+  prado: {
+    ...elantra,
+    id: 'prado', name: 'Toyota Prado', subtitle: 'Four-wheel drive · SUV', year: '',
+    asset: '/assets/vehicles/prado.glb', wheelAsset: '/assets/vehicles/prado-wheel.glb',
+    massKg: 2320, wheelbaseM: 2.94, trackM: 1.72,
+    dims: { width: 2.05, height: 1.85, length: 4.95 },
+    wheelRadius: .405, wheelWidth: .285, wheelInertia: 2.5,
+    drive: { front: .4, rear: .6 },
+    idleRpm: 700, redlineRpm: 6000, cylinders: 6, engineTone: 'v6', soundVol: 1.1,
+    torqueCurve: [[700, 160], [1500, 230], [2500, 305], [3800, 365], [4800, 350], [5600, 310], [6000, 250]],
+    gears: [-3.2, 0, 3.52, 2.04, 1.4, 1.0, .72, .58], finalDrive: 3.9,
+    suspRest: .42, suspTravel: .3, suspK: 39000, suspCComp: 3100, suspCReb: 4200,
+    bumpStopK: 260000, engineBraking: 42, brakeTorqueMax: 4700, handbrakeTorque: 3300,
+    tireGrip: .96, latGripScale: .92, dragCoef: .9, liftCoef: 0,
+    maxSteer: .57, steerHighSpeed: .16,
+    modelFit: { bodyHeightOffset: -.05, bodyLongitudinalOffset: .045 },
+    hoodCamera: { height: 1.55, forward: 1.45 }, headlightHeight: .95,
+    description: 'A taller four-wheel-drive SUV with a softer ride and steady traction.',
   },
 });

@@ -1,6 +1,6 @@
 # DriveAtBAku
 
-A fan-made browser driving game set around the Baku City Circuit. Drive a Ferrari 458 Italia or a 2012 Elantra/Avante, customize the paint, and explore the circuit by day or night in sunny, overcast, wet, rainy or snowy conditions.
+A fan-made browser driving game set around the Baku City Circuit. Choose a Ferrari 458 Italia, a 2012 Elantra/Avante, a Mercedes-AMG or a Toyota Prado, customize the paint, and explore the circuit by day or night in sunny, overcast, wet, rainy or snowy conditions.
 
 ## Play locally
 
@@ -18,6 +18,8 @@ The city uses spatial frustum culling, conservative facade occlusion, selective 
 For development measurements, append `?graphicsDebug=1` to the game URL. Compare the same view with `?graphicsDebug=1&occlusion=off` to bypass occlusion while retaining frustum culling. The overlay reports candidate triangles, all-pass draw counts, CPU timings, and reflection captures; it does not measure GPU time. The normal game view has no diagnostic overlay.
 
 Use **WASD** or the arrow keys to drive, **Space** for the handbrake, **C** to switch camera, **R** to recover in place, **Shift+R** to return to the start, and **Esc** to pause. Open **Controls** on the main or pause menu for the complete key list. The pause menu also has day/night and engine-volume controls.
+
+The garage includes the supplied AMG and Prado bodies and wheels, separate saved paint for each car, and saved vehicle selection. Their assets load on first selection and are reused when switching back. See the [garage vehicle update](docs/GARAGE_VEHICLES_UPDATE.md) for model fitting and validation.
 
 ## Build and deploy
 
@@ -47,7 +49,9 @@ Run `npm run verify-handling`, `npm run verify-camera`, `npm run verify-drive-ca
 
 Run `npm run verify-graphics` to check the Elantra's repaired surface normals against the included showroom asset.
 
-Run `npm run verify-idle-drivetrain` to check both cars' reset/idle wheel rotation, unpowered gear direction, opposite-gear coasting, powered pullaway, airborne spin, burnout and downhill rolling.
+Run `npm run verify-idle-drivetrain` to check all four cars' reset/idle wheel rotation, unpowered gear direction, opposite-gear coasting, powered pullaway, airborne spin, burnout and downhill rolling.
+
+Run `npm run verify-garage-vehicles` to check the supplied AMG/Prado geometry, scale, ground contact, axle alignment, shared wheels, stationary Prado calipers, paint, lamp masks, animation and forward/reverse/braking behavior.
 
 Run `npm run verify-realism` to check wheel geometry, Ferrari grounding/glass, weather transitions, precipitation amount/density, asphalt filtering and shader composition, cutout-preserving AO depth, resizing and resource cleanup.
 

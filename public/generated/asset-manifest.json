@@ -20,5 +20,16 @@
         "buildings.glb.gz.part2"
       ]
     }
+  },
+  "files": {
+    "/assets/vehicles/amg-wheel.glb": 548152,
+    "/assets/vehicles/prado-wheel.glb": 1672232,
+    "/assets/vehicles/ferrari-458.glb": 1681572,
+    "/generated/route.json": 1202,
+    "/assets/vehicles/prado.glb": 12364196,
+    "/assets/vehicles/amg.glb": 4772148,
+    "/assets/vehicles/elantra-wheel.glb": 1442728,
+    "/assets/vehicles/elantra-showroom.bin": 9872638,
+    "/generated/collision.glb": 7126136
   }
 }
