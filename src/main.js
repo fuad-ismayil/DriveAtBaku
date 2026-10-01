@@ -11,8 +11,15 @@ import { VEHICLES } from './vehicleCatalog.js';
 import { EngineAudio } from './engineAudio.js';
 import { drawMinimap } from './minimap.js';
 import { createSky } from './sky.js';
+import { createGraphics, createSkyEnvironments } from './graphics.js';
 import { accelerationPullback, chaseCameraOffset } from './cameraTuning.js';
 import { DriveCameraControls } from './driveCameraControls.js';
+import { BarrierCollision } from './barrierCollision.js';
+import { isTrackBoundary, createShadowCandidate, updateShadowCandidates } from './trackBoundaries.js';
+import { partitionMesh, canCullBackfaces, WorldOptimization, freezeStaticWorld } from './worldOptimization.js';
+import { createSurfaceDetail } from './surfaceDetail.js';
+import { createLocalReflections } from './localReflections.js';
+import { createGraphicsDiagnostics } from './graphicsDiagnostics.js';
 import './style.css';
 
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
@@ -37,11 +44,19 @@ const sky = createSky();
 scene.add(sky);
 const environment = new THREE.PMREMGenerator(renderer);
 const room = new RoomEnvironment();
-scene.environment = environment.fromScene(room, 0.035).texture;
+const garageEnvironment = environment.fromScene(room, 0.035);
+const skyEnvironments = createSkyEnvironments(renderer, sky);
+scene.environment = skyEnvironments.day.texture;
 room.dispose();
 environment.dispose();
 const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.15, 6000);
 camera.up.set(0, 0, 1);
+const graphicsOptions = new URLSearchParams(location.search);
+const worldOptimization = new WorldOptimization(camera, { occlusion: graphicsOptions.get('occlusion') !== 'off' });
+const multiDrawSupported = renderer.extensions.has('WEBGL_multi_draw');
+const surfaceDetail = createSurfaceDetail();
+surfaceDetail.texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+const localReflections = createLocalReflections(renderer, scene, sky);
 const clock = new THREE.Clock();
 const draco = new DRACOLoader().setDecoderPath('/draco/');
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setDRACOLoader(draco);
@@ -61,6 +76,7 @@ let controlsOrigin = 'menu';
 const availableVehicles = new Set(['ferrari']);
 const carCache = new Map();
 const shadowCandidates = [];
+const barrierCollision = new BarrierCollision();
 const nightMaterials = [];
 let selectingVehicle = false;
 const cameraLook = new THREE.Vector3();
@@ -84,17 +100,29 @@ for (const vehicleId of Object.keys(DEFAULT_PAINT)) {
 const FIXED_STEP = 1 / 120;
 
 const hemisphere = new THREE.HemisphereLight(0xcbe9ff, 0x6d6657, 0.88);
+hemisphere.position.set(0, 0, 1); // The circuit uses Z-up, including its sky illumination.
 scene.add(hemisphere);
 const sun = new THREE.DirectionalLight(0xffefcf, 3.35);
 sun.position.set(-800, -400, 1100); sun.castShadow = true;
-sun.shadow.mapSize.set(3072, 3072); sun.shadow.camera.near = 10; sun.shadow.camera.far = 2500;
-sun.shadow.camera.left = -80; sun.shadow.camera.right = 80; sun.shadow.camera.top = 80; sun.shadow.camera.bottom = -80;
+sun.shadow.mapSize.set(4096, 4096); sun.shadow.camera.near = 10; sun.shadow.camera.far = 2500;
+sun.shadow.camera.left = -100; sun.shadow.camera.right = 100; sun.shadow.camera.top = 100; sun.shadow.camera.bottom = -100;
 sun.shadow.bias = -0.00015;
 sun.shadow.normalBias = 0.008;
-sun.shadow.radius = 1.5;
 scene.add(sun, sun.target);
 const shadowAnchor = new THREE.Vector3();
-const shadowOffset = new THREE.Vector3(450, 165, 145);
+const shadowOffset = new THREE.Vector3(450, 165, 310);
+const graphics = createGraphics(renderer, scene, camera, sun);
+const graphicsQuality = document.getElementById('graphics-quality');
+let savedQuality = 'cinematic';
+try { savedQuality = localStorage.getItem('baku-graphics-quality') ?? 'cinematic'; } catch { /* storage is optional */ }
+graphicsQuality.value = graphics.setQuality(savedQuality);
+localReflections.setQuality(graphics.quality);
+const graphicsDiagnostics = createGraphicsDiagnostics(renderer, worldOptimization, localReflections, graphics, graphicsOptions.has('graphicsDebug'));
+graphicsQuality.onchange = () => {
+  graphicsQuality.value = graphics.setQuality(graphicsQuality.value);
+  localReflections.setQuality(graphics.quality);
+  try { localStorage.setItem('baku-graphics-quality', graphicsQuality.value); } catch { /* storage is optional */ }
+};
 
 function addHeadlights(vehicle) {
   if (vehicle.userData.headlights) return;
@@ -171,23 +199,25 @@ function choosePaint(color) {
 function setNightMode(enabled, save = true) {
   nightMode = Boolean(enabled);
   sky.material.uniforms.night.value = nightMode ? 1 : 0;
-  scene.fog.color.set(nightMode ? 0x19263d : 0x9bc8df);
-  scene.fog.density = nightMode ? 0.0003 : 0.00018;
-  hemisphere.color.set(nightMode ? 0x8aa8d2 : 0xcbe9ff);
-  hemisphere.groundColor.set(nightMode ? 0x293448 : 0x6d6657);
-  hemisphere.intensity = nightMode ? 0.35 : 0.88;
-  sun.color.set(nightMode ? 0x9dbbff : 0xffefcf);
-  sun.intensity = nightMode ? 0.32 : 3.35;
-  shadowOffset.set(nightMode ? 270 : 450, nightMode ? 190 : 165, nightMode ? 590 : 145);
-  sky.material.uniforms.sunDirection.value.copy(shadowOffset).normalize();
-  scene.environmentIntensity = nightMode ? 0.22 : 1;
-  renderer.toneMappingExposure = nightMode ? 0.78 : 0.84;
+  scene.fog.color.set(nightMode ? 0x263b56 : 0xb4c5cd);
+  scene.fog.density = nightMode ? 0.00024 : 0.00014;
+  hemisphere.color.set(nightMode ? 0x99b9ee : 0xc9e2ff);
+  hemisphere.groundColor.set(nightMode ? 0x343e54 : 0x857867);
+  hemisphere.intensity = nightMode ? 0.46 : 0.65;
+  sun.color.set(nightMode ? 0xb4ccff : 0xffe3b8);
+  sun.intensity = nightMode ? 0.60 : 2.75;
+  shadowOffset.set(nightMode ? 270 : 450, nightMode ? 190 : 165, nightMode ? 590 : 310);
+  scene.environment = skyEnvironments[nightMode ? 'night' : 'day'].texture;
+  scene.environmentIntensity = nightMode ? 1.4 : 0.85;
+  renderer.toneMappingExposure = nightMode ? 1.1 : 0.97;
+  graphics.setNight(nightMode);
+  localReflections.invalidate();
   for (const toggle of [ui['time-toggle'], ui['pause-time-toggle']]) {
     toggle.textContent = nightMode ? '☾ NIGHT MODE' : '☀ DAY MODE';
     toggle.setAttribute('aria-pressed', String(nightMode));
   }
   ui['route-time'].textContent = `6.003 KM · ${nightMode ? 'NIGHT' : 'DAY'}`;
-  for (const material of nightMaterials) material.emissiveIntensity = nightMode ? 0.13 : 0;
+  for (const material of nightMaterials) material.emissiveIntensity = nightMode ? 0.42 : 0;
   if (save) try { localStorage.setItem('baku-night-mode', String(nightMode)); } catch { /* storage is optional */ }
 }
 
@@ -214,32 +244,53 @@ async function loadGLB(url, onProgress) {
 function tuneMap(root) {
   scene.add(root);
   root.updateMatrixWorld(true);
-  root.traverse(o => {
-    if (!o.isMesh) return;
+  const meshes = [], backfaceMaterials = new Map();
+  root.traverse(o => { if (o.isMesh) meshes.push(o); });
+  for (const o of meshes) {
     o.receiveShadow = true;
     o.castShadow = false;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     for (const m of mats) {
-      m.envMapIntensity = 0.22;
+      m.envMapIntensity = 0.38;
       if (m.alphaTest > 0) m.alphaTest = /tree|hedge|grass_bridge/i.test(m.name) ? 0.38 : 10 / 255;
       if (/water/i.test(m.name)) { m.roughness = 0.16; m.metalness = 0.18; m.envMapIntensity = 0.55; }
-      if (/road|track|asphalt/i.test(m.name) && !/line|decal|board/i.test(m.name)) { m.roughness = 0.88; m.metalness = 0; }
+      surfaceDetail.apply(m);
       if (/window|glass/i.test(m.name)) { m.roughness = 0.22; m.metalness = 0.24; m.envMapIntensity = 0.62; }
-      if (/window|building.*lights/i.test(m.name) && m.emissive && !m.transparent) {
+      if (/window|building.*lights/i.test(m.name) && m.emissive && !m.transparent && !nightMaterials.includes(m)) {
         m.emissive.set(0xffd7a3);
-        m.emissiveIntensity = nightMode ? 0.13 : 0;
+        m.emissiveMap = m.map;
+        m.emissiveIntensity = nightMode ? 0.42 : 0;
         nightMaterials.push(m);
       }
       for (const tex of [m.map, m.normalMap, m.roughnessMap]) if (tex) tex.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy());
     }
-    if (mats.some(m => /tree|hedge|building|wall|fence/i.test(m.name)) && !mats.some(m => m.transparent && m.alphaTest === 0)) {
-      o.geometry.computeBoundingSphere();
-      const sphere = o.geometry.boundingSphere;
-      const scale = o.getWorldScale(new THREE.Vector3());
-      const radius = sphere.radius * Math.max(scale.x, scale.y, scale.z);
-      if (radius < 85) shadowCandidates.push({ mesh: o, center: sphere.center.clone().applyMatrix4(o.matrixWorld), radius });
+    if (!Array.isArray(o.material)) backfaceMaterials.set(o.material, (backfaceMaterials.get(o.material) ?? true) && canCullBackfaces(o));
+  }
+  for (const [material, eligible] of backfaceMaterials) {
+    if (eligible) {
+      material.side = THREE.FrontSide;
+      material.shadowSide = THREE.DoubleSide; // Supplied facades may be thin planes.
+      material.needsUpdate = true; worldOptimization.stats.singleSided++;
     }
-  });
+  }
+  for (const o of meshes) {
+    worldOptimization.addOccluders(o);
+    // Preserve the original barrier geometry/BVH for physics, independently of
+    // render chunks and their camera-specific draw ranges.
+    if (isTrackBoundary(o)) barrierCollision.addMesh(o);
+    const chunks = partitionMesh(o, multiDrawSupported ? 96 : 256);
+    if (chunks[0] !== o) {
+      if (multiDrawSupported && !o.material.transparent) o.parent.add(worldOptimization.addBatchedMesh(chunks));
+      else for (const chunk of chunks) { o.parent.add(chunk); worldOptimization.addMesh(chunk); }
+      if (isTrackBoundary(o)) o.visible = false;
+      else { o.removeFromParent(); o.geometry.dispose(); }
+    } else worldOptimization.addMesh(o);
+    for (const chunk of chunks) {
+      const candidate = createShadowCandidate(chunk);
+      if (candidate) shadowCandidates.push(candidate);
+    }
+  }
+  freezeStaticWorld(root);
 }
 
 async function boot() {
@@ -251,6 +302,9 @@ async function boot() {
     progress(16, 'Loading Baku streets…'); const map = await loadGLB('/generated/baku.glb', e => e.total && progress(16 + (e.loaded/e.total)*38, 'Loading Baku streets…')); tuneMap(map.scene);
     progress(58, 'Loading the city skyline…'); const buildings = await loadGLB('/generated/buildings.glb', e => e.total && progress(58 + (e.loaded/e.total)*25, 'Loading the city skyline…')); tuneMap(buildings.scene);
     progress(85, 'Preparing road contact…'); const collision = await loadGLB('/generated/collision.glb'); collision.scene.traverse(o=>{if(o.isMesh){o.visible=false;o.geometry.computeBoundsTree({targetLeafSize:20});collisionMeshes.push(o);}}); scene.add(collision.scene);
+    collision.scene.updateMatrixWorld(true);
+    for (const mesh of collisionMeshes) barrierCollision.addMesh(mesh);
+    freezeStaticWorld(collision.scene);
     progress(93, 'Preparing your car…');
     const carAsset = await loadGLB('/assets/vehicles/ferrari-458.glb');
     car = createCarModel(carAsset); carCache.set('ferrari', car); scene.add(car); addHeadlights(car); applyPaint(car, 'ferrari'); updatePaintUI(); scene.updateMatrixWorld(true); resetCar(false, false);
@@ -266,6 +320,8 @@ async function boot() {
       progress(96, 'Loading your garage car…');
       await selectVehicle(savedVehicle);
     }
+    progress(98, 'Preparing city lighting…');
+    await renderer.compileAsync(scene, camera);
     progress(100, 'Welcome to Baku'); await new Promise(r=>setTimeout(r,450)); ui.loading.classList.add('hidden'); ui.menu.classList.remove('hidden'); mode='menu';
   } catch(err) { progress(100, 'Map conversion required — run npm run convert-map'); console.error(err); }
 }
@@ -429,19 +485,6 @@ function drivingInput() {
   return input;
 }
 
-function barrierAhead(travel) {
-  const distance = Math.hypot(travel.x, travel.y);
-  if (distance < 0.001) return false;
-  const direction = new THREE.Vector3(travel.x / distance, travel.y / distance, 0);
-  const ray = new THREE.Raycaster(handling.position.clone(), direction, 0, distance + 2.2);
-  ray.firstHitOnly = true;
-  for (const mesh of collisionMeshes) {
-    const hit = ray.intersectObject(mesh, false)[0];
-    if (hit && Math.abs(hit.face?.normal?.z ?? 1) < 0.65) return true;
-  }
-  return false;
-}
-
 function updateCar(dt) {
   if (mode !== 'drive') return;
   physicsAccumulator = Math.min(physicsAccumulator + dt, FIXED_STEP * 8);
@@ -449,14 +492,7 @@ function updateCar(dt) {
     previousBodyPosition.copy(handling.position);
     previousBodyQuaternion.copy(handling.quaternion);
     stepDynamics(handling, drivingInput(), FIXED_STEP, activeVehicle, sampleGround);
-    const travel = handling.position.clone().sub(previousBodyPosition);
-    if (barrierAhead(travel)) {
-      handling.position.x = previousBodyPosition.x;
-      handling.position.y = previousBodyPosition.y;
-      handling.velocity.x *= -0.12;
-      handling.velocity.y *= -0.12;
-      handling.angularVelocity.z *= 0.3;
-    }
+    barrierCollision.resolve(handling, previousBodyPosition, previousBodyQuaternion, activeVehicle);
     physicsPosition.copy(handling.position).add(new THREE.Vector3(0, 0, -handling.comHeight).applyQuaternion(handling.quaternion));
     if (!handling.groundedWheels && handling.position.z < -4) { resetCar(); return; }
     if (handling.groundedWheels >= 3 && handling.velocity.length() < 34) {
@@ -488,6 +524,8 @@ function updateCar(dt) {
 
 function updateSceneLighting(dt) {
   if (!car) return;
+  scene.environment = mode === 'garage' ? garageEnvironment.texture : skyEnvironments[nightMode ? 'night' : 'day'].texture;
+  scene.environmentIntensity = mode === 'garage' ? 0.85 : nightMode ? 1.4 : 0.85;
   for (const lamp of car.userData.garageLights ?? []) lamp.visible = nightMode && mode === 'garage';
   const texelSize = (sun.shadow.camera.right - sun.shadow.camera.left) / sun.shadow.mapSize.x;
   shadowAnchor.set(
@@ -500,11 +538,7 @@ function updateSceneLighting(dt) {
   shadowUpdateTimer -= dt;
   if (shadowUpdateTimer <= 0) {
     shadowUpdateTimer = 0.2;
-    for (const candidate of shadowCandidates) {
-      const dx = candidate.center.x - car.position.x;
-      const dy = candidate.center.y - car.position.y;
-      candidate.mesh.castShadow = dx * dx + dy * dy < (115 + candidate.radius) ** 2;
-    }
+    updateShadowCandidates(shadowCandidates, car.position);
   }
 }
 
@@ -671,7 +705,7 @@ document.addEventListener('pointerlockchange', () => {
   }
 });
 canvas.addEventListener('click', () => { if (mode === 'drive') captureDrivePointer(); });
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();graphics.resize();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();pointerSeen=false;driveCamera.setRearHeld(false);}engineAudio.setEnabled(!document.hidden && !audioMuted);});
 document.addEventListener('pointermove', e => {
   if (mode !== 'drive') { pointerSeen = false; return; }
@@ -706,4 +740,16 @@ for (const swatch of document.querySelectorAll('.paint-swatch')) swatch.onclick=
 ui['custom-paint'].oninput=e=>choosePaint(e.target.value);
 for (const aid of ['abs','tcs','esc']) ui[`aid-${aid}`].onclick=()=>toggleAid(aid);
 
-function frame(){requestAnimationFrame(frame);const dt=Math.min(clock.getDelta(),0.1);updateCar(dt);updateCamera(dt);updateSceneLighting(dt);sky.position.copy(camera.position);sky.material.uniforms.time.value+=dt;engineAudio.update(handling,activeVehicle,mode==='drive',dt);renderer.render(scene,camera);} boot();frame();
+function frame() {
+  requestAnimationFrame(frame);
+  graphicsDiagnostics.begin();
+  const dt = Math.min(clock.getDelta(), 0.1);
+  updateCar(dt); updateCamera(dt); updateSceneLighting(dt);
+  sky.position.copy(camera.position); sky.material.uniforms.time.value += dt;
+  engineAudio.update(handling, activeVehicle, mode === 'drive', dt);
+  worldOptimization.update();
+  localReflections.update(dt, car, carCache.values(), mode === 'garage' || mode === 'loading');
+  graphics.render(dt);
+  graphicsDiagnostics.end();
+}
+boot(); frame();

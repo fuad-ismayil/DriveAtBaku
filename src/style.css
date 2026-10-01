@@ -106,6 +106,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .pause-actions button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: #74dbe626; }
 .volume-control { display: grid; gap: .65rem; margin: 0 0 1.3rem; color: #b6cbd3; font-size: .65rem; font-weight: 700; letter-spacing: .13em; }
 .volume-control input { width: 100%; accent-color: var(--accent); }
+.graphics-control { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 0 1.3rem; color: #b6cbd3; font-size: .65rem; font-weight: 700; letter-spacing: .13em; }
+.graphics-control select { padding: .65rem 2rem .65rem .65rem; border: 1px solid var(--edge); border-radius: 3px; background: #102a35; color: #e8f7fa; font: 600 .75rem Inter, sans-serif; cursor: pointer; }
+.graphics-control select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .text-button { display: flex; justify-content: space-between; width: 100%; padding: .9rem 0 0; background: transparent; border-top: 1px solid var(--edge); color: #c3d4d9; font-size: .67rem; font-weight: 700; letter-spacing: .13em; text-align: left; }
 .text-button:hover { color: var(--accent); }
 

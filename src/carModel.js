@@ -10,8 +10,8 @@ export function createCarModel(gltf) {
   const body = visual.getObjectByName('body');
   if (body) {
     body.material = new THREE.MeshPhysicalMaterial({
-      color: 0xa80719, metalness: 0.64, roughness: 0.23,
-      clearcoat: 1, clearcoatRoughness: 0.12,
+      color: 0xa80719, metalness: 0.42, roughness: 0.28,
+      clearcoat: 1, clearcoatRoughness: 0.19,
     });
     vehicle.userData.paintMaterials = [body.material];
   }

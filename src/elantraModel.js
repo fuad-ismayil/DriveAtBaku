@@ -1,5 +1,24 @@
 import * as THREE from 'three';
 
+export function repairMissingNormals(geometry) {
+  const authoredNormals = geometry.getAttribute('normal');
+  const missingNormals = [];
+  for (let i = 0; i < authoredNormals.count; i++) {
+    if (authoredNormals.getX(i) === 0 && authoredNormals.getY(i) === 0 && authoredNormals.getZ(i) === 0) missingNormals.push(i);
+  }
+  if (missingNormals.length) {
+    geometry.deleteAttribute('normal');
+    geometry.computeVertexNormals();
+    const computedNormals = geometry.getAttribute('normal');
+    for (const i of missingNormals) {
+      const x = computedNormals.getX(i), y = computedNormals.getY(i), z = computedNormals.getZ(i);
+      authoredNormals.setXYZ(i, x, x === 0 && y === 0 && z === 0 ? 1 : y, z);
+    }
+    geometry.setAttribute('normal', authoredNormals);
+  }
+  return missingNormals.length;
+}
+
 function decodeArray(encoded, Type) {
   const binary = atob(encoded);
   const bytes = new Uint8Array(binary.length);
@@ -214,6 +233,10 @@ export async function loadElantraModel() {
     geometry.setAttribute('normal', new THREE.BufferAttribute(decodeArray(part.n, Int16Array), 3, true));
     geometry.setAttribute('uv', new THREE.BufferAttribute(decodeArray(part.uv, Float32Array), 2));
     geometry.setIndex(new THREE.BufferAttribute(decodeArray(part.ix, Uint32Array), 1));
+    // The showroom export includes zero normals. Normalizing those in a physical
+    // shader can produce NaNs that spread across HDR bloom. Keep authored normals
+    // and reconstruct only the missing ones from the actual triangle faces.
+    repairMissingNormals(geometry);
     for (const group of part.groups) geometry.addGroup(...group);
     const mesh = new THREE.Mesh(geometry, part.materials.map((entry, index) => materialFor(part, entry, index, textures, brakes, paintMaterials, headlightMaterials, reverseLightMaterials)));
     mesh.name = part.name || `Elantra part ${part.id}`;
