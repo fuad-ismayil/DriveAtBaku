@@ -19,6 +19,8 @@ For development measurements, append `?graphicsDebug=1` to the game URL. Compare
 
 Use **WASD** or the arrow keys to drive, **Space** for the handbrake, **C** to switch camera, **R** to recover in place, **Shift+R** to return to the start, and **Esc** to pause. Open **Controls** on the main or pause menu for the complete key list. The pause menu also has day/night and engine-volume controls.
 
+The heading-up minimap uses the circuit's actual road geometry, including its bends and road widths. The circuit appears in cyan, surrounding roads in grey, with pavement, green areas and the coastline for context. It follows the displayed car position and direction, shows more road ahead, and includes a 100 m scale and a start marker. The map is baked once during loading and reused while driving. Run `npm run verify-minimap` to check coordinate alignment and all 14 route checkpoints against the supplied track.
+
 The garage includes the supplied AMG and Prado bodies and wheels, separate saved paint for each car, and saved vehicle selection. Their assets load on first selection and are reused when switching back. See the [garage vehicle update](docs/GARAGE_VEHICLES_UPDATE.md) for model fitting and validation.
 
 ## Build and deploy

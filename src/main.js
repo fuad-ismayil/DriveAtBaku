@@ -10,7 +10,7 @@ import { loadImportedVehicle } from './importedVehicleModel.js';
 import { createDynamicsState, stepDynamics, GEAR_LABELS } from './vehicleDynamics.js';
 import { VEHICLES } from './vehicleCatalog.js';
 import { EngineAudio } from './engineAudio.js';
-import { drawMinimap } from './minimap.js';
+import { createMinimap, drawMinimap } from './minimap.js';
 import { createSky } from './sky.js';
 import { createGraphics, createSkyEnvironments } from './graphics.js';
 import { accelerationPullback, chaseCameraOffset } from './cameraTuning.js';
@@ -70,12 +70,13 @@ const clock = new THREE.Clock();
 const draco = new DRACOLoader().setDecoderPath('/draco/');
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setDRACOLoader(draco);
 const keys = new Set();
-let route, car, handling, collisionMeshes = [], mode = 'loading', cameraMode = 0, lastSafe;
+let route, minimap, car, handling, collisionMeshes = [], mode = 'loading', cameraMode = 0, lastSafe;
 let packedAssets = {};
 let assetFileBytes = {};
 let physicsAccumulator = 0, safeTimer = 0;
 let physicsPosition, previousBodyPosition, previousBodyQuaternion;
 const interpolatedBody = new THREE.Vector3(), interpolatedQuaternion = new THREE.Quaternion();
+const minimapForward = new THREE.Vector3();
 let pendingShiftUp = false, pendingShiftDown = false;
 let padShiftUpHeld = false, padShiftDownHeld = false;
 let padCameraHeld = false, padTransmissionHeld = false;
@@ -394,7 +395,10 @@ async function boot() {
     const routeBytes = await fetchAssetBytes('/generated/route.json', event => reportAsset('/generated/route.json', event), { expectedBytes: assetFileBytes['/generated/route.json'] });
     route = JSON.parse(new TextDecoder().decode(routeBytes));
     loadingScreen.stage('Loading Baku streets…', '01 / 05 · THE STREETS', 'Downloading the streets and their textures.', true);
-    const map = await loadGLB('/generated/baku.glb'); await tuneMap(map.scene);
+    const map = await loadGLB('/generated/baku.glb');
+    loadingScreen.stage('Mapping Baku streets…', '01 / 05 · THE STREETS', 'Tracing the circuit and its surrounding roads.');
+    minimap = await createMinimap(map.scene);
+    await tuneMap(map.scene);
     loadingScreen.stage('Loading the city skyline…', '02 / 05 · THE SKYLINE', 'Bringing the city into view.', true);
     const buildings = await loadGLB('/generated/buildings.glb'); await tuneMap(buildings.scene);
     loadingScreen.stage('Preparing road contact…', '03 / 05 · THE ROAD', 'Downloading the road surface.', true);
@@ -641,7 +645,8 @@ function updateCar(dt) {
     ui[`aid-${aid}`].classList.toggle('working', handling[`${aid}Active`]);
   }
   for (let i = 0; i < 4; i++) ui[`susp-${i}`].style.height = `${Math.round(100 * THREE.MathUtils.clamp(handling.wheels[i].compression / activeVehicle.suspTravel, 0, 1))}%`;
-  drawMinimap(ui.minimap, route, car.position, handling.heading, handling.velocity.length());
+  minimapForward.set(0, 1, 0).applyQuaternion(car.quaternion);
+  drawMinimap(ui.minimap, minimap, route, car.position, Math.atan2(-minimapForward.x, minimapForward.y), Math.hypot(handling.velocity.x, handling.velocity.y));
 }
 
 function updateSceneLighting(dt) {
