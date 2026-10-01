@@ -6,6 +6,10 @@ export function surfaceKind(name = '') {
   return null;
 }
 
+export function isRoadSurface(name = '') {
+  return surfaceKind(name) === 'asphalt' || /^ROADA_(?:\d+|MAIN)(?:-|$)/i.test(name);
+}
+
 // A small shared, seamless texture supplies millimetre-scale grain. Original
 // color maps and UVs stay intact; detail is sampled in world metres across chunks.
 export function createSurfaceDetail() {
@@ -31,19 +35,37 @@ export function createSurfaceDetail() {
   let materialCount = 0;
 
   function apply(material) {
-    const kind = surfaceKind(material.name);
+    const kind = surfaceKind(material.name) ?? (isRoadSurface(material.name) ? 'asphalt-atlas' : null);
     if (!kind || material.userData.surfaceDetail) return false;
     material.userData.surfaceDetail = kind;
-    material.roughness = kind === 'asphalt' ? 0.89 : 0.82;
+    material.userData.dryRoadSurface = isRoadSurface(material.name);
+    material.roughness = material.userData.dryRoadSurface ? .97 : .82;
     material.metalness = 0;
     const previous = material.onBeforeCompile, previousKey = material.customProgramCacheKey.bind(material);
+    // The main asphalt bitmap contains isolated baked highlights. Use a small
+    // minimum mip footprint plus screen-space filtering for that grain only;
+    // numbered ROADA atlases and separate painted markings retain their UV detail.
+    const filterAggregate = kind === 'asphalt' || /^ROADA_MAIN(?:-|$)/i.test(material.name);
     // Capture the old key before installing a new callback (the default key uses
     // onBeforeCompile.toString()). Compose callbacks rather than erasing patches.
     const key = previousKey();
     material.onBeforeCompile = (shader, renderer) => {
       previous.call(material, shader, renderer);
       shader.uniforms.streetDetail = { value: texture };
-      shader.uniforms.streetNormalStrength = { value: kind === 'asphalt' ? 0.11 : 0.035 };
+      shader.uniforms.streetNormalStrength = { value: kind === 'asphalt' ? .055 : kind === 'asphalt-atlas' ? 0 : .035 };
+      if (filterAggregate && material.map) {
+        const image = material.map.image;
+        shader.uniforms.streetMapSize = { value: new THREE.Vector2(image?.width ?? 1, image?.height ?? 1) };
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform vec2 streetMapSize;')
+          .replace('#include <map_fragment>', THREE.ShaderChunk.map_fragment.replace(
+            'vec4 sampledDiffuseColor = texture2D( map, vMapUv );',
+            `vec2 streetMapDx = dFdx(vMapUv) * streetMapSize;
+             vec2 streetMapDy = dFdy(vMapUv) * streetMapSize;
+             float streetMapFootprint = max(length(streetMapDx), length(streetMapDy));
+             float streetMapMip = max(2.0, log2(max(streetMapFootprint, 1.0)) + 0.75);
+             vec4 sampledDiffuseColor = textureLod(map, vMapUv, streetMapMip);`));
+      }
       shader.vertexShader = shader.vertexShader
         .replace('#include <common>', '#include <common>\nvarying vec3 vStreetPosition;')
         .replace('#include <project_vertex>', `#include <project_vertex>
@@ -58,16 +80,18 @@ export function createSurfaceDetail() {
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <common>', '#include <common>\nvarying vec3 vStreetPosition;\nuniform sampler2D streetDetail;\nuniform float streetNormalStrength;')
         .replace('#include <color_fragment>', `#include <color_fragment>
-          vec4 streetGrain = texture2D(streetDetail, vStreetPosition.xy / 0.65);`)
+          vec4 streetGrain = texture2D(streetDetail, vStreetPosition.xy / 0.65);
+          float streetPixelMetres = max(length(dFdx(vStreetPosition.xy)), length(dFdy(vStreetPosition.xy)));
+          float streetGrainWeight = 1.0 - smoothstep(0.0015, 0.008, streetPixelMetres);`)
         .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
           vec3 streetUp = mat3(viewMatrix) * vec3(0.0, 0.0, 1.0);
           float streetTop = smoothstep(0.65, 0.95, abs(dot(normal, streetUp)));
           vec3 streetSlope = mat3(viewMatrix) * vec3(streetGrain.rg * 2.0 - 1.0, 0.0);
-          diffuseColor.rgb *= mix(1.0, 0.97 + streetGrain.a * 0.06, streetTop);
-          roughnessFactor = clamp(roughnessFactor + (streetGrain.b - 0.88) * 0.30 * streetTop, 0.65, 1.0);
-          normal = normalize(normal + streetSlope * streetNormalStrength * streetTop);`);
+          diffuseColor.rgb *= mix(1.0, 0.97 + streetGrain.a * 0.06, streetTop * streetGrainWeight * ${kind === 'asphalt-atlas' ? '0.0' : '1.0'});
+          roughnessFactor = clamp(roughnessFactor + (streetGrain.b - 0.88) * 0.30 * streetTop * streetGrainWeight, ${material.userData.dryRoadSurface ? '.94' : '.65'}, 1.0);
+          normal = normalize(normal + streetSlope * streetNormalStrength * streetTop * streetGrainWeight);`);
     };
-    material.customProgramCacheKey = () => `${key}:street-detail-v1:${kind}`;
+    material.customProgramCacheKey = () => `${key}:street-detail-v3:${kind}:${filterAggregate && !!material.map}`;
     material.needsUpdate = true;
     materialCount++;
     return true;

@@ -1,6 +1,6 @@
 # DriveAtBAku: practical graphics realism roadmap
 
-Research date: 1 October 2026. Target: a powerful gaming PC, with visual quality prioritized. The audit below records the research baseline and installed Three.js 0.180.0. The first implementation package is now in the working tree; its status and limits are recorded here. Earlier lighting work is described separately in [GRAPHICS_RESEARCH.md](C:/Users/Fuad/Desktop/DriveAtBaku/docs/GRAPHICS_RESEARCH.md).
+Research date: 1 October 2026. Target: a powerful gaming PC, with visual quality prioritized. The audit below records the research baseline and installed Three.js 0.180.0. Three implementation packages are now in the working tree; their status and limits are recorded here. Earlier lighting work is described separately in [GRAPHICS_RESEARCH.md](C:/Users/Fuad/Desktop/DriveAtBaku/docs/GRAPHICS_RESEARCH.md).
 
 ## First implementation package
 
@@ -17,7 +17,23 @@ Implemented on 1 October 2026:
 
 The first occlusion implementation deliberately uses current-camera geometric proofs instead of asynchronous GPU query results. It needs no depth readback, query pass, or delayed visibility state. It may miss opportunities where several small faces together cover a chunk; those chunks remain visible. GPU-query experiments remain a later profiling option if the CPU cost or missed opportunities justify them.
 
-### Validation and remaining acceptance work
+### Current corrections: asphalt shimmer, idle drivetrain and precipitation amount
+
+The asphalt aggregate shader now filters tiny baked highlights and fades unresolved procedural grain, verified with quick left/right camera motion. Engine overrun opposes actual wheel rotation without producing torque from rest; near-rest unpowered wheels synchronize with road contact. Both cars pass reset, Reverse and first-gear idle checks without unintended wheel rotation or acceleration. Elantra wheels are visually 5% smaller, its engine gain is increased again, and a separate saved 0–200% rain/snow amount slider controls falling particles without changing surface weather. Vehicle tuning is preserved; build and all eleven suites pass. See [the targeted correction and live RTX verification](ASPHALT_IDLE_WEATHER_FIXES.md).
+
+### Previous follow-up: stable reflections, tires and supplied wheel
+
+Dry asphalt is more matte without removing wet-road sheen. Local car probes now blend smoothly in linear HDR into one stable texture. Both cars have bounded contact-based rubber marks and small smoke wisps; wet/snowy surfaces suppress rubber smoke. Tire squeal is quieter and the Elantra engine is louder. The user-supplied wheel GLB replaces the generated Elantra wheel at all four corners, with shared geometry, fitted axle transforms and separate calipers. Build and all ten suites pass. Short RTX 3050 motion checks confirm smooth reflection transitions and restrained effects; quality cycles retain stable resource counts. See [implementation and current verification](REFLECTIONS_TIRES_WHEEL_UPDATE.md). Water spray, snow tracks, grip and other remaining roadmap items are still outstanding.
+
+### Second package: wheels, grounding, AO, antialiasing and weather
+
+The follow-up package adds beveled split-spoke Elantra alloys with separate stationary calipers; removes the Ferrari's gradient shadow plane; excludes its transparent glass from opaque depth/shadows; neutralizes direct sunlight, sun glow and cloud highlights; replaces Balanced FXAA with SMAA; adds supported scene-only HDR MSAA (2x Balanced / 4x Cinematic), optional 125% / 150% render scale, and switchable half-resolution GTAO using the actual scene depth. Alpha cutouts remain in that depth instead of being overwritten by solid normal-pass materials.
+
+Saved **Sunny, Overcast, Wet roads without rain, Rain and Snow** modes now change illumination, cloud cover, fog, material wetness/snow and bounded precipitation. Day/night stays independent. Weather environments use a bounded six-map cache, local car reflections refresh on mode changes, and quality switching releases added targets. Weather is currently visual; grip, wipers, tire spray/tracks, shelter, accumulation and city reflections in puddles remain future work.
+
+Build and all **nine** suites pass, including the new realism checks. Live RTX 3050 inspection confirmed the wheels, Ferrari grounding, all day-weather modes, rainy nights with both cars, shared cutout-preserving AO depth, and stable resource counts through three quality cycles. Completed-package native-1080p Cinematic starting-straight samples averaged approximately **57 FPS sunny, 52 FPS snowy and 55 FPS rainy night**, with median GPU times of **11.50–11.74 ms**. These heavier effects consume more rendering budget than the first package; sustained 60 FPS remains unverified. See [the graphics/weather update](GRAPHICS_WEATHER_UPDATE.md) for settings, screenshots, measurements and limitations.
+
+### First-package validation and remaining acceptance work
 
 `npm run verify-world-graphics` checks the packed map, preserving all **2,385,404 triangles**, their authored normals, UVs, winding and world transforms in both cell-size paths. The multi-draw path contains **10,480 culling chunks in 633 render objects**, including 321 material batches; the regular-mesh fallback contains 3,538 chunks. The fixture identifies 127 opaque materials eligible for backface culling, and 115 nearby shadow chunks at spawn. Synthetic checks cover actual openings, near-plane/edge cases, mirrored/back-facing facades, camera turns, independent shadow/reflection visibility, and collision with hidden render geometry. Reflection tests cover partial-capture isolation, six-frame publication, caching, teleport/night invalidation, garage fallback, quality changes and renderer-state cleanup.
 
@@ -25,9 +41,9 @@ Across 14 sampled route views, the original mesh-frustum estimate was approximat
 
 Production build and all eight verification suites pass. **Browser verification succeeded on retry on 1 October 2026:** both cars were inspected by day and night at all 14 authored route checkpoints. All 56 fixed-view occlusion-on/off comparisons were pixel-identical outside the changing diagnostics and toast areas. Runtime inspection confirmed local reflections, the actual 4096-pixel Cinematic shadow target, and stable renderer resource counts across three quality cycles. No rendering errors appeared; Balanced retains the previously observed FXAA compiler warnings. See [the browser verification report](GRAPHICS_BROWSER_VERIFICATION.md) for screenshots, methodology, and timing evidence. The screenshots later in this roadmap still show the research baseline.
 
-GPU timing is now measured on **Intel Iris Xe at 1280 × 720, pixel ratio 1**, with 120-frame samples. The initial Cinematic day sample measured 22.25 ms median GPU elapsed time and a 24.24 ms mean frame interval, below a 60 FPS target. In short controlled spawn and narrow-street comparisons, occlusion's CPU overhead outweighed any GPU saving. These are sampled local results, not performance acceptance for a powerful dedicated GPU: a native-resolution target-PC benchmark, repeated on/off comparisons, sustained driving, and longer stutter/resource checks remain outstanding.
+GPU timing has now been measured on **NVIDIA GeForce RTX 3050 Laptop GPU**, confirmed by the browser's actual WebGL renderer. At native **1920 × 1080, pixel ratio 1**, a 240-frame Cinematic day sample measured **6.56 ms median GPU time** and a **12.76 ms mean frame interval**, approximately **78 FPS**; a night/low-beam sample averaged approximately 79 FPS. At 720p, Cinematic measured 5.88 ms median GPU time and approximately 79 FPS, compared with 22.25 ms and approximately 41 FPS in the earlier Intel run. CPU submission now exceeds median GPU time. Repeated spawn occlusion comparisons in both orders showed a small GPU saving outweighed by CPU overhead. See [the RTX verification report](GRAPHICS_RTX_VERIFICATION.md) for all presets, evidence, and limitations. Short native-resolution measurements and repeated spawn comparisons are complete; full-route RTX timings with both cars, sustained driving, and longer stutter/resource checks remain outstanding.
 
-Street fixtures/night-light tuning, texture-resolution recovery, asset compression, AO with correct alpha-cutout handling, cascaded shadows, contact shadows, and reflection parallax correction remain subsequent roadmap phases.
+The preceding approximately 79 FPS RTX timings describe the first package before the MSAA/AO/weather follow-up. Current timings are recorded above. Street fixtures/night-light tuning, texture-resolution recovery, asset compression, cascaded shadows, further contact-shadow tuning, reflection parallax correction and more complete weather simulation remain subsequent roadmap phases.
 
 ## Recommendation
 

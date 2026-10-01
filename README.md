@@ -1,6 +1,6 @@
 # DriveAtBAku
 
-A fan-made browser driving game set around the Baku City Circuit. Drive a Ferrari 458 Italia or a 2012 Elantra/Avante, customize the paint, and explore the circuit by day or night.
+A fan-made browser driving game set around the Baku City Circuit. Drive a Ferrari 458 Italia or a 2012 Elantra/Avante, customize the paint, and explore the circuit by day or night in sunny, overcast, wet, rainy or snowy conditions.
 
 ## Play locally
 
@@ -11,9 +11,9 @@ npm run dev
 
 Open the local address printed by Vite. The playable circuit assets are included in `public/generated/` as compressed, upload-safe parts; a fresh clone does not need the original `levels/` folder to run.
 
-The pause menu includes saved **Performance**, **Balanced**, and **Cinematic** graphics settings. Cinematic is the default for fresh settings, targeting a powerful gaming PC; existing saved preferences are respected. Cinematic adds SMAA antialiasing, 4096-pixel sun shadows, and local car reflections. Balanced uses FXAA, 2048-pixel shadows, and smaller reflection captures. Performance uses direct rendering and sky reflections.
+The pause menu includes saved **Performance**, **Balanced**, and **Cinematic** graphics settings. Cinematic is the default for fresh settings; existing preferences are respected. Balanced and Cinematic combine SMAA with supported HDR MSAA (up to 2x / 4x) and half-resolution ambient occlusion. Cinematic uses 4096-pixel sun shadows and local car reflections; Balanced uses 2048-pixel shadows and smaller captures. Performance uses direct rendering and sky reflections. AO can be disabled separately, and optional 125% / 150% render resolution improves fine edges at added GPU cost.
 
-The city uses spatial frustum culling, conservative facade occlusion, selective backface culling, static transforms, and material batching where the GPU supports it. Asphalt and pavement have shared fine surface detail. Day/night lighting, drifting clouds, and restrained bloom remain available. See the [graphics roadmap and implementation status](docs/GRAPHICS_REALISM_ROADMAP.md).
+The city uses spatial frustum culling, conservative facade occlusion, selective backface culling, static transforms, and material batching where the GPU supports it. Dry asphalt has filtered, matte grain, pavement has fine surface detail, and local car reflections blend smoothly. Weather changes clouds, fog, illumination, wetness/snow and precipitation; it currently changes appearance without changing driving physics. A separate saved **Rain / Snow Amount** slider adjusts falling precipitation from 0–200%. Sliding tires leave fading rubber marks and subtle smoke. The Elantra uses the supplied wheel GLB, visually reduced by 5%, and the Ferrari uses real shadows/AO without an attached shadow rectangle. See the [graphics roadmap](docs/GRAPHICS_REALISM_ROADMAP.md), [graphics/weather verification](docs/GRAPHICS_WEATHER_UPDATE.md), [reflections/tire/wheel update](docs/REFLECTIONS_TIRES_WHEEL_UPDATE.md), and [latest asphalt/idle/precipitation corrections](docs/ASPHALT_IDLE_WEATHER_FIXES.md).
 
 For development measurements, append `?graphicsDebug=1` to the game URL. Compare the same view with `?graphicsDebug=1&occlusion=off` to bypass occlusion while retaining frustum culling. The overlay reports candidate triangles, all-pass draw counts, CPU timings, and reflection captures; it does not measure GPU time. The normal game view has no diagnostic overlay.
 
@@ -46,6 +46,12 @@ The packing step verifies the gzip data and splits the large visual GLBs into fi
 Run `npm run verify-handling`, `npm run verify-camera`, `npm run verify-drive-camera`, `npm run verify-engine-audio`, and `npm run verify-minimap` for the driving-system checks. The 2012 Elantra asset can be regenerated from the supplied showroom file with `npm run extract-elantra -- "C:/path/to/elantra.html"`.
 
 Run `npm run verify-graphics` to check the Elantra's repaired surface normals against the included showroom asset.
+
+Run `npm run verify-idle-drivetrain` to check both cars' reset/idle wheel rotation, unpowered gear direction, opposite-gear coasting, powered pullaway, airborne spin, burnout and downhill rolling.
+
+Run `npm run verify-realism` to check wheel geometry, Ferrari grounding/glass, weather transitions, precipitation amount/density, asphalt filtering and shader composition, cutout-preserving AO depth, resizing and resource cleanup.
+
+Run `npm run verify-tire-effects` to check rolling/sliding tires, contact planes, wet/snow/grass/airborne suppression, teleport breaks, fading, bounded effects and cleanup.
 
 Run `npm run verify-barriers` to check fence shadows, vehicle-body collisions, actual openings, and collision gaps against the packed track assets.
 

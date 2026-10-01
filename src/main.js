@@ -20,6 +20,8 @@ import { partitionMesh, canCullBackfaces, WorldOptimization, freezeStaticWorld }
 import { createSurfaceDetail } from './surfaceDetail.js';
 import { createLocalReflections } from './localReflections.js';
 import { createGraphicsDiagnostics } from './graphicsDiagnostics.js';
+import { createWeather } from './weather.js';
+import { createTireEffects } from './tireEffects.js';
 import './style.css';
 
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
@@ -57,6 +59,8 @@ const multiDrawSupported = renderer.extensions.has('WEBGL_multi_draw');
 const surfaceDetail = createSurfaceDetail();
 surfaceDetail.texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 const localReflections = createLocalReflections(renderer, scene, sky);
+const weather = createWeather(scene, sky);
+const tireEffects = createTireEffects(scene);
 const clock = new THREE.Clock();
 const draco = new DRACOLoader().setDecoderPath('/draco/');
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setDRACOLoader(draco);
@@ -102,7 +106,7 @@ const FIXED_STEP = 1 / 120;
 const hemisphere = new THREE.HemisphereLight(0xcbe9ff, 0x6d6657, 0.88);
 hemisphere.position.set(0, 0, 1); // The circuit uses Z-up, including its sky illumination.
 scene.add(hemisphere);
-const sun = new THREE.DirectionalLight(0xffefcf, 3.35);
+const sun = new THREE.DirectionalLight(0xfff7ee, 2.75);
 sun.position.set(-800, -400, 1100); sun.castShadow = true;
 sun.shadow.mapSize.set(4096, 4096); sun.shadow.camera.near = 10; sun.shadow.camera.far = 2500;
 sun.shadow.camera.left = -100; sun.shadow.camera.right = 100; sun.shadow.camera.top = 100; sun.shadow.camera.bottom = -100;
@@ -117,10 +121,45 @@ let savedQuality = 'cinematic';
 try { savedQuality = localStorage.getItem('baku-graphics-quality') ?? 'cinematic'; } catch { /* storage is optional */ }
 graphicsQuality.value = graphics.setQuality(savedQuality);
 localReflections.setQuality(graphics.quality);
+weather.setQuality(graphics.quality);
+const weatherSelectors = [document.getElementById('menu-weather'), document.getElementById('pause-weather')];
+const aoControl = document.getElementById('ambient-occlusion');
+const scaleControl = document.getElementById('render-scale');
+const precipitationControl = document.getElementById('precipitation-intensity');
+const precipitationAmount = document.getElementById('precipitation-amount');
+try {
+  weather.setMode(localStorage.getItem('baku-weather') ?? 'sunny');
+  weather.setIntensity(localStorage.getItem('baku-precipitation-intensity') ?? 1);
+  aoControl.checked = localStorage.getItem('baku-ambient-occlusion') !== 'false';
+  scaleControl.value = String(graphics.setRenderScale(localStorage.getItem('baku-render-scale') ?? 1));
+} catch { /* storage is optional */ }
+precipitationControl.value = String(weather.intensity * 100);
+precipitationAmount.value = `${Math.round(weather.intensity * 100)}%`;
+precipitationControl.oninput = () => {
+  const intensity = weather.setIntensity(Number(precipitationControl.value) / 100);
+  precipitationAmount.value = `${Math.round(intensity * 100)}%`;
+  try { localStorage.setItem('baku-precipitation-intensity', String(intensity)); } catch { /* storage is optional */ }
+};
+graphics.setAO(aoControl.checked);
+aoControl.disabled = !graphics.aoAvailable;
+for (const selector of weatherSelectors) {
+  selector.value = weather.mode;
+  selector.onchange = () => setWeather(selector.value);
+}
+aoControl.onchange = () => {
+  graphics.setAO(aoControl.checked);
+  try { localStorage.setItem('baku-ambient-occlusion', String(aoControl.checked)); } catch { /* storage is optional */ }
+};
+scaleControl.onchange = () => {
+  scaleControl.value = String(graphics.setRenderScale(scaleControl.value));
+  try { localStorage.setItem('baku-render-scale', scaleControl.value); } catch { /* storage is optional */ }
+};
 const graphicsDiagnostics = createGraphicsDiagnostics(renderer, worldOptimization, localReflections, graphics, graphicsOptions.has('graphicsDebug'));
 graphicsQuality.onchange = () => {
   graphicsQuality.value = graphics.setQuality(graphicsQuality.value);
   localReflections.setQuality(graphics.quality);
+  weather.setQuality(graphics.quality);
+  aoControl.disabled = !graphics.aoAvailable;
   try { localStorage.setItem('baku-graphics-quality', graphicsQuality.value); } catch { /* storage is optional */ }
 };
 
@@ -199,16 +238,8 @@ function choosePaint(color) {
 function setNightMode(enabled, save = true) {
   nightMode = Boolean(enabled);
   sky.material.uniforms.night.value = nightMode ? 1 : 0;
-  scene.fog.color.set(nightMode ? 0x263b56 : 0xb4c5cd);
-  scene.fog.density = nightMode ? 0.00024 : 0.00014;
-  hemisphere.color.set(nightMode ? 0x99b9ee : 0xc9e2ff);
-  hemisphere.groundColor.set(nightMode ? 0x343e54 : 0x857867);
-  hemisphere.intensity = nightMode ? 0.46 : 0.65;
-  sun.color.set(nightMode ? 0xb4ccff : 0xffe3b8);
-  sun.intensity = nightMode ? 0.60 : 2.75;
+  applyWeatherLighting();
   shadowOffset.set(nightMode ? 270 : 450, nightMode ? 190 : 165, nightMode ? 590 : 310);
-  scene.environment = skyEnvironments[nightMode ? 'night' : 'day'].texture;
-  scene.environmentIntensity = nightMode ? 1.4 : 0.85;
   renderer.toneMappingExposure = nightMode ? 1.1 : 0.97;
   graphics.setNight(nightMode);
   localReflections.invalidate();
@@ -216,9 +247,31 @@ function setNightMode(enabled, save = true) {
     toggle.textContent = nightMode ? '☾ NIGHT MODE' : '☀ DAY MODE';
     toggle.setAttribute('aria-pressed', String(nightMode));
   }
-  ui['route-time'].textContent = `6.003 KM · ${nightMode ? 'NIGHT' : 'DAY'}`;
+  ui['route-time'].textContent = `6.003 KM · ${nightMode ? 'NIGHT' : 'DAY'} · ${weather.preset.label.toUpperCase()}`;
   for (const material of nightMaterials) material.emissiveIntensity = nightMode ? 0.42 : 0;
   if (save) try { localStorage.setItem('baku-night-mode', String(nightMode)); } catch { /* storage is optional */ }
+}
+
+function applyWeatherLighting() {
+  const preset = weather.preset;
+  scene.fog.color.set(nightMode ? 0x263b56 : preset.fogColor);
+  scene.fog.density = preset.fog * (nightMode ? 1.25 : 1);
+  hemisphere.color.set(nightMode ? 0x99b9ee : 0xd6e3ee);
+  hemisphere.groundColor.set(nightMode ? 0x343e54 : 0x79817e);
+  hemisphere.intensity = (nightMode ? 0.46 : 0.65) + preset.clouds * (nightMode ? .1 : .42);
+  sun.color.set(nightMode ? 0xb4ccff : 0xfff7ee);
+  sun.intensity = (nightMode ? 0.60 : 2.75) * preset.sun;
+  scene.environment = skyEnvironments.get(nightMode, preset.clouds).texture;
+  scene.environmentIntensity = nightMode ? 1.4 : 0.85 + preset.clouds * .25;
+}
+
+function setWeather(value, save = true) {
+  weather.setMode(value);
+  for (const selector of weatherSelectors) selector.value = weather.mode;
+  applyWeatherLighting();
+  localReflections.invalidate();
+  ui['route-time'].textContent = `6.003 KM · ${nightMode ? 'NIGHT' : 'DAY'} · ${weather.preset.label.toUpperCase()}`;
+  if (save) try { localStorage.setItem('baku-weather', weather.mode); } catch { /* storage is optional */ }
 }
 
 function progress(value, copy) { ui['progress-bar'].style.width = `${value}%`; ui['loading-copy'].textContent = copy; }
@@ -253,8 +306,10 @@ function tuneMap(root) {
     for (const m of mats) {
       m.envMapIntensity = 0.38;
       if (m.alphaTest > 0) m.alphaTest = /tree|hedge|grass_bridge/i.test(m.name) ? 0.38 : 10 / 255;
+      if (m.alphaTest > 0) m.alphaToCoverage = true;
       if (/water/i.test(m.name)) { m.roughness = 0.16; m.metalness = 0.18; m.envMapIntensity = 0.55; }
       surfaceDetail.apply(m);
+      weather.apply(m);
       if (/window|glass/i.test(m.name)) { m.roughness = 0.22; m.metalness = 0.24; m.envMapIntensity = 0.62; }
       if (/window|building.*lights/i.test(m.name) && m.emissive && !m.transparent && !nightMaterials.includes(m)) {
         m.emissive.set(0xffd7a3);
@@ -364,6 +419,7 @@ function resetCar(notify = true, useLastSafe = true, override = null) {
   previousBodyQuaternion = handling.quaternion.clone();
   car.quaternion.copy(handling.quaternion);
   physicsAccumulator = 0;
+  tireEffects.reset();
   lastSafe = { position: physicsPosition.clone(), heading: handling.heading };
   safeTimer = 0;
   if (notify) toast('VEHICLE RESET TO ROAD');
@@ -524,8 +580,8 @@ function updateCar(dt) {
 
 function updateSceneLighting(dt) {
   if (!car) return;
-  scene.environment = mode === 'garage' ? garageEnvironment.texture : skyEnvironments[nightMode ? 'night' : 'day'].texture;
-  scene.environmentIntensity = mode === 'garage' ? 0.85 : nightMode ? 1.4 : 0.85;
+  scene.environment = mode === 'garage' ? garageEnvironment.texture : skyEnvironments.get(nightMode, weather.preset.clouds).texture;
+  scene.environmentIntensity = mode === 'garage' ? 0.85 : nightMode ? 1.4 : 0.85 + weather.preset.clouds * .25;
   for (const lamp of car.userData.garageLights ?? []) lamp.visible = nightMode && mode === 'garage';
   const texelSize = (sun.shadow.camera.right - sun.shadow.camera.left) / sun.shadow.mapSize.x;
   shadowAnchor.set(
@@ -680,6 +736,8 @@ function toggleTransmission() {
   toast(handling.autoTransmission ? 'AUTOMATIC GEARBOX' : 'MANUAL GEARBOX');
 }
 addEventListener('keydown',e=>{
+  // Let the precipitation slider use its native arrow-key adjustment while paused.
+  if (mode !== 'drive' && e.target === precipitationControl && e.code !== 'Escape') return;
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   keys.add(e.code);
   if (e.repeat) return;
@@ -746,7 +804,9 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 0.1);
   updateCar(dt); updateCamera(dt); updateSceneLighting(dt);
   sky.position.copy(camera.position); sky.material.uniforms.time.value += dt;
+  weather.update(dt, camera, mode !== 'garage' && mode !== 'loading');
   engineAudio.update(handling, activeVehicle, mode === 'drive', dt);
+  tireEffects.update(dt, handling, activeVehicle, weather.preset, mode === 'drive', mode !== 'garage' && mode !== 'loading');
   worldOptimization.update();
   localReflections.update(dt, car, carCache.values(), mode === 'garage' || mode === 'loading');
   graphics.render(dt);

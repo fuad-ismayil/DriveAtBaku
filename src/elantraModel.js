@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { createElantraCaliper } from './elantraAlloys.js';
+import { loadElantraWheel } from './elantraWheel.js';
 
 export function repairMissingNormals(geometry) {
   const authoredNormals = geometry.getAttribute('normal');
@@ -140,71 +142,8 @@ function materialFor(part, entry, index, textures, brakeMaterials, paintMaterial
   return result;
 }
 
-function buildWheel() {
-  const wheel = new THREE.Group();
-  const tireMaterial = new THREE.MeshStandardMaterial({ color: 0x171a1d, roughness: 0.91 });
-  const alloy = new THREE.MeshStandardMaterial({ color: 0xaeb8c0, metalness: 0.83, roughness: 0.27 });
-  const dark = new THREE.MeshStandardMaterial({ color: 0x20262a, metalness: 0.43, roughness: 0.49 });
-  const profile = new THREE.CatmullRomCurve3([
-    [-0.103, 0.224], [-0.115, 0.245], [-0.112, 0.292], [-0.09, 0.327],
-    [-0.058, 0.338], [0, 0.34], [0.058, 0.338], [0.09, 0.327],
-    [0.112, 0.292], [0.115, 0.245], [0.103, 0.224], [0, 0.224],
-  ].map(([x, r]) => new THREE.Vector3(x, r, 0)), true, 'centripetal');
-  const positions = [], indices = [], segments = 96, rings = 32;
-  for (let ring = 0; ring <= rings; ring++) {
-    const point = profile.getPoint(ring / rings);
-    for (let segment = 0; segment <= segments; segment++) {
-      const angle = segment / segments * Math.PI * 2;
-      let radius = point.y;
-      if (radius > 0.329) {
-        for (const groove of [-0.052, -0.018, 0.018, 0.052]) {
-          radius -= 0.003 * Math.exp(-(((point.x - groove) / 0.004) ** 2));
-        }
-      }
-      positions.push(point.x, Math.cos(angle) * radius, Math.sin(angle) * radius);
-    }
-  }
-  for (let ring = 0; ring < rings; ring++) for (let segment = 0; segment < segments; segment++) {
-    const a = ring * (segments + 1) + segment, b = a + segments + 1;
-    indices.push(a, a + 1, b, b, a + 1, b + 1);
-  }
-  const tireGeometry = new THREE.BufferGeometry();
-  tireGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  tireGeometry.setIndex(indices);
-  tireGeometry.computeVertexNormals();
-  const tire = new THREE.Mesh(tireGeometry, tireMaterial);
-  tire.castShadow = true;
-  wheel.add(tire);
-  for (const side of [-1, 1]) {
-    const sidewall = new THREE.Mesh(new THREE.RingGeometry(0.218, 0.333, 64), tireMaterial);
-    sidewall.rotation.y = side * Math.PI / 2;
-    sidewall.position.x = side * 0.109;
-    wheel.add(sidewall);
-    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.217, 0.009, 8, 64), alloy);
-    lip.rotation.y = Math.PI / 2;
-    lip.position.x = side * 0.114;
-    wheel.add(lip);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.053, 0.053, 0.014, 24), alloy);
-    hub.rotation.z = Math.PI / 2;
-    hub.position.x = side * 0.121;
-    wheel.add(hub);
-    for (let i = 0; i < 5; i++) {
-      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.122, 0.034), alloy);
-      spoke.position.set(side * 0.119, Math.cos(i * Math.PI * 2 / 5) * 0.139, Math.sin(i * Math.PI * 2 / 5) * 0.139);
-      spoke.rotation.x = -i * Math.PI * 2 / 5;
-      spoke.rotation.y = side * 0.18;
-      wheel.add(spoke);
-    }
-    const centre = new THREE.Mesh(new THREE.CircleGeometry(0.034, 24), dark);
-    centre.rotation.y = side * Math.PI / 2;
-    centre.position.x = side * 0.131;
-    wheel.add(centre);
-  }
-  return wheel;
-}
-
 export async function loadElantraModel() {
-  const data = await loadData();
+  const [data, wheelGeometry] = await Promise.all([loadData(), loadElantraWheel()]);
   const loader = new THREE.TextureLoader();
   const textures = {};
   await Promise.all(Object.entries(data.textures).map(async ([name, encoded]) => {
@@ -244,16 +183,22 @@ export async function loadElantraModel() {
     mesh.receiveShadow = true;
     body.add(mesh);
   }
-  const wheelGeometry = buildWheel();
   const wheels = [];
   for (const item of data.wheels) {
     const pivot = new THREE.Group();
     pivot.position.set(...item.pos);
     const spin = new THREE.Group();
-    spin.add(wheelGeometry.clone());
+    const fittedWheel = wheelGeometry.clone();
+    // Rotate the left-side copy, rather than mirror geometry and invert normals.
+    if (item.pos[0] < 0) fittedWheel.rotation.y = Math.PI;
+    spin.add(fittedWheel);
     pivot.add(spin);
+    const caliper = createElantraCaliper();
+    caliper.position.x = Math.sign(item.pos[0]) * 0.072;
+    pivot.add(caliper);
     yUp.add(pivot);
-    const physicsIndex = item.name.includes('lf') ? 0 : item.name.includes('rf') ? 1 : item.name.includes('lb') ? 2 : 3;
+    // The export's left/right names are reversed relative to the game's X axis.
+    const physicsIndex = (item.name.includes('f') ? 0 : 2) + (item.pos[0] > 0 ? 1 : 0);
     wheels.push({ steerPivot: pivot, spinPivot: spin, front: physicsIndex < 2, physicsIndex, baseY: item.pos[1], spinDirection: -1 });
   }
   // Source coordinates are Y-up and nose toward -Z; the game is Z-up and nose +Y.

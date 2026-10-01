@@ -1,5 +1,7 @@
 # Graphics browser verification — 1 October 2026
 
+This report records the original **Intel Iris Xe** run. After changing the application's GPU preference, the [RTX 3050 verification report](GRAPHICS_RTX_VERIFICATION.md) confirms NVIDIA rendering and records short native-1080p samples at approximately 78–79 FPS in Cinematic. The Intel results below remain historical evidence.
+
 The local game opened successfully on the retry. Rendering and the sampled culling comparisons pass. The measured adapter does **not** meet a sustained 60 FPS Cinematic target, and the current occlusion implementation did not improve frame time in the two short controlled comparisons.
 
 ## Environment and method

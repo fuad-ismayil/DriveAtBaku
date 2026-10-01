@@ -165,11 +165,20 @@ assert.equal(capturedDirections.length, 6, 'stationary car reuses completed refl
 captureCar.position.x = 100;
 scheduledReflections.update(0.016, captureCar, [captureCar], false);
 assert.equal(capturedDirections.length, 7, 'teleport starts a fresh capture immediately');
-assert.equal(reflectivePaint.envMap, null, 'teleport clears the old local reflection');
+assert.equal(reflectivePaint.envMap, published, 'teleport keeps a stable reflection while recapturing');
 for (let i = 0; i < 5; i++) scheduledReflections.update(0.016, captureCar, [captureCar], false);
-assert.equal(reflectivePaint.envMap, published, 'filtered target reused across captures');
+assert.equal(reflectivePaint.envMap, published, 'display texture remains stable across captures');
+assert.equal(scheduledReflections.stats.blend, 0, 'a new complete probe starts with zero contribution');
+let lastBlend = 0;
+for (let i = 0; i < 9; i++) {
+  scheduledReflections.update(.1, captureCar, [captureCar], false);
+  assert.ok(scheduledReflections.stats.blend >= lastBlend, 'probe crossfade progresses without jumping backward');
+  lastBlend = scheduledReflections.stats.blend;
+  assert.equal(reflectivePaint.envMap, published, 'no shader recompile or map swap during the crossfade');
+}
+assert.ok(lastBlend > .999, 'complete probe smoothly replaces the previous one');
 scheduledReflections.invalidate();
-assert.equal(reflectivePaint.envMap, null, 'day/night invalidation immediately restores the sky fallback');
+assert.equal(reflectivePaint.envMap, published, 'weather invalidation avoids a sky-fallback flash');
 for (let i = 0; i < 6; i++) scheduledReflections.update(0.016, captureCar, [captureCar], false);
 scheduledReflections.update(0.016, captureCar, [captureCar], true);
 assert.equal(reflectivePaint.envMap, null, 'garage keeps its dedicated studio environment');

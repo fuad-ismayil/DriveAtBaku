@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { engineLayerGains, engineMixTargets, rpmWeights } from '../src/engineMix.js';
-import { ENGINE_BANKS } from '../src/engineAudio.js';
+import { ENGINE_BANKS, EngineAudio } from '../src/engineAudio.js';
 import { VEHICLES } from '../src/vehicleCatalog.js';
 
 const points = [900, 2400, 4500, 7000];
@@ -38,4 +38,23 @@ for (const file of ['car-rpm-0.wav', 'car-rpm-1.wav', 'car-rpm-2.wav', 'car-rpm-
   assert.ok(statSync(path).size > 30000, `${file} must be a recorded audio asset`);
   assert.equal(readFileSync(path).toString('ascii', 0, 4), 'RIFF', `${file} must be a WAV file`);
 }
-console.log('Audio: recorded assets, RPM crossfades, continuous idle-to-redline presence, full-load, coast, and shift mix passed.');
+// Exercise the real audio update path without requiring an audio device.
+const parameter = () => ({ value: 0, setTargetAtTime(value) { this.value = value; } });
+const layer = () => ({ gain: { gain: parameter() }, source: { playbackRate: parameter() }, rpm: 1000 });
+const audio = new EngineAudio(); audio.context = { currentTime: 0, state: 'running' };
+for (const name of ['wind', 'skid']) audio[name] = { gain: { gain: parameter() }, filter: { frequency: parameter() } };
+audio.horn = { gain: parameter() }; audio.master = { gain: parameter() };
+for (const [id, config] of Object.entries(ENGINE_BANKS)) audio.banks.set(id, {
+  config, bus: { gain: parameter() }, tone: { frequency: parameter() }, idle: layer(),
+  on: config.on.map(layer), off: config.off.map(layer),
+});
+const audioState = { ...state, rpm: 3000, shiftTimer: 0, gear: 2, wheels: [{ grounded: true, slideSpeed: 10.2 }] };
+audio.update(audioState, VEHICLES.elantra, true);
+assert.ok(Math.abs(audio.banks.get('elantra').bus.gain.value / (VEHICLES.elantra.soundVol * .95) - 1.6) < 1e-9, 'Elantra engine bus has the requested additional presence');
+assert.equal(audio.banks.get('ferrari').bus.gain.value, 0, 'inactive car stays silent');
+assert.ok(Math.abs(audio.skid.gain.gain.value - .14) < 1e-9, 'moderate tire slip is 30% quieter');
+audioState.wheels[0].slideSpeed = 100; audio.update(audioState, VEHICLES.elantra, true);
+assert.equal(audio.skid.gain.gain.value, .16, 'extreme squeal has a lower ceiling');
+audio.update(audioState, VEHICLES.elantra, false);
+assert.equal(audio.skid.gain.gain.value, 0); assert.equal(audio.banks.get('elantra').bus.gain.value, 0);
+console.log('Audio: recorded assets, RPM crossfades, continuous presence, load/coast/shift mix, Elantra presence, restrained slip and pause muting passed.');

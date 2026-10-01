@@ -18,6 +18,7 @@ export const ENGINE_BANKS = {
     cutoffFloor: 1250,
   },
   elantra: {
+    gain: 1.6,
     idle: { file: 'car-rpm-0.wav', rpm: 750, level: 1.45 },
     on: [
       { file: 'car-rpm-1.wav', rpm: 1500 },
@@ -214,7 +215,7 @@ export class EngineAudio {
 
     for (const [id, bank] of this.banks) {
       const selected = id === vehicle.id;
-      bank.bus.gain.setTargetAtTime(active && selected ? (vehicle.soundVol ?? 1) * 0.95 : 0, now, selected ? 0.12 : 0.18);
+      bank.bus.gain.setTargetAtTime(active && selected ? (vehicle.soundVol ?? 1) * 0.95 * (bank.config.gain ?? 1) : 0, now, selected ? 0.12 : 0.18);
       if (!selected) continue;
       bank.tone.frequency.setTargetAtTime(
         Math.max(bank.config.cutoffFloor, Math.min(6800, (420 + this.audioRpm * 0.4 + this.mixLoad * 1100) * bank.config.brightness)), now, 0.065,
@@ -241,7 +242,7 @@ export class EngineAudio {
     this.wind.gain.gain.setTargetAtTime(active ? Math.min(0.13, 0.12 * (speed / 170) ** 2) : 0, now, 0.12);
     this.wind.filter.frequency.setTargetAtTime(260 + speed * 5, now, 0.1);
     const sliding = Math.max(...state.wheels.map(wheel => wheel.grounded ? Math.max(0, wheel.slideSpeed - 2.2) / 8 : 0));
-    this.skid.gain.gain.setTargetAtTime(active ? Math.min(0.23, sliding * 0.2) : 0, now, 0.06);
+    this.skid.gain.gain.setTargetAtTime(active ? Math.min(0.16, sliding * 0.14) : 0, now, 0.06);
     this.skid.filter.frequency.setTargetAtTime(770 + 400 * Math.min(sliding, 1), now, 0.08);
     this.horn.gain.setTargetAtTime(active && state.horn ? 0.2 : 0, now, 0.025);
     if (active && this.lastGear !== null && state.gear !== this.lastGear && state.gear > 1 && speed > 7) {

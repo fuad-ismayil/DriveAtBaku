@@ -46,7 +46,7 @@ export function createCarModel(gltf) {
     glass.add(covers);
     glass.material = new THREE.MeshPhysicalMaterial({
       color: 0x17242c, metalness: 0.08, roughness: 0.13,
-      transparent: true, opacity: 0.7, side: THREE.DoubleSide,
+      transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide,
     });
   }
   const rearLights = visual.getObjectByName('lights_red');
@@ -114,24 +114,12 @@ export function createCarModel(gltf) {
 
   visual.traverse(object => {
     if (!object.isMesh) return;
-    object.castShadow = true;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    object.castShadow = !materials.every(material => material.transparent);
     object.receiveShadow = true;
   });
-  const shadowCanvas = document.createElement('canvas');
-  shadowCanvas.width = 128; shadowCanvas.height = 256;
-  const context = shadowCanvas.getContext('2d');
-  const gradient = context.createRadialGradient(64, 128, 20, 64, 128, 126);
-  gradient.addColorStop(0, 'rgba(0,0,0,0.42)');
-  gradient.addColorStop(0.58, 'rgba(0,0,0,0.22)');
-  gradient.addColorStop(1, 'rgba(0,0,0,0)');
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, 128, 256);
-  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.55, 5.15), new THREE.MeshBasicMaterial({
-    map: new THREE.CanvasTexture(shadowCanvas), transparent: true, depthWrite: false,
-  }));
-  shadow.position.z = 0.018;
-  shadow.renderOrder = 2;
-  vehicle.add(shadow);
+  // Grounding comes from the car's actual sun shadows and scene-depth AO.
+  // A body-attached rectangle cannot follow uneven road contact correctly.
   vehicle.userData.wheels = wheels;
   return vehicle;
 }

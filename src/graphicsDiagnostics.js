@@ -23,6 +23,8 @@ export function createGraphicsDiagnostics(renderer, world, reflections, graphics
       const ordered = [...samples].sort((a, b) => a - b);
       panel.textContent = [
         `Quality: ${graphics.quality}`,
+        `AA: ${graphics.stats.samples}x MSAA + ${graphics.aoAvailable ? 'SMAA' : 'canvas AA'}; render scale: ${graphics.stats.renderScale}`,
+        `Ambient occlusion: ${graphics.stats.ao ? 'on' : 'off'}; AO buffer: ${graphics.stats.aoSize.join(' x ')}`,
         `Frame interval median / p95: ${(ordered[Math.floor(ordered.length * 0.5)] ?? 0).toFixed(1)} / ${(ordered[Math.floor(ordered.length * 0.95)] ?? 0).toFixed(1)} ms`,
         `CPU frame submission: ${(now - start).toFixed(1)} ms (not GPU time)`,
         `World triangles: ${world.stats.triangles.toLocaleString()}`,

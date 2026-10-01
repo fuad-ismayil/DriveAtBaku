@@ -109,6 +109,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .graphics-control { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 0 1.3rem; color: #b6cbd3; font-size: .65rem; font-weight: 700; letter-spacing: .13em; }
 .graphics-control select { padding: .65rem 2rem .65rem .65rem; border: 1px solid var(--edge); border-radius: 3px; background: #102a35; color: #e8f7fa; font: 600 .75rem Inter, sans-serif; cursor: pointer; }
 .graphics-control select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.graphics-control input[type="checkbox"] { width: 1.2rem; height: 1.2rem; accent-color: var(--accent); cursor: pointer; }
+.graphics-control input:disabled { opacity: .45; cursor: default; }
+.weather-control { display: flex; align-items: center; gap: .8rem; margin-top: 1rem; color: var(--muted); font-size: .65rem; font-weight: 700; letter-spacing: .13em; }
+.weather-control select { background: #102a35; color: #e8f7fa; border: 1px solid var(--edge); padding: .65rem; border-radius: 3px; font: 600 .75rem Inter, sans-serif; }
+.weather-control select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .text-button { display: flex; justify-content: space-between; width: 100%; padding: .9rem 0 0; background: transparent; border-top: 1px solid var(--edge); color: #c3d4d9; font-size: .67rem; font-weight: 700; letter-spacing: .13em; text-align: left; }
 .text-button:hover { color: var(--accent); }
 
@@ -181,3 +186,5 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   .engine-readout { display: none; }
   .dynamics-panel { width: 110px; }
 }
+.precipitation-control > span { display: flex; justify-content: space-between; gap: 1rem; }
+.precipitation-control output { color: var(--accent, #79dfe0); }

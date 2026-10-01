@@ -53,7 +53,7 @@ export function createDynamicsState(heading = 0, settings = VEHICLES.ferrari, ro
     state.wheels.push({
       hp: new THREE.Vector3((i % 2 ? 1 : -1) * settings.trackM / 2, (front ? 1 : -1) * settings.wheelbaseM / 2, settings.hardpointZ),
       front, steer: 0, omega: 0, spinAngle: 0, compression: staticCompression,
-      grounded: false, contact: new THREE.Vector3(), normal: new THREE.Vector3(0, 0, 1), load: 0,
+      grounded: false, contact: new THREE.Vector3(), normal: new THREE.Vector3(0, 0, 1), load: 0, surfaceMu: 1,
       slipRatio: 0, slipAngle: 0, slideSpeed: 0, absFactor: 1,
     });
   }
@@ -68,8 +68,21 @@ function addForceAtPoint(state, force, point) {
   state.torque.add(t.cross);
 }
 
-function integrateWheel(wheel, index, tireForce, longitudinal, driveTorque, brake, state, settings, dt) {
-  let torque = driveTorque * (wheel.front ? settings.drive.front : settings.drive.rear) * 0.5;
+function synchronizeStaticWheel(wheel, longitudinal, driveTorque, brake, state, settings, index) {
+  if (!wheel.grounded || wheel.load <= 0 || driveTorque !== 0 || brake > 0 || state.handbrake || state.escBrake[index] > 0 || Math.abs(wheel.omega) >= 3) return;
+  const oppositeGear = state.gear === 0 ? state.longitudinalSpeed > 0 : state.gear > 1 && state.longitudinalSpeed < 0;
+  // Use the existing static-contact region for an unpowered opposite-gear roll;
+  // ordinary travel only needs the near-rest residual-spin correction.
+  const limit = oppositeGear ? 1.4 : .25;
+  if (state.velocity.lengthSq() < limit * limit) wheel.omega = Math.abs(longitudinal) < .005 ? 0 : longitudinal / settings.wheelRadius;
+}
+
+function integrateWheel(wheel, index, tireForce, longitudinal, driveTorque, overrunTorque, brake, state, settings, dt) {
+  const driveShare = (wheel.front ? settings.drive.front : settings.drive.rear) * 0.5;
+  let torque = driveTorque * driveShare;
+  // Overrun resists actual rotation in either gear. Limit it to the wheel's
+  // momentum so it cannot start or reverse a stopped wheel in one step.
+  torque -= Math.sign(wheel.omega) * Math.min(overrunTorque * driveShare, Math.abs(wheel.omega) * settings.wheelInertia / dt);
   if (wheel.grounded && Math.abs(wheel.slipRatio) > 0.22 && torque !== 0) {
     const limit = wheel.load * settings.wheelRadius * settings.tireGrip
       * (0.88 + 0.22 * clamp(1 - 1.4 * (Math.abs(wheel.slipRatio) - 0.22), 0, 1));
@@ -92,6 +105,10 @@ function integrateWheel(wheel, index, tireForce, longitudinal, driveTorque, brak
   if (state.handbrake && !wheel.front) brakeTorque += settings.handbrakeTorque;
   const change = brakeTorque / settings.wheelInertia * dt;
   wheel.omega = Math.abs(wheel.omega) <= change ? 0 : wheel.omega - Math.sign(wheel.omega) * change;
+  // The existing static-contact blend removes tire reaction at rest. Synchronize
+  // free, loaded wheels there so suspension settling cannot leave residual spin.
+  // Keep powered launches, wheelspin, airborne wheels and normal rolling intact.
+  synchronizeStaticWheel(wheel, longitudinal, driveTorque, brake, state, settings, index);
   wheel.omega = clamp(wheel.omega, -320, 320);
   wheel.spinAngle += wheel.omega * dt;
 }
@@ -168,12 +185,13 @@ export function stepDynamics(state, input, dt, settings = VEHICLES.ferrari, samp
   }
   ratio = settings.gears[state.gear] * settings.finalDrive;
   coupled = state.gear !== 1 && state.shiftTimer <= 0 && !input.clutch;
-  let engineTorque = 0;
+  let engineTorque = 0, engineOverrun = 0;
   if (coupled && state.rpm < settings.redlineRpm + 150) {
     engineTorque = torqueAt(settings.torqueCurve, state.rpm) * effectiveGas;
-    engineTorque -= settings.engineBraking * state.rpm / settings.redlineRpm * (1 - effectiveGas);
+    engineOverrun = settings.engineBraking * state.rpm / settings.redlineRpm * (1 - effectiveGas);
   }
   const driveTorque = engineTorque * ratio * settings.drivelineEff;
+  const overrunTorque = engineOverrun * Math.abs(ratio) * settings.drivelineEff;
 
   state.force.set(0, 0, -9.81 * settings.massKg);
   state.torque.set(0, 0, 0);
@@ -191,10 +209,11 @@ export function stepDynamics(state, input, dt, settings = VEHICLES.ferrari, samp
     const previousCompression = wheel.compression;
     if (!hit) {
       wheel.grounded = false; wheel.compression = 0; wheel.load = 0; wheel.slideSpeed = 0;
-      integrateWheel(wheel, index, 0, 0, driveTorque, brake, state, settings, dt);
+      integrateWheel(wheel, index, 0, 0, driveTorque, overrunTorque, brake, state, settings, dt);
       continue;
     }
     wheel.grounded = true;
+    wheel.surfaceMu = hit.mu ?? 1;
     state.groundedWheels++;
     wheel.contact.copy(hit.point);
     wheel.normal.copy(hit.normal ?? UP).normalize();
@@ -214,6 +233,7 @@ export function stepDynamics(state, input, dt, settings = VEHICLES.ferrari, samp
     t.arm.subVectors(wheel.contact, state.position);
     t.contactVelocity.crossVectors(state.angularVelocity, t.arm).add(state.velocity);
     const longitudinal = t.contactVelocity.dot(t.wheelForward), lateral = t.contactVelocity.dot(t.wheelSide);
+    synchronizeStaticWheel(wheel, longitudinal, driveTorque, brake, state, settings, index);
     const wheelSurfaceSpeed = wheel.omega * settings.wheelRadius;
     wheel.slipRatio = (wheelSurfaceSpeed - longitudinal) / Math.max(Math.abs(longitudinal), 2.2);
     wheel.slipAngle = Math.atan2(lateral, Math.abs(longitudinal) + 0.6);
@@ -233,7 +253,7 @@ export function stepDynamics(state, input, dt, settings = VEHICLES.ferrari, samp
     const rolling = -(hit.rr ?? 0.013) * wheel.load * clamp(longitudinal / 0.8, -1, 1);
     t.force.copy(t.wheelForward).multiplyScalar(fx + rolling).addScaledVector(t.wheelSide, fy);
     addForceAtPoint(state, t.force, wheel.contact);
-    integrateWheel(wheel, index, fx, longitudinal, driveTorque, brake, state, settings, dt);
+    integrateWheel(wheel, index, fx, longitudinal, driveTorque, overrunTorque, brake, state, settings, dt);
   }
 
   state.velocity.addScaledVector(state.force, dt / settings.massKg);

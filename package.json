@@ -11,13 +11,16 @@
     "pack-assets": "node scripts/pack_assets.mjs --clean",
     "extract-elantra": "python scripts/extract_elantra.py",
     "verify-handling": "node scripts/verify_handling.mjs",
+    "verify-idle-drivetrain": "node scripts/verify_idle_drivetrain.mjs",
     "verify-camera": "node scripts/verify_camera.mjs",
     "verify-drive-camera": "node scripts/verify_drive_camera.mjs",
     "verify-engine-audio": "node scripts/verify_engine_audio.mjs",
     "verify-minimap": "node scripts/verify_minimap.mjs",
     "verify-graphics": "node scripts/verify_graphics.mjs",
     "verify-barriers": "node scripts/verify_barriers.mjs",
-    "verify-world-graphics": "node scripts/verify_world_graphics.mjs"
+    "verify-world-graphics": "node scripts/verify_world_graphics.mjs",
+    "verify-realism": "node scripts/verify_realism.mjs",
+    "verify-tire-effects": "node scripts/verify_tire_effects.mjs"
   },
   "dependencies": {
     "three": "^0.180.0",
