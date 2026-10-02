@@ -22,7 +22,8 @@
     "verify-realism": "node scripts/verify_realism.mjs",
     "verify-tire-effects": "node scripts/verify_tire_effects.mjs",
     "verify-garage-vehicles": "node scripts/verify_garage_vehicles.mjs",
-    "verify-loading": "node scripts/verify_loading.mjs"
+    "verify-loading": "node scripts/verify_loading.mjs",
+    "verify-license-plates": "node scripts/verify_license_plates.mjs"
   },
   "dependencies": {
     "three": "^0.180.0",

@@ -23,6 +23,8 @@ The heading-up minimap uses the circuit's actual road geometry, including its be
 
 The garage includes the supplied AMG and Prado bodies and wheels, separate saved paint for each car, and saved vehicle selection. Their assets load on first selection and are reused when switching back. See the [garage vehicle update](docs/GARAGE_VEHICLES_UPDATE.md) for model fitting and validation.
 
+The **License Plate** section supports Azerbaijani civilian plates on all four cars. Toggle plates on/off, enter the region/letters/serial separately, choose long or compact two-row geometry, and select modern RFID or classic flag/AZ treatment. Settings save separately for each car. **View Front / View Rear** inspect the individually fitted mounts and stamped metal plates. See the [plate implementation and validation](docs/AZERBAIJANI_LICENSE_PLATES.md).
+
 ## Build and deploy
 
 ```powershell
@@ -54,6 +56,8 @@ Run `npm run verify-graphics` to check the Elantra's repaired surface normals ag
 Run `npm run verify-idle-drivetrain` to check all four cars' reset/idle wheel rotation, unpowered gear direction, opposite-gear coasting, powered pullaway, airborne spin, burnout and downhill rolling.
 
 Run `npm run verify-garage-vehicles` to check the supplied AMG/Prado geometry, scale, ground contact, axle alignment, shared wheels, stationary Prado calipers, paint, lamp masks, animation and forward/reverse/braking behavior.
+
+Run `npm run verify-license-plates` to check Azerbaijani input/storage, real plate dimensions and embossing, removal of supplied plate artwork/holders, and front/rear clearance and bracket contact on every actual car in both formats. With the development server running, `/scripts/plate-fit.html` provides a vehicle/side/format/lighting inspector.
 
 Run `npm run verify-realism` to check wheel geometry, Ferrari grounding/glass, weather transitions, precipitation amount/density, asphalt filtering and shader composition, cutout-preserving AO depth, resizing and resource cleanup.
 

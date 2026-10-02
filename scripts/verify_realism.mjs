@@ -30,7 +30,8 @@ wheel.traverse(mesh => {
 const caliper = createElantraCaliper();
 assert.ok(!wheel.children.includes(caliper), 'caliper attaches to steering/suspension rather than spinning with the rim');
 const ferrari = createCarModel({ scene: new THREE.Group() });
-assert.equal(ferrari.children.length, 1, 'Ferrari model adds no separate ground-shadow rectangle');
+assert.equal(ferrari.children.filter(child => !ferrari.userData.licensePlates.rigs.includes(child)).length, 1, 'Ferrari retains its visual body without a separate ground-shadow rectangle');
+assert.equal(ferrari.userData.licensePlates.rigs.length, 2, 'front/rear plate mounts are the only added model groups');
 const glassFixture = new THREE.Group();
 const windowMesh = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
 windowMesh.name = 'glass'; glassFixture.add(windowMesh);

@@ -1,6 +1,8 @@
 import * as THREE from 'three';
+import { installLicensePlates, setLicensePlateLighting } from './licensePlates.js';
 
 export function setHeadlightBulbs(vehicle, mode) {
+  setLicensePlateLighting(vehicle, mode > 0);
   for (const material of vehicle.userData.headlightMaterials ?? []) {
     const enabled = mode > 0 && (!material.userData.highBeamOnly || mode === 2);
     material.emissiveIntensity = enabled ? (mode === 1 ? 3.2 : 5.2)
@@ -141,6 +143,7 @@ export function createCarModel(gltf) {
   // Grounding comes from the car's actual sun shadows and scene-depth AO.
   // A body-attached rectangle cannot follow uneven road contact correctly.
   vehicle.userData.wheels = wheels;
+  installLicensePlates(vehicle, 'ferrari');
   return vehicle;
 }
 

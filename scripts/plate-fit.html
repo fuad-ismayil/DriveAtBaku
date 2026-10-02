@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><meta charset="UTF-8"><title>Azerbaijani plate fit inspection</title>
+<style>body{margin:0;background:#222;font:14px system-ui;color:white}canvas{display:block}aside{position:absolute;top:12px;left:12px;background:#10232eef;padding:16px;border-radius:10px;max-width:370px}label{display:inline-block;margin:5px}select,button{padding:8px;background:#293b4b;color:white;border:1px solid #6d8294;border-radius:4px}pre{font-size:11px;white-space:pre-wrap}</style>
+<style>aside{max-width:300px;font-size:12px}pre{max-height:155px;overflow:auto;font-size:10px}</style>
+<canvas id="preview" aria-label="Vehicle plate fitting view"></canvas><aside>
+<label>Car <select id="car"><option value="ferrari">Ferrari</option><option value="elantra">Elantra</option><option value="amg">AMG</option><option value="prado">Prado</option></select></label>
+<label>Side <select id="side"><option>front</option><option>rear</option></select></label>
+<label>View <select id="view"><option>whole</option><option>close</option><option>edge</option></select></label>
+<label>Format <select id="format"><option>long</option><option>compact</option></select></label>
+<label>Lighting <select id="light"><option>day</option><option>night</option><option>grazing</option></select></label>
+<label>Identity <select id="identity"><option value="older">older · RFID</option><option value="new">new · no RFID / hyphens</option></select></label>
+<label><input id="enabled" type="checkbox" checked>Plates enabled</label>
+<pre id="report">Loading…</pre></aside><script type="module" src="/scripts/plate-fit.js"></script></html>

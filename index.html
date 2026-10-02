@@ -107,6 +107,27 @@
               <label class="custom-paint">CUSTOM <input id="custom-paint" type="color" value="#a80719" aria-label="Custom paint color" /></label>
             </div>
           </div>
+          <section class="plate-picker" aria-labelledby="plate-heading">
+            <h3 id="plate-heading">LICENSE PLATE <span>AZERBAIJAN</span></h3>
+            <div class="plate-setting"><span id="plate-enable-label">Enable License Plate</span><button id="plate-enabled" type="button" class="plate-toggle" role="switch" aria-checked="true" aria-labelledby="plate-enable-label">ON</button></div>
+            <div id="plate-options" class="plate-options">
+              <div id="plate-preview" class="plate-preview" role="img" aria-label="Azerbaijani plate 10-AA-001">
+                <span class="plate-identity"><svg class="plate-flag" viewBox="0 0 60 30" aria-hidden="true"><path fill="#00a3d6" d="M0 0h60v10H0z"/><path fill="#ed2939" d="M0 10h60v10H0z"/><path fill="#009c57" d="M0 20h60v10H0z"/><path fill="white" d="M30 11a4 4 0 1 0 0 8 3.35 3.35 0 1 1 0-8"/><path fill="white" d="m33.5 12 .5 1.5 1.4-.7-.7 1.4 1.5.5-1.5.5.7 1.4-1.4-.7-.5 1.5-.5-1.5-1.4.7.7-1.4-1.5-.5 1.5-.5-.7-1.4 1.4.7z"/></svg><b>AZ</b></span>
+                <span class="plate-preview-region">10</span><span class="plate-preview-series"><span class="plate-preview-letters">AA</span><span class="plate-preview-separator">-</span><span class="plate-preview-serial">001</span></span><i class="plate-preview-chip" aria-hidden="true"></i>
+              </div>
+              <div class="plate-groups">
+                <label for="plate-region">REGION CODE<input id="plate-region" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" value="10" autocomplete="off" aria-describedby="plate-input-hint" /></label>
+                <label for="plate-letters">TWO LETTERS<input id="plate-letters" type="text" maxlength="2" pattern="[A-HJ-PR-VXYZ]{2}" value="AA" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="plate-input-hint" /></label>
+                <label for="plate-serial">FINAL THREE DIGITS<input id="plate-serial" type="text" inputmode="numeric" maxlength="3" pattern="[0-9]{3}" value="001" autocomplete="off" aria-describedby="plate-input-hint" /></label>
+              </div>
+              <p id="plate-input-hint" class="plate-hint">Two digits · two Latin letters · three digits. Saved for this car.</p>
+              <div class="plate-setting"><label for="plate-hyphens">Hyphens</label><button id="plate-hyphens" type="button" class="plate-toggle" role="switch" aria-checked="true" aria-label="Hyphens">ON</button></div>
+              <label class="plate-select" for="plate-format">PLATE FORMAT<select id="plate-format"><option value="long">Standard long · 520 × 110 mm</option><option value="compact">Compact / two-row · 300 × 150 mm</option></select></label>
+              <label class="plate-select" for="plate-identity">AZ / FLAG PANEL<select id="plate-identity"><option value="older">Older · flag + RFID + hyphens</option><option value="new">New · flag + AZ, no RFID or hyphens</option></select></label>
+              <p id="plate-fit-note" class="plate-hint">Front and rear plates fitted to this car.</p>
+              <div class="plate-views" role="group" aria-label="Inspect mounted plates"><button type="button" data-plate-view="front">VIEW FRONT</button><button type="button" data-plate-view="rear">VIEW REAR</button><button type="button" data-plate-view="car" aria-pressed="true">WHOLE CAR</button></div>
+            </div>
+          </section>
           <p id="garage-status" class="garage-status" aria-live="polite"></p>
           <button id="garage-back" class="primary">BACK</button>
         </div>

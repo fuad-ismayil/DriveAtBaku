@@ -9,6 +9,9 @@ import { loadElantraModel } from './elantraModel.js';
 import { loadImportedVehicle } from './importedVehicleModel.js';
 import { createDynamicsState, stepDynamics, GEAR_LABELS } from './vehicleDynamics.js';
 import { VEHICLES } from './vehicleCatalog.js';
+import { updateLicensePlates } from './licensePlates.js';
+import { PLATE_FORMATS, readPlateSettings, savePlateSettings } from './licensePlateSettings.js';
+import { createLicensePlateControls } from './licensePlateControls.js';
 import { EngineAudio } from './engineAudio.js';
 import { createMinimap, drawMinimap } from './minimap.js';
 import { createSky } from './sky.js';
@@ -83,6 +86,7 @@ let padCameraHeld = false, padTransmissionHeld = false;
 let activeVehicle = VEHICLES.ferrari;
 const engineAudio = new EngineAudio();
 let garageOrigin = 'menu';
+let garagePlateView = 'car';
 let controlsOrigin = 'menu';
 const availableVehicles = new Set(['ferrari']);
 const carCache = new Map();
@@ -109,6 +113,25 @@ for (const vehicleId of Object.keys(DEFAULT_PAINT)) {
   } catch { /* storage is optional */ }
 }
 const FIXED_STEP = 1 / 120;
+const plateSelections = {};
+for (const id of Object.keys(VEHICLES)) {
+  try { plateSelections[id] = readPlateSettings(localStorage, id); }
+  catch { plateSelections[id] = readPlateSettings(null, id); }
+}
+const plateControls = createLicensePlateControls(ui.garage, {
+  getSettings: () => plateSelections[activeVehicle.id],
+  onChange: settings => {
+    plateSelections[activeVehicle.id] = settings;
+    try { savePlateSettings(localStorage, activeVehicle.id, settings); } catch { /* optional storage */ }
+    if (car) updateLicensePlates(car, settings);
+  },
+  onInspect: view => {
+    garagePlateView = view;
+    ui.garage.classList.toggle('garage-plate-inspect', view !== 'car');
+    if (view === 'car') plateControls.resetView();
+  },
+});
+plateControls.render();
 
 const hemisphere = new THREE.HemisphereLight(0xcbe9ff, 0x6d6657, 0.88);
 hemisphere.position.set(0, 0, 1); // The circuit uses Z-up, including its sky illumination.
@@ -418,7 +441,7 @@ async function boot() {
     freezeStaticWorld(collision.scene);
     loadingScreen.stage('Preparing your car…', '04 / 05 · YOUR CAR', 'Downloading your first ride.', true);
     const carAsset = await loadGLB('/assets/vehicles/ferrari-458.glb');
-    car = createCarModel(carAsset); carCache.set('ferrari', car); scene.add(car); addHeadlights(car); applyPaint(car, 'ferrari'); updatePaintUI(); scene.updateMatrixWorld(true); resetCar(false, false);
+    car = createCarModel(carAsset); updateLicensePlates(car, plateSelections.ferrari); carCache.set('ferrari', car); scene.add(car); addHeadlights(car); applyPaint(car, 'ferrari'); updatePaintUI(); scene.updateMatrixWorld(true); resetCar(false, false);
     await Promise.all(Object.values(VEHICLES).filter(vehicle => vehicle.id !== 'ferrari').map(async vehicle => {
       const files = [vehicle.asset, vehicle.wheelAsset].filter(Boolean);
       const responses = await Promise.allSettled(files.map(file => fetch(file, { method: 'HEAD' })));
@@ -539,6 +562,8 @@ function openGarage(){
   ui.pause.classList.add('hidden');
   ui.hud.classList.add('hidden');
   ui.garage.classList.remove('hidden');
+  ui.garage.classList.remove('garage-plate-inspect');
+  garagePlateView = 'car'; plateControls.resetView(); plateControls.render();
   ui['garage-status'].textContent = activeVehicle.description;
 }
 function closeGarage(){
@@ -568,6 +593,7 @@ async function selectVehicle(id){
       activeVehicle = VEHICLES[id];
       addHeadlights(car);
       applyPaint(car, id);
+      updateLicensePlates(car, plateSelections[id]);
       resetCar(false, false, marker);
       cameraReady = false;
       try { localStorage.setItem('baku-selected-car', id); } catch { /* storage is optional */ }
@@ -581,6 +607,7 @@ async function selectVehicle(id){
   }
   for (const [vehicleId, button] of garageChoices) button.classList.toggle('selected', vehicleId === id);
   updatePaintUI();
+  plateControls.render();
   ui['garage-status'].textContent = activeVehicle.description;
 }
 
@@ -697,6 +724,33 @@ function updateCamera(dt) {
     cameraTrackedCarPosition.copy(car.position);
     cameraPositionVelocity.set(0, 0, 0);
     cameraLookVelocity.set(0, 0, 0);
+    if (garagePlateView !== 'car' && car.userData.licensePlates?.settings.enabled) {
+      car.updateMatrixWorld(true);
+      const rig = car.userData.licensePlates.rigs[garagePlateView === 'front' ? 0 : 1];
+      const plateCenter = rig.getWorldPosition(new THREE.Vector3());
+      const outward = new THREE.Vector3(0, 0, 1).transformDirection(rig.matrixWorld);
+      const plateRight = new THREE.Vector3(1, 0, 0).transformDirection(rig.matrixWorld);
+      const up = new THREE.Vector3(0, 1, 0).transformDirection(rig.matrixWorld);
+      const narrow = innerWidth < 700;
+      const panel = ui.garage.querySelector('.garage-panel').getBoundingClientRect();
+      const width = narrow ? innerWidth : Math.max(100, innerWidth - panel.right);
+      const height = narrow ? Math.max(100, panel.top) : innerHeight;
+      const dimensions = PLATE_FORMATS[car.userData.licensePlates.settings.format];
+      const halfFov = Math.tan(THREE.MathUtils.degToRad(47 / 2));
+      const distance = Math.max(1.05,
+        (dimensions.width + .08) * innerHeight / (2 * halfFov * Math.max(80, width - 32)),
+        (dimensions.height + .10) * innerHeight / (2 * halfFov * Math.max(80, height - 32)));
+      const desired = plateCenter.clone().addScaledVector(outward, distance).addScaledVector(plateRight, -.08).addScaledVector(up, .13);
+      camera.position.lerp(desired, 1 - Math.exp(-dt * 5));
+      cameraLook.copy(plateCenter);
+      // Shift the projection into the unobscured area without moving the camera
+      // sideways into the bumper or sending the registration beyond the viewport.
+      camera.setViewOffset(innerWidth, innerHeight, narrow ? 0 : -panel.right / 2,
+        narrow ? (innerHeight - height) / 2 : 0, innerWidth, innerHeight);
+      camera.lookAt(cameraLook); camera.fov = THREE.MathUtils.damp(camera.fov, 47, 5, dt);
+      camera.updateProjectionMatrix(); return;
+    }
+    if (camera.view?.enabled) camera.clearViewOffset();
     garageOrbit += dt * 0.3;
     const heading = handling.heading;
     const forward = new THREE.Vector3(-Math.sin(heading), Math.cos(heading), 0);
@@ -712,6 +766,7 @@ function updateCamera(dt) {
     camera.updateProjectionMatrix();
     return;
   }
+  if (camera.view?.enabled) camera.clearViewOffset();
   const pad = Array.from(navigator.getGamepads?.() ?? []).find(Boolean);
   const camX = Math.abs(pad?.axes?.[2] ?? 0) > 0.12 ? pad.axes[2] : 0;
   const camY = Math.abs(pad?.axes?.[3] ?? 0) > 0.12 ? pad.axes[3] : 0;
@@ -807,6 +862,7 @@ function toggleTransmission() {
   toast(handling.autoTransmission ? 'AUTOMATIC GEARBOX' : 'MANUAL GEARBOX');
 }
 addEventListener('keydown',e=>{
+  if (mode !== 'drive' && e.target.matches?.('input, select, textarea, button') && e.code !== 'Escape') return;
   // Let the precipitation slider use its native arrow-key adjustment while paused.
   if (mode !== 'drive' && e.target === precipitationControl && e.code !== 'Escape') return;
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();

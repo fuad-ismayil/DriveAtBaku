@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { createElantraCaliper } from './elantraAlloys.js';
 import { loadElantraWheel } from './elantraWheel.js';
 import { fetchAssetBytes } from './assetTransfer.js';
+import { installLicensePlates } from './licensePlates.js';
 
 export function repairMissingNormals(geometry) {
   const authoredNormals = geometry.getAttribute('normal');
@@ -154,7 +155,9 @@ export async function loadElantraModel(onProgress) {
     texture.anisotropy = 8;
     textures[name.toLowerCase()] = texture;
   }));
-
+  return createElantraModel(data, wheelGeometry, textures);
+}
+export function createElantraModel(data, wheelGeometry, textures = {}) {
   const car = new THREE.Group();
   car.rotation.order = 'ZXY';
   const yUp = new THREE.Group();
@@ -216,5 +219,6 @@ export async function loadElantraModel(onProgress) {
   car.userData.headlightMaterials = headlightMaterials;
   car.userData.reverseLightMaterials = reverseLightMaterials;
   car.userData.paintMaterials = paintMaterials;
+  installLicensePlates(car, 'elantra');
   return car;
 }

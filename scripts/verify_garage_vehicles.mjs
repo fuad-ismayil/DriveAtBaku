@@ -8,7 +8,7 @@ import { createDynamicsState, stepDynamics } from '../src/vehicleDynamics.js';
 import { VEHICLES } from '../src/vehicleCatalog.js';
 
 // Geometry/material checks run without a DOM image decoder. Embedded image
-// decoding (including the AMG plate) is checked separately in the browser.
+// decoding is checked separately in the browser. The supplied AMG plate is hidden.
 const loader = new GLTFLoader().register(() => ({
   name: 'verification-image-placeholder', loadTexture: () => Promise.resolve(null),
 }));
@@ -22,8 +22,10 @@ for (const id of ['amg', 'prado']) {
   const settings = VEHICLES[id], [body, wheel] = await Promise.all([load(settings.asset), load(settings.wheelAsset)]);
   const model = createImportedVehicle(body, wheel, settings);
   model.updateMatrixWorld(true);
-  const bounds = new THREE.Box3().setFromObject(model);
+  const bounds = new THREE.Box3().setFromObject(model.children.find(child => !model.userData.licensePlates.rigs.includes(child)));
   assert.ok(Math.abs(bounds.getSize(new THREE.Vector3()).y - settings.dims.length) < .00001, `${id}: normalized body length`);
+  const mountedBounds = new THREE.Box3().setFromObject(model);
+  assert.ok(mountedBounds.getSize(new THREE.Vector3()).y < settings.dims.length + .04, 'mounted plate thickness adds at most a small bumper projection');
   assert.ok(bounds.min.z > -.001 && bounds.min.z < .001, `${id}: tires rest on the ground`);
   assert.ok(Math.abs(bounds.max.z - settings.dims.height) < .08, `${id}: roof matches the collision/camera height`);
   assert.equal(model.userData.wheels.length, 4);
