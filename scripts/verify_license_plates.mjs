@@ -73,6 +73,28 @@ for (const format of ['long', 'compact']) for (const identity of ['older', 'new'
   assert.equal(hit(ink, x, y + h * (.48 - .5)), 0, 'stamped A has an open inner counter');
   assert.ok(hit(ink, x, y + h * (.30 - .5)) > 0, 'stamped A retains its crossbar');
 }
+// Eight has two white counters. Verify both openings and the solid waist at
+// every numeric position, on both the enamel tops and the pressed shoulders.
+for (const format of ['long', 'compact']) for (const identity of ['older', 'new']) {
+  const plate = createAzerbaijaniPlate({ format, identity, region: '88', serial: '888' }); plate.updateMatrixWorld(true);
+  const h = format === 'long' ? .077 : .050;
+  const digits = format === 'long' ? [-.1475, -.0955, .1065, .1585, .2105].map(x => [x, 0])
+    : [[-.0215, .033], [.0155, .033], [.014, -.034], [.051, -.034], [.088, -.034]];
+  const ray = new THREE.Raycaster();
+  for (const name of ['Raised black registration', 'Stamped character shoulders']) {
+    const mesh = plate.getObjectByName(name);
+    const hit = (x, y) => {
+      ray.set(mesh.localToWorld(new THREE.Vector3(x, y, .02)), new THREE.Vector3(0, 0, -1));
+      return ray.intersectObject(mesh, false).length;
+    };
+    for (const [x, y] of digits) {
+      assert.equal(hit(x, y + h * (.28 - .5)), 0, `${format} ${name}: eight's lower counter stays open`);
+      assert.equal(hit(x, y + h * (.72 - .5)), 0, `${format} ${name}: eight's upper counter stays open`);
+      // The shoulders contain bevels/sides only; the solid front cap is enamel.
+      if (name === 'Raised black registration') assert.ok(hit(x, y + h * (.515 - .5)) > 0, `${format}: eight retains its solid waist`);
+    }
+  }
+}
 // Decode the actual supplied Ferrari/AMG/Prado and Elantra geometry, including
 // the shipped Draco binary, without relying on browser-only image decoders.
 const loader = new GLTFLoader().setDRACOLoader(draco).register(() => ({ name: 'headless-images', loadTexture: () => Promise.resolve(null) }));
@@ -123,4 +145,4 @@ for (const id of Object.keys(VEHICLES)) {
   assert.ok(car.userData.licensePlates.rigs.every(r => r.userData.fitment.anchorContacts.every(x => x !== null)));
 }
 console.log(reports.join('\n'));
-console.log('Passed: Azerbaijani groups, saved-style migration, per-car persistence, both real plate sizes, open printed/embossed A counters, older/new identity, straight flags, non-emissive retroreflection, every car/side/format fit, bumper clearance, connected anchors, ON/OFF, and moved-car edits.');
+console.log('Passed: Azerbaijani groups, saved-style migration, per-car persistence, both real plate sizes, open A and both 8 counters, older/new identity, straight flags, non-emissive retroreflection, every car/side/format fit, bumper clearance, connected anchors, ON/OFF, and moved-car edits.');

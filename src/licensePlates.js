@@ -86,7 +86,15 @@ function glyphGeometry(character, w, h, raised = true) {
     else if (op === 'c') path.bezierCurveTo(...p);
     else path.currentPath.closePath();
   }
-  const shapes = path.toShapes(PLATE_GLYPH_METRICS[character].ccw);
+  // Font contours may interleave holes and outlines (8: hole, outline, hole).
+  // ShapePath's holes-first grouping drops holes after the final solid outline.
+  // Put all solids first so every counter is assigned to its containing shape.
+  const ccw = PLATE_GLYPH_METRICS[character].ccw, solids = [], holes = [];
+  for (const contour of path.subPaths) {
+    (THREE.ShapeUtils.isClockWise(contour.getPoints()) !== ccw ? solids : holes).push(contour);
+  }
+  path.subPaths = [...solids, ...holes];
+  const shapes = path.toShapes(ccw);
   const g = raised ? new THREE.ExtrudeGeometry(shapes, { depth: .0004, bevelEnabled: true,
     bevelThickness: .00055, bevelSize: .00035, bevelSegments: 3, curveSegments: 12, steps: 1 })
     : new THREE.ShapeGeometry(shapes, 12);
