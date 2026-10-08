@@ -1059,7 +1059,7 @@ if (mpUi.btn) {
         serverUrl: url,
         scene,
         localVehicle: car,
-        baseAssetScene,
+        baseAssetScene: baseCarAssetScene,
         camera,
         onToast: toast,
       });
