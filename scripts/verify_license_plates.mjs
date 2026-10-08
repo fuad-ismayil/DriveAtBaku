@@ -140,9 +140,13 @@ for (const id of Object.keys(VEHICLES)) {
   }
   // A number/format edit while driving/paused must stay attached to a moved,
   // rotated car rather than taking measurements in the wrong coordinate frame.
-  car.position.set(200, -75, 2); car.rotation.set(.04, -.03, 1.2);
   updateLicensePlates(car, { format: 'long', serial: '123', letters: 'BC', identity: 'new' });
+  const localPlatePositions = car.userData.licensePlates.rigs.map(rig => rig.position.clone());
+  car.position.set(200, -75, 2); car.rotation.set(.04, -.03, 1.2);
+  updateLicensePlates(car, { format: 'long', serial: '456', letters: 'CD', identity: 'new' });
   assert.ok(car.userData.licensePlates.rigs.every(r => r.userData.fitment.anchorContacts.every(x => x !== null)));
+  assert.ok(car.userData.licensePlates.rigs.every((rig, index) => rig.position.distanceTo(localPlatePositions[index]) < 1e-8),
+    `${id}: plate mounts retain their vehicle-local pose after a multiplayer position update`);
 }
 console.log(reports.join('\n'));
 console.log('Passed: Azerbaijani groups, saved-style migration, per-car persistence, both real plate sizes, open A and both 8 counters, older/new identity, straight flags, non-emissive retroreflection, every car/side/format fit, bumper clearance, connected anchors, ON/OFF, and moved-car edits.');

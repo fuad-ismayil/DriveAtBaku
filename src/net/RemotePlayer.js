@@ -19,6 +19,8 @@ export class RemotePlayer {
     this.paintColor = info.state?.col || this.color;
     this.plateData = info.state?.plt || null;
     this.isLoadingVehicle = false;
+    this.loadingCarId = null;
+    this.pendingCarId = null;
 
     // Local reception timeline buffer: [ { localTime, state } ]
     this.buffer = [];
@@ -73,75 +75,97 @@ export class RemotePlayer {
   }
 
   async _initVehicle(carId) {
+    // Do not let the previous car's loop continue while the replacement asset
+    // is downloading. A new source is created from this player's new bank
+    // after the model swap completes.
+    if (carId !== this.carId) this._disposeAudioSource();
+    this.pendingCarId = carId;
     if (this.isLoadingVehicle) return;
     this.isLoadingVehicle = true;
-    this.carId = carId;
 
     try {
-      let newCar = null;
-      if (typeof this.createVehicleModel === 'function') {
-        newCar = await this.createVehicleModel(carId);
-      }
-      if (!newCar && this.baseAssetScene) {
-        newCar = createCarModel({ scene: this.baseAssetScene.clone(true) });
-      }
+      while (this.pendingCarId) {
+        const requestedCarId = this.pendingCarId;
+        this.pendingCarId = null;
+        this.loadingCarId = requestedCarId;
 
-      if (!newCar) return;
-
-      // Prevent local raycasters from testing against remote vehicle
-      newCar.traverse(obj => {
-        if (obj.isMesh) obj.raycast = () => {};
-      });
-
-      // Transfer position & rotation if replacing existing
-      newCar.position.copy(this.currentPosition);
-      newCar.quaternion.copy(this.currentQuaternion);
-
-      // Setup private paint materials
-      if (newCar.userData.paintMaterials) {
-        const clonedMaterials = [];
-        for (const mat of newCar.userData.paintMaterials) {
-          const cloned = mat.clone();
-          cloned.color.set(this.paintColor);
-          clonedMaterials.push(cloned);
+        let newCar = null;
+        if (typeof this.createVehicleModel === 'function') {
+          newCar = await this.createVehicleModel(requestedCarId);
         }
-        newCar.userData.paintMaterials = clonedMaterials;
-        const bodyMesh = newCar.getObjectByName('body');
-        if (bodyMesh && clonedMaterials[0]) bodyMesh.material = clonedMaterials[0];
-      }
+        if (!newCar && this.baseAssetScene) {
+          newCar = createCarModel({ scene: this.baseAssetScene.clone(true) });
+        }
 
-      // Setup spotlights
-      const nose = 4.5 * 0.43;
-      const lamps = [];
-      for (const x of [-0.55, 0.55]) {
-        const lamp = new THREE.SpotLight(0xe8f2ff, 0, 28, 0.42, 0.75, 1.35);
-        lamp.position.set(x, nose, 0.6);
-        lamp.castShadow = false;
-        const target = new THREE.Object3D();
-        target.position.set(x * 0.4, 22, 0.04);
-        newCar.add(lamp, target);
-        lamp.target = target;
-        lamps.push(lamp);
-      }
+        // A more recent state arrived while this asset was loading. Do not
+        // briefly install a stale car (or its stale plate fitment).
+        if (this.pendingCarId && this.pendingCarId !== requestedCarId) continue;
+        if (!newCar) continue;
 
-      // Apply initial license plate
-      if (this.plateData) {
-        updateLicensePlates(newCar, this.plateData);
-      }
+        // Prevent local raycasters from testing against remote vehicle.
+        newCar.traverse(obj => {
+          if (obj.isMesh) obj.raycast = () => {};
+        });
 
-      // Swap out old car
-      if (this.car) {
-        this.scene.remove(this.car);
-      }
+        // Transfer position & rotation if replacing existing.
+        newCar.position.copy(this.currentPosition);
+        newCar.quaternion.copy(this.currentQuaternion);
 
-      this.car = newCar;
-      this.wheels = newCar.userData.wheels || [];
-      this.headlights = lamps;
-      this.scene.add(this.car);
+        // Each remote needs private instances for every paint material. Some
+        // models use the same paint on several meshes, so replacing just a
+        // mesh named "body" left parts of a remote car sharing another
+        // player's material state.
+        const paintMaterials = newCar.userData.paintMaterials || [];
+        const materialMap = new Map();
+        for (const material of paintMaterials) {
+          if (!materialMap.has(material)) {
+            const cloned = material.clone();
+            cloned.color.set(this.paintColor);
+            materialMap.set(material, cloned);
+          }
+        }
+        if (materialMap.size) {
+          newCar.traverse(obj => {
+            if (!obj.isMesh) return;
+            if (Array.isArray(obj.material)) obj.material = obj.material.map(material => materialMap.get(material) || material);
+            else obj.material = materialMap.get(obj.material) || obj.material;
+          });
+          newCar.userData.paintMaterials = paintMaterials.map(material => materialMap.get(material));
+        }
+
+        // Setup spotlights.
+        const nose = 4.5 * 0.43;
+        const lamps = [];
+        for (const x of [-0.55, 0.55]) {
+          const lamp = new THREE.SpotLight(0xe8f2ff, 0, 28, 0.42, 0.75, 1.35);
+          lamp.position.set(x, nose, 0.6);
+          lamp.castShadow = false;
+          const target = new THREE.Object3D();
+          target.position.set(x * 0.4, 22, 0.04);
+          newCar.add(lamp, target);
+          lamp.target = target;
+          lamps.push(lamp);
+        }
+
+        // Apply the most recent plate only after the final model is ready.
+        // This avoids fitting a new registration to an obsolete model while a
+        // vehicle-change request is still in flight.
+        if (this.plateData) updateLicensePlates(newCar, this.plateData);
+
+        if (this.car) this.scene.remove(this.car);
+        this.car = newCar;
+        this.carId = requestedCarId;
+        this.wheels = newCar.userData.wheels || [];
+        this.headlights = lamps;
+        this.scene.add(this.car);
+        this._disposeAudioSource();
+      }
     } catch (err) {
       console.error(`RemotePlayer: failed to create vehicle model for ${carId}:`, err);
     } finally {
+      this.loadingCarId = null;
       this.isLoadingVehicle = false;
+      if (this.pendingCarId) this._initVehicle(this.pendingCarId);
     }
   }
 
@@ -186,6 +210,7 @@ export class RemotePlayer {
   }
 
   _initAudio() {
+    if (this.audioGain) return;
     const ctx = this.engineAudio?.context;
     if (!ctx) return;
 
@@ -215,7 +240,7 @@ export class RemotePlayer {
     }
 
     // Check if vehicle model, color, or plate changed
-    if (state.cid && state.cid !== this.carId) {
+    if (state.cid && state.cid !== this.carId && state.cid !== this.loadingCarId && state.cid !== this.pendingCarId) {
       this._initVehicle(state.cid);
     }
     if (state.col && state.col !== this.paintColor) {
@@ -224,9 +249,9 @@ export class RemotePlayer {
         mat.color.set(this.paintColor);
       }
     }
-    if (state.plt && this.car) {
+    if (state.plt) {
       this.plateData = state.plt;
-      updateLicensePlates(this.car, state.plt);
+      if (this.car) updateLicensePlates(this.car, state.plt);
     }
   }
 
@@ -410,6 +435,10 @@ export class RemotePlayer {
   }
 
   _updateAudio(camera) {
+    // The multiplayer session may be created before the user gesture that
+    // starts Web Audio. Initialise lazily so remote engines still get a
+    // dedicated graph once audio becomes available.
+    this._initAudio();
     if (!this.audioGain || !this.engineAudio?.context || this.engineAudio.context.state !== 'running') return;
     if (!camera) return;
 
@@ -471,11 +500,17 @@ export class RemotePlayer {
       this.nameplateTexture?.dispose();
     }
     this.tireEffects?.dispose();
-    if (this.audioSource) {
-      try { this.audioSource.stop(); this.audioSource.disconnect(); } catch { /* ignore */ }
-    }
+    this._disposeAudioSource();
     if (this.audioGain) {
       try { this.audioGain.disconnect(); } catch { /* ignore */ }
     }
+  }
+
+  _disposeAudioSource() {
+    if (this.audioSource) {
+      try { this.audioSource.stop(); this.audioSource.disconnect(); } catch { /* ignore */ }
+    }
+    this.audioSource = null;
+    this.audioActive = false;
   }
 }

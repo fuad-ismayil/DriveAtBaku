@@ -113,12 +113,9 @@ export class MultiplayerSession {
         this.localVehicle.setWorldTransform(slot.position, slot.heading);
       }
 
-      // Tint local vehicle with assigned color
-      if (this.localVehicle?.userData?.paintMaterials) {
-        for (const mat of this.localVehicle.userData.paintMaterials) {
-          mat.color.set(this.ownColor);
-        }
-      }
+      // `color` is only the player's HUD/nameplate marker.  The actual body
+      // paint belongs to the state payload; applying this server-assigned
+      // marker here used to overwrite a driver's selected paint on join.
 
       // Populate existing remote players
       for (const p of data.players || []) {
@@ -128,6 +125,9 @@ export class MultiplayerSession {
       }
 
       this._updatePlayerListUI();
+      // Advertise the current car/customisation as soon as the server accepts
+      // the join, rather than waiting for the next movement tick.
+      this.sendImmediateState();
       this.onToast?.(`JOINED MULTIPLAYER (${data.players?.length + 1} DRIVERS)`);
     };
 
