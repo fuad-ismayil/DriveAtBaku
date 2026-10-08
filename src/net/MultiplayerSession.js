@@ -10,6 +10,9 @@ export class MultiplayerSession {
     this.camera = options.camera;
     this.onToast = options.onToast || console.log;
 
+    this.createVehicleModel = options.createVehicleModel;
+    this.engineAudio = options.engineAudio;
+
     this.client = new NetClient();
     this.remotes = new Map(); // id -> RemotePlayer
     this.ownId = null;
@@ -149,7 +152,6 @@ export class MultiplayerSession {
     };
 
     this.client.onSnapshot = data => {
-      const serverTs = data.ts || Date.now();
       for (const [id, state] of Object.entries(data.states || {})) {
         if (id === this.ownId) continue;
         let remote = this.remotes.get(id);
@@ -157,7 +159,7 @@ export class MultiplayerSession {
           // Player joined before we received a joined message
           remote = this._createRemote({ id, nick: 'Player', state });
         }
-        remote.pushState(serverTs, state);
+        remote.pushState(state);
       }
     };
   }
@@ -166,6 +168,8 @@ export class MultiplayerSession {
     const remote = new RemotePlayer(info, {
       scene: this.scene,
       baseAssetScene: this.baseAssetScene,
+      createVehicleModel: this.createVehicleModel,
+      engineAudio: this.engineAudio,
     });
     this.remotes.set(info.id, remote);
     return remote;
@@ -194,9 +198,18 @@ export class MultiplayerSession {
     this.hudList.innerHTML = html;
   }
 
+  sendImmediateState() {
+    if (this.localVehicle?.getNetState && this.client.status === 'connected') {
+      const now = performance.now();
+      this.seq++;
+      const rawState = this.localVehicle.getNetState();
+      const payload = formatStatePayload(this.seq, now, rawState);
+      this.client.sendState(payload);
+    }
+  }
+
   update(dt) {
     const now = performance.now();
-    const serverTime = this.client.getServerTime();
 
     // 1. Gather and send local state
     if (this.localVehicle?.getNetState && this.client.status === 'connected') {
@@ -223,10 +236,9 @@ export class MultiplayerSession {
       }
     }
 
-    // 2. Update remote players (interpolation & effects)
-    const cameraPos = this.camera?.position;
+    // 2. Update remote players (interpolation & effects & spatial audio)
     for (const remote of this.remotes.values()) {
-      remote.update(dt, serverTime, cameraPos);
+      remote.update(dt, this.camera);
     }
 
     // 3. Update HUD telemetry

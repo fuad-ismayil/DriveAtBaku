@@ -113,9 +113,29 @@ function sanitizeState(raw) {
     }
   }
 
+  const cid = typeof raw.cid === 'string' && ['ferrari', 'elantra', 'amg', 'prado'].includes(raw.cid)
+    ? raw.cid : 'ferrari';
+  const col = typeof raw.col === 'string' && /^#[0-9a-f]{6}$/i.test(raw.col) ? raw.col : null;
+  const plt = raw.plt && typeof raw.plt === 'object' ? {
+    enabled: raw.plt.enabled !== false,
+    region: String(raw.plt.region || '10').slice(0, 2),
+    letters: String(raw.plt.letters || 'AA').slice(0, 2),
+    serial: String(raw.plt.serial || '001').slice(0, 3),
+    hyphens: Boolean(raw.plt.hyphens),
+    format: raw.plt.format === 'compact' ? 'compact' : 'long',
+    identity: raw.plt.identity === 'new' ? 'new' : 'older',
+  } : null;
+  const rpm = Number.isFinite(raw.rpm) ? Math.max(0, Math.min(10000, Math.round(raw.rpm))) : 900;
+  const gr = Number.isFinite(raw.gr) ? Math.max(0, Math.min(8, Math.round(raw.gr))) : 1;
+
   return {
     seq: Number.isFinite(raw.seq) ? (raw.seq >>> 0) : 0,
     ts: Number.isFinite(raw.ts) ? Number(raw.ts) : 0,
+    cid,
+    col,
+    plt,
+    rpm,
+    gr,
     p: p.map(n => Math.round(n * 1000) / 1000),
     q: q.map(n => Math.round(n * 10000) / 10000),
     v: v.map(n => Math.round(n * 100) / 100),
@@ -219,6 +239,9 @@ wss.on('connection', (ws, req) => {
     } catch {
       return; // Ignore malformed JSON
     }
+
+    ws.isAlive = true;
+    ws.missedPongs = 0;
 
     if (!msg || typeof msg !== 'object' || typeof msg.t !== 'string') return;
 
@@ -390,18 +413,19 @@ const snapshotInterval = setInterval(() => {
   }
 }, TICK_INTERVAL_MS);
 
-// Heartbeat interval (15s)
+// Heartbeat & liveness check (15s)
+// Uses application-level activity (lastSeen) because Cloudflare Quick Tunnels
+// frequently intercept or drop low-level WebSocket ping/pong control frames.
 const heartbeatInterval = setInterval(() => {
-  wss.clients.forEach(ws => {
-    if (!ws.isAlive) {
-      ws.missedPongs = (ws.missedPongs || 0) + 1;
-      if (ws.missedPongs >= 2) {
-        ws.terminate();
-        return;
-      }
+  const now = Date.now();
+  for (const [id, player] of players) {
+    if (now - player.lastSeen > 40000) {
+      console.log(`[TIMEOUT] Player ${player.nick} (${id}) inactive for >40s, closing socket`);
+      player.ws.terminate();
     }
-    ws.isAlive = false;
-    ws.ping();
+  }
+  wss.clients.forEach(ws => {
+    try { ws.ping(); } catch { /* ignore */ }
   });
 }, HEARTBEAT_INTERVAL_MS);
 

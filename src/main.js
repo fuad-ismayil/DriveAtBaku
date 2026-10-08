@@ -98,6 +98,11 @@ function attachVehicleNetHooks(vehicle) {
     const isBraking = Boolean(handling && (handling.brakeForceInput > 0.1 || handling.handbrake));
     const isReverse = Boolean(handling && handling.gear === 0);
     return {
+      cid: activeVehicle.id,
+      col: paintSelections[activeVehicle.id] || DEFAULT_PAINT[activeVehicle.id] || '#a80719',
+      plt: plateSelections[activeVehicle.id] || null,
+      rpm: handling ? handling.rpm : 900,
+      gr: handling ? handling.gear : 1,
       p: [vehicle.position.x, vehicle.position.y, vehicle.position.z],
       q: [vehicle.quaternion.x, vehicle.quaternion.y, vehicle.quaternion.z, vehicle.quaternion.w],
       v: handling ? [handling.velocity.x, handling.velocity.y, handling.velocity.z] : [0, 0, 0],
@@ -172,6 +177,7 @@ const plateControls = createLicensePlateControls(ui.garage, {
     plateSelections[activeVehicle.id] = settings;
     try { savePlateSettings(localStorage, activeVehicle.id, settings); } catch { /* optional storage */ }
     if (car) updateLicensePlates(car, settings);
+    if (isMultiplayer && multiplayerSession) multiplayerSession.sendImmediateState();
   },
   onInspect: view => {
     garagePlateView = view;
@@ -308,6 +314,7 @@ function choosePaint(color) {
   applyPaint(car, activeVehicle.id);
   updatePaintUI();
   try { localStorage.setItem(`baku-paint-${activeVehicle.id}`, color.toLowerCase()); } catch { /* storage is optional */ }
+  if (isMultiplayer && multiplayerSession) multiplayerSession.sendImmediateState();
 }
 
 function setNightMode(enabled, save = true) {
@@ -652,6 +659,10 @@ async function selectVehicle(id){
       applyPaint(car, id);
       updateLicensePlates(car, plateSelections[id]);
       attachVehicleNetHooks(car);
+      if (isMultiplayer && multiplayerSession) {
+        multiplayerSession.localVehicle = car;
+        multiplayerSession.sendImmediateState();
+      }
       resetCar(false, false, marker);
       cameraReady = false;
       try { localStorage.setItem('baku-selected-car', id); } catch { /* storage is optional */ }
@@ -1054,12 +1065,30 @@ if (mpUi.btn) {
       isMultiplayer = true;
       const { MultiplayerSession } = await import('./net/MultiplayerSession.js');
       startDrive();
+
+      async function createVehicleInstance(carId) {
+        const settings = VEHICLES[carId] || VEHICLES.ferrari;
+        if (carId === 'elantra') {
+          return await loadElantraModel((url, event) => reportAsset(url, event));
+        } else if (settings.wheelAsset) {
+          return await loadImportedVehicle(settings, loadGLB);
+        } else {
+          if (baseCarAssetScene && carId === 'ferrari') {
+            return createCarModel({ scene: baseCarAssetScene.clone(true) });
+          }
+          const gltf = await loadGLB(settings.asset);
+          return createCarModel(gltf);
+        }
+      }
+
       multiplayerSession = await MultiplayerSession.start({
         nick,
         serverUrl: url,
         scene,
         localVehicle: car,
         baseAssetScene: baseCarAssetScene,
+        createVehicleModel: createVehicleInstance,
+        engineAudio,
         camera,
         onToast: toast,
       });
