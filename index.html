@@ -62,9 +62,30 @@
           <p class="eyebrow">THE CITY IS YOURS</p>
           <h1>DriveAt<span>Baku</span></h1>
           <p class="lede">Your car. Your route. Baku after every turn.</p>
-          <div class="menu-actions">
-            <button id="drive-button" class="primary">START DRIVING <b aria-hidden="true">↗</b></button>
+          <div class="menu-actions" id="menu-main-actions">
+            <button id="drive-button" class="primary">SINGLE PLAYER <b aria-hidden="true">↗</b></button>
+            <button id="multiplayer-button" class="primary mp-btn">MULTIPLAYER <b aria-hidden="true">↗</b></button>
             <button id="garage-button" class="secondary">YOUR GARAGE <b aria-hidden="true">→</b></button>
+          </div>
+          <div id="mp-menu-panel" class="mp-menu-panel hidden">
+            <p class="mp-panel-title">MULTIPLAYER DRIVE</p>
+            <div class="mp-field">
+              <label for="mp-nick-input">DRIVER NICKNAME</label>
+              <input id="mp-nick-input" type="text" maxlength="16" placeholder="Your nickname" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="mp-advanced-group">
+              <button type="button" id="mp-advanced-toggle" class="mp-text-toggle">ADVANCED SETTINGS ▾</button>
+              <div id="mp-server-field" class="mp-field hidden">
+                <label for="mp-server-input">SERVER URL <small>(wss://...)</small></label>
+                <input id="mp-server-input" type="text" placeholder="wss://xxxx.trycloudflare.com" autocomplete="off" spellcheck="false" />
+                <p class="mp-hint">e.g. wss://xxxx.trycloudflare.com or ws://localhost:8787</p>
+              </div>
+            </div>
+            <p id="mp-connect-status" class="mp-status-msg"></p>
+            <div class="mp-actions">
+              <button id="mp-join-button" class="primary" disabled>JOIN DRIVE <b aria-hidden="true">↗</b></button>
+              <button id="mp-back-button" class="secondary">BACK</button>
+            </div>
           </div>
           <div class="menu-settings">
             <button id="time-toggle" class="setting-button" type="button" aria-pressed="false">☀ DAY MODE</button>

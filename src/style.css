@@ -221,3 +221,204 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 }
 .precipitation-control > span { display: flex; justify-content: space-between; gap: 1rem; }
 .precipitation-control output { color: var(--accent, #79dfe0); }
+
+/* --- Multiplayer Menu & HUD --- */
+.mp-menu-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.5rem 1.8rem;
+  background: rgba(17, 21, 24, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  max-width: 420px;
+  margin-top: 1rem;
+  border-radius: 4px;
+}
+.mp-panel-title {
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  color: #79dfe0;
+  margin: 0;
+}
+.mp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.mp-field label {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+.mp-field label small {
+  opacity: 0.6;
+}
+.mp-field input {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f3f1e9;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  border-radius: 3px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.mp-field input:focus {
+  border-color: #79dfe0;
+}
+.mp-hint {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0.2rem 0 0;
+}
+.mp-text-toggle {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  padding: 0.2rem 0;
+  text-align: left;
+  transition: color 0.2s;
+}
+.mp-text-toggle:hover {
+  color: #79dfe0;
+}
+.mp-status-msg {
+  font-size: 0.75rem;
+  color: #ff9800;
+  margin: 0;
+  min-height: 1rem;
+}
+.mp-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+.mp-actions button {
+  flex: 1;
+}
+
+/* Multiplayer In-game HUD */
+.mp-hud {
+  position: fixed;
+  top: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+}
+.mp-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(17, 21, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  pointer-events: auto;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #f3f1e9;
+}
+.mp-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.mp-dot.connected { background-color: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
+.mp-dot.connecting { background-color: #f39c12; box-shadow: 0 0 6px #f39c12; }
+.mp-dot.reconnecting { background-color: #e67e22; animation: mpPulse 1.2s infinite; }
+.mp-dot.error, .mp-dot.disconnected { background-color: #e74c3c; }
+
+@keyframes mpPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.mp-status-text {
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+.mp-ping {
+  color: rgba(255, 255, 255, 0.6);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.7rem;
+}
+.mp-players-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #f3f1e9;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  letter-spacing: 0.06em;
+  transition: background 0.2s;
+}
+.mp-players-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.mp-player-list {
+  position: absolute;
+  top: 100%;
+  margin-top: 0.5rem;
+  background: rgba(17, 21, 24, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  pointer-events: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.mp-player-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.78rem;
+  color: #f3f1e9;
+}
+.mp-player-item.is-self {
+  font-weight: 700;
+  color: #79dfe0;
+}
+.mp-color-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mp-player-nick {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mp-banner {
+  margin-top: 0.6rem;
+  background: rgba(230, 126, 34, 0.9);
+  color: #ffffff;
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  pointer-events: auto;
+}
+

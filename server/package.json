@@ -1,0 +1,14 @@
+{
+  "name": "driveatbaku-server",
+  "version": "1.0.0",
+  "description": "DriveAtBaku real-time multiplayer relay server",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "loadtest": "node loadtest.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

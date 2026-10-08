@@ -74,6 +74,54 @@ const draco = new DRACOLoader().setDecoderPath('/draco/');
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setDRACOLoader(draco);
 const keys = new Set();
 let route, minimap, car, handling, collisionMeshes = [], mode = 'loading', cameraMode = 0, lastSafe;
+let isMultiplayer = false, multiplayerSession = null, baseCarAssetScene = null;
+
+function attachVehicleNetHooks(vehicle) {
+  if (!vehicle) return;
+  vehicle.getNetState = () => {
+    const wheels = [];
+    for (let i = 0; i < 4; i++) {
+      const w = handling?.wheels[i];
+      if (!w) continue;
+      const isSkidding = (w.grounded && w.load >= 150 && w.normal.z >= 0.45 && w.surfaceMu >= 0.9 && w.slideSpeed >= 2.5) ? 1 : 0;
+      const smokeIntensity = THREE.MathUtils.clamp((w.slideSpeed - 4.5) / 12, 0, 1);
+      wheels.push({
+        st: w.steer || 0,
+        rot: w.spinAngle || 0,
+        sl: w.slideSpeed || 0,
+        sk: isSkidding,
+        sm: smokeIntensity,
+        c: w.grounded ? 1 : 0,
+        cp: w.grounded && w.contact ? [w.contact.x, w.contact.y, w.contact.z] : null,
+      });
+    }
+    const isBraking = Boolean(handling && (handling.brakeForceInput > 0.1 || handling.handbrake));
+    const isReverse = Boolean(handling && handling.gear === 0);
+    return {
+      p: [vehicle.position.x, vehicle.position.y, vehicle.position.z],
+      q: [vehicle.quaternion.x, vehicle.quaternion.y, vehicle.quaternion.z, vehicle.quaternion.w],
+      v: handling ? [handling.velocity.x, handling.velocity.y, handling.velocity.z] : [0, 0, 0],
+      av: handling ? [handling.angularVelocity.x, handling.angularVelocity.y, handling.angularVelocity.z] : [0, 0, 0],
+      spd: handling ? Math.hypot(handling.velocity.x, handling.velocity.y) * 3.6 : 0,
+      in: {
+        th: handling?.throttle ?? 0,
+        br: handling?.braking ?? 0,
+        st: handling?.steer ?? 0,
+        hb: handling?.handbrake ? 1 : 0,
+        rev: isReverse ? 1 : 0,
+      },
+      li: {
+        head: headlightMode,
+        brake: isBraking ? 1 : 0,
+        rev: isReverse ? 1 : 0,
+      },
+      w: wheels,
+    };
+  };
+  vehicle.setWorldTransform = (pos, heading) => {
+    resetCar(false, false, { position: new THREE.Vector3(...pos), heading });
+  };
+}
 let packedAssets = {};
 let assetFileBytes = {};
 let physicsAccumulator = 0, safeTimer = 0;
@@ -441,7 +489,9 @@ async function boot() {
     freezeStaticWorld(collision.scene);
     loadingScreen.stage('Preparing your car…', '04 / 05 · YOUR CAR', 'Downloading your first ride.', true);
     const carAsset = await loadGLB('/assets/vehicles/ferrari-458.glb');
+    baseCarAssetScene = carAsset.scene.clone(true);
     car = createCarModel(carAsset); updateLicensePlates(car, plateSelections.ferrari); carCache.set('ferrari', car); scene.add(car); addHeadlights(car); applyPaint(car, 'ferrari'); updatePaintUI(); scene.updateMatrixWorld(true); resetCar(false, false);
+    attachVehicleNetHooks(car);
     await Promise.all(Object.values(VEHICLES).filter(vehicle => vehicle.id !== 'ferrari').map(async vehicle => {
       const files = [vehicle.asset, vehicle.wheelAsset].filter(Boolean);
       const responses = await Promise.allSettled(files.map(file => fetch(file, { method: 'HEAD' })));
@@ -543,7 +593,14 @@ function releaseDrivePointer() {
 function startDrive(){mode='drive';driveCamera.reset();cameraReady=false;cameraTransition=null;pointerSeen=false;pointerEdgeX=pointerEdgeY=0;ui.menu.classList.add('hidden');ui.hud.classList.remove('hidden');captureDrivePointer();engineAudio.activate().catch(console.warn);clock.getDelta();}
 function pause(){if(mode!=='drive')return;mode='pause';keys.clear();driveCamera.setRearHeld(false);pointerSeen=false;pointerEdgeX=pointerEdgeY=0;ui.pause.classList.remove('hidden');releaseDrivePointer();}
 function resume(){if(mode!=='pause')return;mode='drive';ui.pause.classList.add('hidden');captureDrivePointer();engineAudio.activate().catch(console.warn);clock.getDelta();}
-function exitToMenu(){mode='menu';keys.clear();driveCamera.setRearHeld(false);ui.pause.classList.add('hidden');ui.hud.classList.add('hidden');ui.menu.classList.remove('hidden');releaseDrivePointer();}
+function exitToMenu(){
+  if (isMultiplayer && multiplayerSession) {
+    multiplayerSession.stop();
+    multiplayerSession = null;
+    isMultiplayer = false;
+  }
+  mode='menu';keys.clear();driveCamera.setRearHeld(false);ui.pause.classList.add('hidden');ui.hud.classList.add('hidden');ui.menu.classList.remove('hidden');releaseDrivePointer();
+}
 function openControls() {
   controlsOrigin = mode;
   if (controlsOrigin === 'pause') ui.pause.classList.add('hidden');
@@ -594,6 +651,7 @@ async function selectVehicle(id){
       addHeadlights(car);
       applyPaint(car, id);
       updateLicensePlates(car, plateSelections[id]);
+      attachVehicleNetHooks(car);
       resetCar(false, false, marker);
       cameraReady = false;
       try { localStorage.setItem('baku-selected-car', id); } catch { /* storage is optional */ }
@@ -926,6 +984,107 @@ for (const swatch of document.querySelectorAll('.paint-swatch')) swatch.onclick=
 ui['custom-paint'].oninput=e=>choosePaint(e.target.value);
 for (const aid of ['abs','tcs','esc']) ui[`aid-${aid}`].onclick=()=>toggleAid(aid);
 
+const mpUi = {
+  btn: document.getElementById('multiplayer-button'),
+  panel: document.getElementById('mp-menu-panel'),
+  mainActions: document.getElementById('menu-main-actions'),
+  nickInput: document.getElementById('mp-nick-input'),
+  serverInput: document.getElementById('mp-server-input'),
+  joinBtn: document.getElementById('mp-join-button'),
+  backBtn: document.getElementById('mp-back-button'),
+  advToggle: document.getElementById('mp-advanced-toggle'),
+  serverField: document.getElementById('mp-server-field'),
+  statusMsg: document.getElementById('mp-connect-status'),
+};
+
+if (mpUi.btn) {
+  let resolvedUrl = '';
+  mpUi.btn.onclick = async () => {
+    mpUi.mainActions?.classList.add('hidden');
+    mpUi.panel?.classList.remove('hidden');
+    let savedNick = '';
+    try { savedNick = localStorage.getItem('dab_nick') || ''; } catch { /* ignore */ }
+    if (mpUi.nickInput) {
+      mpUi.nickInput.value = savedNick;
+      mpUi.joinBtn.disabled = !savedNick.trim();
+      mpUi.nickInput.focus();
+    }
+    try {
+      const { NetClient } = await import('./net/NetClient.js');
+      resolvedUrl = await NetClient.resolveServerUrl();
+      if (mpUi.serverInput) {
+        mpUi.serverInput.value = resolvedUrl;
+      }
+      if (resolvedUrl) {
+        mpUi.serverField?.classList.add('hidden');
+      } else {
+        mpUi.serverField?.classList.remove('hidden');
+      }
+    } catch { /* ignore */ }
+  };
+
+  mpUi.backBtn.onclick = () => {
+    mpUi.panel?.classList.add('hidden');
+    mpUi.mainActions?.classList.remove('hidden');
+    if (mpUi.statusMsg) mpUi.statusMsg.textContent = '';
+  };
+
+  mpUi.advToggle.onclick = () => {
+    mpUi.serverField?.classList.toggle('hidden');
+  };
+
+  mpUi.nickInput.oninput = () => {
+    const val = mpUi.nickInput.value.trim();
+    mpUi.joinBtn.disabled = !val;
+  };
+
+  const handleJoin = async () => {
+    const nick = mpUi.nickInput.value.trim();
+    if (!nick) return;
+    const url = mpUi.serverInput.value.trim() || resolvedUrl;
+    try {
+      localStorage.setItem('dab_nick', nick);
+      if (url) localStorage.setItem('dab_server_url', url);
+    } catch { /* ignore */ }
+
+    if (mpUi.statusMsg) mpUi.statusMsg.textContent = 'Connecting…';
+    mpUi.joinBtn.disabled = true;
+
+    try {
+      isMultiplayer = true;
+      const { MultiplayerSession } = await import('./net/MultiplayerSession.js');
+      startDrive();
+      multiplayerSession = await MultiplayerSession.start({
+        nick,
+        serverUrl: url,
+        scene,
+        localVehicle: car,
+        baseAssetScene,
+        camera,
+        onToast: toast,
+      });
+      mpUi.panel?.classList.add('hidden');
+      mpUi.mainActions?.classList.remove('hidden');
+      if (mpUi.statusMsg) mpUi.statusMsg.textContent = '';
+    } catch (err) {
+      console.error('Multiplayer start failed:', err);
+      if (mpUi.statusMsg) mpUi.statusMsg.textContent = 'Failed to join: ' + err.message;
+      mpUi.joinBtn.disabled = false;
+      isMultiplayer = false;
+    }
+  };
+
+  mpUi.joinBtn.onclick = handleJoin;
+  mpUi.nickInput.onkeydown = e => {
+    if (e.key === 'Enter' && !mpUi.joinBtn.disabled) handleJoin();
+    if (e.key === 'Escape') mpUi.backBtn.click();
+  };
+  mpUi.serverInput.onkeydown = e => {
+    if (e.key === 'Enter' && !mpUi.joinBtn.disabled) handleJoin();
+    if (e.key === 'Escape') mpUi.backBtn.click();
+  };
+}
+
 function frame() {
   requestAnimationFrame(frame);
   // The introduction has its own lightweight motion; don't render an unfinished city.
@@ -937,6 +1096,7 @@ function frame() {
   weather.update(dt, camera, mode !== 'garage' && mode !== 'loading');
   engineAudio.update(handling, activeVehicle, mode === 'drive', dt);
   tireEffects.update(dt, handling, activeVehicle, weather.preset, mode === 'drive', mode !== 'garage' && mode !== 'loading');
+  if (isMultiplayer && multiplayerSession) multiplayerSession.update(dt);
   worldOptimization.update();
   localReflections.update(dt, car, carCache.values(), mode === 'garage' || mode === 'loading');
   graphics.render(dt);
