@@ -191,9 +191,12 @@ function pose(side, profile) {
   const group = new THREE.Group(); group.quaternion.setFromRotationMatrix(matrix);
   group.rotateX(profile.pitch); group.position.set(...profile.position); return group;
 }
-function carrier(vehicle, vehicleId, side, settings) {
-  const sideFit = PLATE_FITMENTS[vehicleId][side], profile = sideFit[settings.format], f = materials();
-  const rig = pose(side, profile); rig.name = `${vehicleId} ${side} ${settings.format} plate mounting`;
+function measureCarrier(vehicle, vehicleId, side, format) {
+  const sideFit = PLATE_FITMENTS[vehicleId][side], profile = sideFit[format];
+  // Fit against the untouched, neutral vehicle exactly once. Re-running this
+  // world-space ray cast while a remote car is interpolating can produce a
+  // different clearance result on another client for the same fixed mount.
+  const rig = pose(side, profile);
   vehicle.add(rig); vehicle.updateMatrixWorld(true);
   const surfaces = []; vehicle.traverse(o => { if (o.isMesh && sideFit.surface.includes(o.name)) surfaces.push(o); });
   const ray = new THREE.Raycaster(); ray.near = 0; ray.far = .8;
@@ -218,12 +221,21 @@ function carrier(vehicle, vehicleId, side, settings) {
   }
   const anchorContacts = profile.anchors.map(([x, y]) => contact(x, y));
   const outward = Math.max(...samples, ...anchorContacts.filter(z => z !== null), samples.length ? -Infinity : 0) + .006;
+  rig.removeFromParent();
+  return { anchorContacts, surfaceSamples: samples.length, outward };
+}
+function carrier(vehicle, vehicleId, side, settings, calibration) {
+  const sideFit = PLATE_FITMENTS[vehicleId][side], profile = sideFit[settings.format], f = materials();
+  const rig = pose(side, profile); rig.name = `${vehicleId} ${side} ${settings.format} plate mounting`;
+  vehicle.add(rig);
+  const fitment = calibration ?? measureCarrier(vehicle, vehicleId, side, settings.format);
+  const { anchorContacts, surfaceSamples, outward } = fitment;
   rig.position.add(new THREE.Vector3(0, 0, outward).applyQuaternion(rig.quaternion));
   const holder = extrusion(rectangle(...profile.frame, .013), .0035, .0004); holder.translate(0, 0, -.0052);
   addMesh(rig, holder, f.holder, `${sideFit.carrier} carrier`);
   // Two steel stand-offs connect the carrier to the actual sampled bumper.
   profile.anchors.forEach(([x, y], i) => {
-    const z = anchorContacts[i] ?? (samples.length ? Math.min(...samples) : 0);
+    const z = anchorContacts[i] ?? 0;
     const length = Math.max(.002, outward - z - .004);
     addMesh(rig, new THREE.BoxGeometry(.024, .022, length), f.bracket, 'Bumper mounting stand-off', x, y, -.004 - length / 2);
     if (Math.abs(y) > profile.frame[1] / 2) {
@@ -247,7 +259,7 @@ function carrier(vehicle, vehicleId, side, settings) {
     }
   }
   rig.userData.fitment = { vehicleId, side, format: settings.format, carrier: sideFit.carrier,
-    anchorContacts, surfaceSamples: samples.length, clearance: .006, outward };
+    anchorContacts, surfaceSamples, clearance: .006, outward };
   return rig;
 }
 function disposeRig(rig) {
@@ -276,7 +288,17 @@ export function installLicensePlates(vehicle, vehicleId, value) {
     mesh.geometry.setIndex(keep); mesh.geometry.clearGroups();
     mesh.geometry.userData.removedPlateHardwareTriangles = removed;
   }
-  vehicle.userData.licensePlates = { vehicleId, rigs: [], settings: null };
+  // These are fixed mechanical mount measurements, not customisation data.
+  // Cache every format while the factory model is at its neutral transform so
+  // owners and remote observers always use the exact same plate pose.
+  const calibrations = {};
+  for (const side of ['front', 'rear']) {
+    calibrations[side] = {};
+    for (const format of Object.keys(PLATE_FORMATS)) {
+      calibrations[side][format] = measureCarrier(vehicle, vehicleId, side, format);
+    }
+  }
+  vehicle.userData.licensePlates = { vehicleId, rigs: [], settings: null, calibrations };
   return updateLicensePlates(vehicle, value);
 }
 export function setLicensePlateLighting(vehicle, enabled) {
@@ -293,6 +315,7 @@ export function updateLicensePlates(vehicle, value) {
     state.settings = settings; state.rigs.forEach(rig => { rig.visible = settings.enabled; }); return state;
   }
   state.rigs.forEach(disposeRig);
-  state.rigs = ['front', 'rear'].map(side => carrier(vehicle, state.vehicleId, side, settings));
+  state.rigs = ['front', 'rear'].map(side => carrier(vehicle, state.vehicleId, side, settings,
+    state.calibrations?.[side]?.[settings.format]));
   state.settings = settings; state.rigs.forEach(rig => { rig.visible = settings.enabled; }); return state;
 }
