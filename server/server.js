@@ -28,7 +28,12 @@ function isAllowedOrigin(origin) {
   try {
     const parsed = new URL(origin);
     const host = parsed.hostname.toLowerCase();
-    if (host === 'driveatbaku.netlify.app' || host === 'driveatbaku.vercel.app') return true;
+    if (
+      host === 'driveatbaku.netlify.app' ||
+      host === 'driveatbaku.vercel.app' ||
+      host === 'driveatbaku.games' ||
+      host === 'www.driveatbaku.games'
+    ) return true;
     if (host === 'localhost' || host === '127.0.0.1') return true;
     if (host.endsWith('.trycloudflare.com')) return true;
     if (allowedOriginsEnv.includes(origin.toLowerCase()) || allowedOriginsEnv.includes(host)) return true;
