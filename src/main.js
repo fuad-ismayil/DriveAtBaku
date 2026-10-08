@@ -13,7 +13,7 @@ import { updateLicensePlates } from './licensePlates.js';
 import { PLATE_FORMATS, readPlateSettings, savePlateSettings } from './licensePlateSettings.js';
 import { createLicensePlateControls } from './licensePlateControls.js';
 import { EngineAudio } from './engineAudio.js';
-import { createMinimap, drawMinimap } from './minimap.js';
+import { createMinimap, drawMinimap, drawFullMap } from './minimap.js';
 import { createSky } from './sky.js';
 import { createGraphics, createSkyEnvironments } from './graphics.js';
 import { accelerationPullback, chaseCameraOffset } from './cameraTuning.js';
@@ -34,7 +34,7 @@ THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 
-const ui = Object.fromEntries(['loading','menu','garage','controls','pause','hud','progress-bar','loading-copy','drive-button','garage-button','time-toggle','pause-time-toggle','route-time','garage-ferrari','garage-elantra','elantra-availability','garage-status','garage-back','paint-name','custom-paint','pause-garage','pause-controls','engine-volume','controls-button','close-controls','resume','restart','exit','speed','gear','rpm','transmission','headlight-mode','aid-abs','aid-tcs','aid-esc','susp-0','susp-1','susp-2','susp-3','minimap','toast'].map(id => [id, document.getElementById(id)]));
+const ui = Object.fromEntries(['loading','menu','garage','controls','pause','hud','progress-bar','loading-copy','drive-button','garage-button','time-toggle','pause-time-toggle','pause-mute','route-time','garage-ferrari','garage-elantra','elantra-availability','garage-status','garage-back','paint-name','custom-paint','pause-garage','pause-controls','engine-volume','controls-button','close-controls','resume','restart','exit','speed','gear','rpm','transmission','headlight-mode','aid-abs','aid-tcs','aid-esc','susp-0','susp-1','susp-2','susp-3','minimap','full-map','full-map-canvas','full-map-close','toast'].map(id => [id, document.getElementById(id)]));
 const garageChoices = new Map([...document.querySelectorAll('[data-vehicle]')].map(button => [button.dataset.vehicle, button]));
 const canvas = document.getElementById('game');
 loadingScreen.stage('Preparing your graphics…', 'STARTING UP', 'Setting the scene for your drive.');
@@ -113,6 +113,7 @@ function attachVehicleNetHooks(vehicle) {
         br: handling?.braking ?? 0,
         st: handling?.steer ?? 0,
         hb: handling?.handbrake ? 1 : 0,
+        hn: handling?.horn ? 1 : 0,
         rev: isReverse ? 1 : 0,
       },
       li: {
@@ -252,7 +253,8 @@ function addHeadlights(vehicle) {
   const lights = [];
   const nose = activeVehicle.dims.length * 0.43;
   for (const x of [-0.55, 0.55]) {
-    const lamp = new THREE.SpotLight(0xe8f2ff, 0, 28, 0.42, 0.75, 1.35);
+    // Restrained, slightly warm low beams avoid the blue-white projector look.
+    const lamp = new THREE.SpotLight(0xfff1d6, 0, 34, 0.36, 0.62, 2);
     lamp.position.set(x, nose, activeVehicle.headlightHeight ?? (activeVehicle.id === 'elantra' ? 0.77 : 0.6));
     lamp.castShadow = false;
     const target = new THREE.Object3D();
@@ -274,12 +276,13 @@ function addHeadlights(vehicle) {
 
 function applyHeadlightMode(vehicle) {
   for (const lamp of vehicle.userData.headlights ?? []) {
-    lamp.intensity = headlightMode === 0 ? 0 : headlightMode === 1 ? 320 : 780;
-    lamp.distance = headlightMode === 2 ? 72 : 22;
-    lamp.angle = headlightMode === 2 ? 0.22 : 0.48;
-    lamp.decay = headlightMode === 2 ? 1.05 : 1.5;
-    lamp.target.position.y = headlightMode === 2 ? 60 : 18;
-    lamp.target.position.z = headlightMode === 2 ? -0.8 : -1.5;
+    lamp.intensity = headlightMode === 0 ? 0 : headlightMode === 1 ? 172.5 : 585;
+    lamp.distance = headlightMode === 2 ? 68 : 30;
+    lamp.angle = headlightMode === 2 ? 0.24 : 0.36;
+    lamp.penumbra = headlightMode === 2 ? 0.52 : 0.62;
+    lamp.decay = 2;
+    lamp.target.position.y = headlightMode === 2 ? 56 : 24;
+    lamp.target.position.z = headlightMode === 2 ? -0.55 : -0.8;
   }
   setHeadlightBulbs(vehicle, headlightMode);
 }
@@ -600,6 +603,29 @@ function releaseDrivePointer() {
 function startDrive(){mode='drive';driveCamera.reset();cameraReady=false;cameraTransition=null;pointerSeen=false;pointerEdgeX=pointerEdgeY=0;ui.menu.classList.add('hidden');ui.hud.classList.remove('hidden');captureDrivePointer();engineAudio.activate().catch(console.warn);clock.getDelta();}
 function pause(){if(mode!=='drive')return;mode='pause';keys.clear();driveCamera.setRearHeld(false);pointerSeen=false;pointerEdgeX=pointerEdgeY=0;ui.pause.classList.remove('hidden');releaseDrivePointer();}
 function resume(){if(mode!=='pause')return;mode='drive';ui.pause.classList.add('hidden');captureDrivePointer();engineAudio.activate().catch(console.warn);clock.getDelta();}
+function setAudioMuted(muted) {
+  audioMuted = Boolean(muted);
+  engineAudio.setEnabled(!audioMuted && !document.hidden);
+  ui['pause-mute'].textContent = audioMuted ? 'SOUND OFF' : 'SOUND ON';
+  ui['pause-mute'].setAttribute('aria-pressed', String(audioMuted));
+}
+function fullMapLocalPlayer() {
+  if (!car) return null;
+  minimapForward.set(0, 1, 0).applyQuaternion(car.quaternion);
+  return { position: car.position, heading: Math.atan2(-minimapForward.x, minimapForward.y), nick: 'YOU' };
+}
+function renderFullMap() {
+  drawFullMap(ui['full-map-canvas'], minimap, fullMapLocalPlayer(), multiplayerSession?.getMapPlayers());
+}
+function openFullMap() {
+  if (mode !== 'drive') return;
+  mode = 'map'; keys.clear(); driveCamera.setRearHeld(false); releaseDrivePointer();
+  ui['full-map'].classList.remove('hidden'); renderFullMap();
+}
+function closeFullMap() {
+  if (mode !== 'map') return;
+  mode = 'drive'; ui['full-map'].classList.add('hidden'); captureDrivePointer(); clock.getDelta();
+}
 function exitToMenu(){
   if (isMultiplayer && multiplayerSession) {
     multiplayerSession.stop();
@@ -742,7 +768,7 @@ function updateCar(dt) {
   }
   for (let i = 0; i < 4; i++) ui[`susp-${i}`].style.height = `${Math.round(100 * THREE.MathUtils.clamp(handling.wheels[i].compression / activeVehicle.suspTravel, 0, 1))}%`;
   minimapForward.set(0, 1, 0).applyQuaternion(car.quaternion);
-  drawMinimap(ui.minimap, minimap, route, car.position, Math.atan2(-minimapForward.x, minimapForward.y), Math.hypot(handling.velocity.x, handling.velocity.y));
+  drawMinimap(ui.minimap, minimap, route, car.position, Math.atan2(-minimapForward.x, minimapForward.y), Math.hypot(handling.velocity.x, handling.velocity.y), multiplayerSession?.getMapPlayers());
 }
 
 function updateSceneLighting(dt) {
@@ -938,6 +964,7 @@ addEventListener('keydown',e=>{
   keys.add(e.code);
   if (e.repeat) return;
   if (e.code === 'Escape' && !ui.controls.classList.contains('hidden')) { closeControls(); return; }
+  if (mode === 'map') { if (e.code === 'Escape' || e.code === 'KeyM') closeFullMap(); return; }
   if (e.code === 'Escape') { if (mode === 'drive') pause(); else if (mode === 'pause' && performance.now() - pointerLockLostAt > 500) resume(); else if (mode === 'garage') closeGarage(); }
   if (mode !== 'drive') return;
   if (e.code === 'KeyR') { if (e.shiftKey) restartAtSpawn(); else recoverInPlace(); }
@@ -947,7 +974,7 @@ addEventListener('keydown',e=>{
   if (e.code === 'KeyE') pendingShiftUp = true;
   if (e.code === 'KeyQ') pendingShiftDown = true;
   if (['Digit1','Digit2','Digit3'].includes(e.code)) toggleAid({ Digit1: 'abs', Digit2: 'tcs', Digit3: 'esc' }[e.code]);
-  if (e.code === 'KeyM') { audioMuted = !audioMuted; engineAudio.setEnabled(!audioMuted && !document.hidden); toast(audioMuted ? 'SOUND MUTED' : 'SOUND ON'); }
+  if (e.code === 'KeyM') openFullMap();
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{keys.clear();pointerSeen=false;driveCamera.setRearHeld(false);});
@@ -989,7 +1016,7 @@ document.addEventListener('mouseup', e => {
   driveCamera.setRearHeld(false);
 }, { capture: true });
 document.addEventListener('auxclick', e => { if (mode === 'drive' && e.button === 1) e.preventDefault(); });
-ui['drive-button'].onclick=startDrive;ui['garage-button'].onclick=openGarage;ui['time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-garage'].onclick=openGarage;ui['garage-back'].onclick=closeGarage;ui['controls-button'].onclick=openControls;ui['pause-controls'].onclick=openControls;ui['close-controls'].onclick=closeControls;ui.resume.onclick=resume;ui.restart.onclick=()=>{recoverInPlace();resume()};ui.exit.onclick=exitToMenu;ui['engine-volume'].oninput=e=>engineAudio.setVolume(e.target.value);
+ui['drive-button'].onclick=startDrive;ui['garage-button'].onclick=openGarage;ui['time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-garage'].onclick=openGarage;ui['garage-back'].onclick=closeGarage;ui['controls-button'].onclick=openControls;ui['pause-controls'].onclick=openControls;ui['close-controls'].onclick=closeControls;ui.resume.onclick=resume;ui.restart.onclick=()=>{recoverInPlace();resume()};ui.exit.onclick=exitToMenu;ui['engine-volume'].oninput=e=>engineAudio.setVolume(e.target.value);ui['pause-mute'].onclick=()=>setAudioMuted(!audioMuted);ui['full-map-close'].onclick=closeFullMap;
 for (const [id, button] of garageChoices) button.onclick = () => selectVehicle(id);
 for (const swatch of document.querySelectorAll('.paint-swatch')) swatch.onclick=()=>choosePaint(swatch.dataset.paint);
 ui['custom-paint'].oninput=e=>choosePaint(e.target.value);
@@ -1126,6 +1153,7 @@ function frame() {
   engineAudio.update(handling, activeVehicle, mode === 'drive', dt);
   tireEffects.update(dt, handling, activeVehicle, weather.preset, mode === 'drive', mode !== 'garage' && mode !== 'loading');
   if (isMultiplayer && multiplayerSession) multiplayerSession.update(dt);
+  if (mode === 'map') renderFullMap();
   worldOptimization.update();
   localReflections.update(dt, car, carCache.values(), mode === 'garage' || mode === 'loading');
   graphics.render(dt);

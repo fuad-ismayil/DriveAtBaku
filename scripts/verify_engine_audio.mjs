@@ -33,16 +33,20 @@ for (const vehicle of Object.values(VEHICLES)) {
   }
 }
 
-for (const file of ['car-rpm-0.wav', 'car-rpm-1.wav', 'car-rpm-2.wav', 'car-rpm-3.wav', 'car-rpm-4.wav', 'car-rpm-5.wav', 'v8-load-5570.wav', 'v8-overrun-5580.wav']) {
-  const path = fileURLToPath(new URL(`../public/assets/audio/engines/${file}`, import.meta.url));
-  assert.ok(statSync(path).size > 30000, `${file} must be a recorded audio asset`);
-  assert.equal(readFileSync(path).toString('ascii', 0, 4), 'RIFF', `${file} must be a WAV file`);
+for (const asset of [
+  ...['car-rpm-0.wav', 'car-rpm-1.wav', 'car-rpm-2.wav', 'car-rpm-3.wav', 'car-rpm-4.wav', 'car-rpm-5.wav', 'v8-load-5570.wav', 'v8-overrun-5580.wav'].map(file => `../public/assets/audio/engines/${file}`),
+  '../public/assets/audio/tires/tires-squeal-loop.wav',
+]) {
+  const path = fileURLToPath(new URL(asset, import.meta.url));
+  assert.ok(statSync(path).size > 30000, `${asset} must be a recorded audio asset`);
+  assert.equal(readFileSync(path).toString('ascii', 0, 4), 'RIFF', `${asset} must be a WAV file`);
 }
 // Exercise the real audio update path without requiring an audio device.
 const parameter = () => ({ value: 0, setTargetAtTime(value) { this.value = value; } });
 const layer = () => ({ gain: { gain: parameter() }, source: { playbackRate: parameter() }, rpm: 1000 });
 const audio = new EngineAudio(); audio.context = { currentTime: 0, state: 'running' };
-for (const name of ['wind', 'skid']) audio[name] = { gain: { gain: parameter() }, filter: { frequency: parameter() } };
+audio.wind = { gain: { gain: parameter() }, filter: { frequency: parameter() } };
+audio.skid = { gain: { gain: parameter() }, filter: { frequency: parameter() }, source: { playbackRate: parameter() } };
 audio.horn = { gain: parameter() }; audio.master = { gain: parameter() };
 for (const [id, config] of Object.entries(ENGINE_BANKS)) audio.banks.set(id, {
   config, bus: { gain: parameter() }, tone: { frequency: parameter() }, idle: layer(),
@@ -52,9 +56,10 @@ const audioState = { ...state, rpm: 3000, shiftTimer: 0, gear: 2, wheels: [{ gro
 audio.update(audioState, VEHICLES.elantra, true);
 assert.ok(Math.abs(audio.banks.get('elantra').bus.gain.value / (VEHICLES.elantra.soundVol * .95) - 1.6) < 1e-9, 'Elantra engine bus has the requested additional presence');
 assert.equal(audio.banks.get('ferrari').bus.gain.value, 0, 'inactive car stays silent');
-assert.ok(Math.abs(audio.skid.gain.gain.value - .14) < 1e-9, 'moderate tire slip is 30% quieter');
+assert.ok(Math.abs(audio.skid.gain.gain.value - .14) < 1e-9, 'recorded asphalt squeal follows moderate tire slip');
+assert.ok(Math.abs(audio.skid.source.playbackRate.value - 1.08) < 1e-9, 'recorded asphalt squeal rises naturally with slip');
 audioState.wheels[0].slideSpeed = 100; audio.update(audioState, VEHICLES.elantra, true);
-assert.equal(audio.skid.gain.gain.value, .16, 'extreme squeal has a lower ceiling');
+assert.equal(audio.skid.gain.gain.value, .16, 'extreme recorded squeal has a controlled ceiling');
 audio.update(audioState, VEHICLES.elantra, false);
 assert.equal(audio.skid.gain.gain.value, 0); assert.equal(audio.banks.get('elantra').bus.gain.value, 0);
 for (const vehicle of Object.values(VEHICLES)) {

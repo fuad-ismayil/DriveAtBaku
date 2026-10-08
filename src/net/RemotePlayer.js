@@ -3,6 +3,7 @@ import { createCarModel, setHeadlightBulbs } from '../carModel.js';
 import { updateLicensePlates } from '../licensePlates.js';
 import { createTireEffects } from '../tireEffects.js';
 import { ENGINE_BANKS } from '../engineAudio.js';
+import { INTERP_DELAY_MS } from './protocol.js';
 
 export class RemotePlayer {
   constructor(info, options) {
@@ -22,10 +23,11 @@ export class RemotePlayer {
     this.loadingCarId = null;
     this.pendingCarId = null;
 
-    // Local reception timeline buffer: [ { localTime, state } ]
+    // Server-time timeline buffer: [ { timestamp, state } ]
     this.buffer = [];
-    this.maxBufferSize = 25;
-    this.interpolationDelayMs = 95; // ~2 ticks at 20 Hz, smooth 60fps playback
+    this.maxBufferSize = 32;
+    this.interpolationDelayMs = INTERP_DELAY_MS;
+    this.serverTimeOffsetMs = 0;
 
     // Visual model
     this.car = null;
@@ -58,12 +60,22 @@ export class RemotePlayer {
     this.currentPosition = new THREE.Vector3();
     this.currentQuaternion = new THREE.Quaternion();
     this.currentVelocity = new THREE.Vector3();
+    this._p0 = new THREE.Vector3();
+    this._p1 = new THREE.Vector3();
+    this._v0 = new THREE.Vector3();
+    this._v1 = new THREE.Vector3();
+    this._targetPosition = new THREE.Vector3();
+    this._q0 = new THREE.Quaternion();
+    this._q1 = new THREE.Quaternion();
+    this._forward = new THREE.Vector3();
 
     // Positional audio
     this.audioSource = null;
     this.audioGain = null;
     this.audioPanner = null;
     this.audioActive = false;
+    this.remoteHornGain = null;
+    this.remoteHornOscillators = [];
 
     this._initNameplate();
     this._initVehicle(this.carId);
@@ -137,7 +149,7 @@ export class RemotePlayer {
         const nose = 4.5 * 0.43;
         const lamps = [];
         for (const x of [-0.55, 0.55]) {
-          const lamp = new THREE.SpotLight(0xe8f2ff, 0, 28, 0.42, 0.75, 1.35);
+          const lamp = new THREE.SpotLight(0xfff1d6, 0, 34, 0.36, 0.62, 2);
           lamp.position.set(x, nose, 0.6);
           lamp.castShadow = false;
           const target = new THREE.Object3D();
@@ -226,15 +238,36 @@ export class RemotePlayer {
         gain.connect(this.engineAudio.master || ctx.destination);
       }
 
+      const hornGain = ctx.createGain();
+      hornGain.gain.value = 0;
+      hornGain.connect(gain);
+      for (const hz of [410, 492]) {
+        const oscillator = ctx.createOscillator();
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.value = hz;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = hz * 2.5;
+        filter.Q.value = 1.15;
+        oscillator.connect(filter).connect(hornGain);
+        oscillator.start();
+        this.remoteHornOscillators.push(oscillator);
+      }
       this.audioGain = gain;
       this.audioPanner = panner;
+      this.remoteHornGain = hornGain;
     } catch { /* Audio is progressive enhancement */ }
   }
 
-  pushState(state) {
+  pushState(state, serverTime = Date.now(), serverTimeOffsetMs = 0) {
     if (!state) return;
-    const now = performance.now();
-    this.buffer.push({ localTime: now, state });
+    this.serverTimeOffsetMs = Number.isFinite(serverTimeOffsetMs) ? serverTimeOffsetMs : this.serverTimeOffsetMs;
+    const last = this.buffer[this.buffer.length - 1];
+    // Relay snapshots repeat the latest stationary state. Keeping just the
+    // newest version avoids a flat receive-time staircase in the history.
+    if (last && last.state.seq === state.seq) return;
+    const timestamp = Number.isFinite(serverTime) ? serverTime : Date.now() + this.serverTimeOffsetMs;
+    this.buffer.push({ timestamp: Math.max(timestamp, (last?.timestamp ?? -Infinity) + 0.001), state });
     if (this.buffer.length > this.maxBufferSize) {
       this.buffer.shift();
     }
@@ -265,11 +298,10 @@ export class RemotePlayer {
   _interpolate(dt) {
     if (this.buffer.length === 0) return;
 
-    const now = performance.now();
-    const renderTime = now - this.interpolationDelayMs;
+    const renderTime = Date.now() + this.serverTimeOffsetMs - this.interpolationDelayMs;
 
     // Case 1: Only 1 state, or renderTime is before oldest received
-    if (this.buffer.length === 1 || renderTime <= this.buffer[0].localTime) {
+    if (this.buffer.length === 1 || renderTime <= this.buffer[0].timestamp) {
       const s = this.buffer[0].state;
       this._applyState(s, s, 0, dt);
       return;
@@ -278,23 +310,22 @@ export class RemotePlayer {
     const newest = this.buffer[this.buffer.length - 1];
 
     // Case 2: Network delay / packet loss — smoothly extrapolate with velocity
-    if (renderTime > newest.localTime) {
-      const pastSeconds = Math.min(0.35, (renderTime - newest.localTime) / 1000);
+    if (renderTime > newest.timestamp) {
+      const pastSeconds = Math.min(0.18, (renderTime - newest.timestamp) / 1000);
       const s = newest.state;
-      const targetPos = new THREE.Vector3(s.p[0], s.p[1], s.p[2])
-        .addScaledVector(new THREE.Vector3(s.v[0], s.v[1], s.v[2]), pastSeconds);
-      const targetQuat = new THREE.Quaternion(s.q[0], s.q[1], s.q[2], s.q[3]);
+      this._targetPosition.set(s.p[0], s.p[1], s.p[2]).addScaledVector(this._v1.set(s.v[0], s.v[1], s.v[2]), pastSeconds);
+      this._q1.set(s.q[0], s.q[1], s.q[2], s.q[3]);
 
       // Smooth decay extrapolation
-      this.currentPosition.lerp(targetPos, 0.45);
-      this.currentQuaternion.slerp(targetQuat, 0.45);
+      this.currentPosition.lerp(this._targetPosition, 0.55);
+      this.currentQuaternion.slerp(this._q1, 0.55);
       this.currentVelocity.set(s.v[0], s.v[1], s.v[2]);
 
       if (this.car) {
         this.car.position.copy(this.currentPosition);
         this.car.quaternion.copy(this.currentQuaternion);
         this._applyLights(s.li);
-        this._applyWheels(s.w, s.spd, dt);
+        this._applyWheels(s.w, dt);
       }
       return;
     }
@@ -303,32 +334,43 @@ export class RemotePlayer {
     let older = this.buffer[0];
     let newer = this.buffer[1];
     for (let i = 0; i < this.buffer.length - 1; i++) {
-      if (this.buffer[i].localTime <= renderTime && this.buffer[i + 1].localTime >= renderTime) {
+      if (this.buffer[i].timestamp <= renderTime && this.buffer[i + 1].timestamp >= renderTime) {
         older = this.buffer[i];
         newer = this.buffer[i + 1];
         break;
       }
     }
 
-    const span = newer.localTime - older.localTime;
-    const alpha = span > 0 ? (renderTime - older.localTime) / span : 0;
+    const span = newer.timestamp - older.timestamp;
+    const alpha = span > 0 ? (renderTime - older.timestamp) / span : 0;
     const clampedAlpha = Math.max(0, Math.min(1, alpha));
 
-    this._applyState(older.state, newer.state, clampedAlpha, dt);
+    this._applyState(older.state, newer.state, clampedAlpha, dt, span / 1000);
   }
 
-  _applyState(s0, s1, alpha, dt) {
-    const p0 = new THREE.Vector3(s0.p[0], s0.p[1], s0.p[2]);
-    const p1 = new THREE.Vector3(s1.p[0], s1.p[1], s1.p[2]);
-    const q0 = new THREE.Quaternion(s0.q[0], s0.q[1], s0.q[2], s0.q[3]);
-    const q1 = new THREE.Quaternion(s1.q[0], s1.q[1], s1.q[2], s1.q[3]);
+  _applyState(s0, s1, alpha, dt, spanSeconds = 0) {
+    const p0 = this._p0.set(s0.p[0], s0.p[1], s0.p[2]);
+    const p1 = this._p1.set(s1.p[0], s1.p[1], s1.p[2]);
+    const q0 = this._q0.set(s0.q[0], s0.q[1], s0.q[2], s0.q[3]);
+    const q1 = this._q1.set(s1.q[0], s1.q[1], s1.q[2], s1.q[3]);
 
     // Teleport snap detection (> 20 meters)
     if (this.currentPosition.lengthSq() > 0 && this.currentPosition.distanceTo(p1) > 20) {
       this.currentPosition.copy(p1);
       this.currentQuaternion.copy(q1);
     } else {
-      this.currentPosition.lerpVectors(p0, p1, alpha);
+      // Cubic Hermite interpolation honours the velocities supplied by the
+      // authoritative driver and prevents the back-and-forth motion visible
+      // when fast cars are sampled only at relay tick boundaries.
+      const t = alpha, t2 = t * t, t3 = t2 * t;
+      const h00 = 2 * t3 - 3 * t2 + 1, h10 = t3 - 2 * t2 + t;
+      const h01 = -2 * t3 + 3 * t2, h11 = t3 - t2;
+      this._v0.set(s0.v[0], s0.v[1], s0.v[2]);
+      this._v1.set(s1.v[0], s1.v[1], s1.v[2]);
+      this.currentPosition.copy(p0).multiplyScalar(h00)
+        .addScaledVector(this._v0, h10 * spanSeconds)
+        .addScaledVector(p1, h01)
+        .addScaledVector(this._v1, h11 * spanSeconds);
       this.currentQuaternion.slerpQuaternions(q0, q1, alpha);
     }
 
@@ -338,7 +380,7 @@ export class RemotePlayer {
       this.car.position.copy(this.currentPosition);
       this.car.quaternion.copy(this.currentQuaternion);
       this._applyLights(s1.li);
-      this._applyWheels(s1.w, s1.spd, dt, s0.w, alpha);
+      this._applyWheels(s1.w, dt, s0.w, alpha);
     }
   }
 
@@ -348,9 +390,11 @@ export class RemotePlayer {
     setHeadlightBulbs(this.car, headMode);
 
     for (const lamp of this.headlights) {
-      lamp.intensity = headMode === 0 ? 0 : headMode === 1 ? 320 : 780;
-      lamp.distance = headMode === 2 ? 72 : 22;
-      lamp.angle = headMode === 2 ? 0.22 : 0.48;
+      lamp.intensity = headMode === 0 ? 0 : headMode === 1 ? 172.5 : 585;
+      lamp.distance = headMode === 2 ? 68 : 30;
+      lamp.angle = headMode === 2 ? 0.24 : 0.36;
+      lamp.penumbra = headMode === 2 ? 0.52 : 0.62;
+      lamp.decay = 2;
     }
 
     const isBraking = Boolean(li.brake);
@@ -369,11 +413,11 @@ export class RemotePlayer {
     }
   }
 
-  _applyWheels(wNew, speedKmh, dt, wOld = null, alpha = 0) {
+  _applyWheels(wNew, dt, wOld = null, alpha = 0) {
     if (!wNew) return;
-
-    const speedMs = (speedKmh || 0) / 3.6;
-    this.wheelSpin = (this.wheelSpin + (speedMs / this.wheelRadius) * dt) % (Math.PI * 2);
+    this._forward.set(0, 1, 0).applyQuaternion(this.currentQuaternion);
+    const signedSpeed = this.currentVelocity.dot(this._forward);
+    this.wheelSpin += signedSpeed / this.wheelRadius * dt;
 
     for (let i = 0; i < Math.min(this.wheels.length, wNew.length); i++) {
       const wheelRig = this.wheels[i];
@@ -389,7 +433,11 @@ export class RemotePlayer {
         wheelRig.steerPivot.rotation.y = steerAngle;
       }
       if (wheelRig.spinPivot) {
-        wheelRig.spinPivot.rotation.x = this.wheelSpin * (wheelRig.spinDirection ?? -1);
+        const oldRotation = wOld?.[i]?.rot;
+        const newRotation = wheelData.rot;
+        const rotation = Number.isFinite(oldRotation) && Number.isFinite(newRotation)
+          ? THREE.MathUtils.lerp(oldRotation, newRotation, alpha) : this.wheelSpin;
+        wheelRig.spinPivot.rotation.x = rotation * (wheelRig.spinDirection ?? -1);
       }
     }
   }
@@ -445,9 +493,11 @@ export class RemotePlayer {
     const ctx = this.engineAudio.context;
     const dist = this.currentPosition.distanceTo(camera.position);
 
-    // Mute if far away (> 55 meters)
-    if (dist > 55 || !this.engineAudio.enabled) {
+    // Remote engines and horns use the same spatial envelope.  The old gain
+    // was multiplied by master volume twice, making nearby cars nearly silent.
+    if (dist > 105 || !this.engineAudio.enabled) {
       this.audioGain.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+      this.remoteHornGain?.gain.setTargetAtTime(0, ctx.currentTime, 0.04);
       return;
     }
 
@@ -469,13 +519,14 @@ export class RemotePlayer {
     }
 
     // Attenuation with distance
-    const distFactor = THREE.MathUtils.clamp(1 - dist / 55, 0, 1);
-    const targetVolume = distFactor * distFactor * 0.22 * (this.engineAudio.volume ?? 0.32);
+    const distFactor = THREE.MathUtils.smoothstep(105, 5, dist);
+    const targetVolume = 0.42 * distFactor * distFactor;
     this.audioGain.gain.setTargetAtTime(targetVolume, ctx.currentTime, 0.05);
+    const latest = this.buffer[this.buffer.length - 1]?.state;
+    this.remoteHornGain?.gain.setTargetAtTime(latest?.in?.hn ? 0.38 * distFactor : 0, ctx.currentTime, 0.02);
 
     // Modulate pitch from RPM
     if (this.audioSource && this.buffer.length > 0) {
-      const latest = this.buffer[this.buffer.length - 1].state;
       const rpm = latest.rpm || 900;
       const bankConfig = ENGINE_BANKS[this.carId] || ENGINE_BANKS.ferrari;
       const baseRpm = bankConfig.idle?.rpm || 950;
@@ -501,6 +552,14 @@ export class RemotePlayer {
     }
     this.tireEffects?.dispose();
     this._disposeAudioSource();
+    for (const oscillator of this.remoteHornOscillators) {
+      try { oscillator.stop(); oscillator.disconnect(); } catch { /* ignore */ }
+    }
+    this.remoteHornOscillators.length = 0;
+    if (this.remoteHornGain) {
+      try { this.remoteHornGain.disconnect(); } catch { /* ignore */ }
+      this.remoteHornGain = null;
+    }
     if (this.audioGain) {
       try { this.audioGain.disconnect(); } catch { /* ignore */ }
     }

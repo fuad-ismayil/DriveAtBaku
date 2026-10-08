@@ -136,6 +136,12 @@ for (const id of Object.keys(VEHICLES)) {
       setHeadlightBulbs(car, mode);
       const lamps = []; state.rigs[1].traverse(o => { if (o.name === 'Rear registration lamp') lamps.push(o); });
       assert.equal(lamps.length, 2); assert.ok(lamps.every(l => (l.intensity > 0) === (mode > 0)), 'rear registration lamps follow driving lights');
+      if (mode > 0) {
+        const [left, right] = lamps;
+        assert.ok(left.position.x * right.position.x < 0, 'registration LEDs straddle the plate centre');
+        assert.ok(Math.abs(left.position.x) > PLATE_FORMATS[format].width * .25, 'registration LEDs reach toward both plate edges');
+        assert.ok(Math.abs(left.target.position.x) < Math.abs(left.position.x), 'each registration LED aims inward for overlapping full-width coverage');
+      }
     }
   }
   // A number/format edit while driving/paused must stay attached to a moved,

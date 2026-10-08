@@ -156,7 +156,7 @@
       <section id="controls" class="modal hidden" aria-modal="true" role="dialog">
         <div class="modal-card">
           <p class="eyebrow">DRIVER BRIEFING / 01</p><h2>CONTROLS</h2>
-          <div class="key-grid"><kbd>W / S</kbd><span>Throttle / brake and reverse</span><kbd>A / D</kbd><span>Steer</span><kbd>SPACE</kbd><span>Handbrake</span><kbd>T</kbd><span>Automatic / manual gearbox</span><kbd>Q / E</kbd><span>Shift down / up</span><kbd>1 / 2 / 3</kbd><span>ABS / traction / stability aids</span><kbd>H / M</kbd><span>Horn / mute</span><kbd>L</kbd><span>Low beams / high beams / off</span><kbd>C</kbd><span>Follow / hood camera</span><kbd>MOUSE</kbd><span>Look around; cursor captured while driving</span><kbd>MIDDLE MOUSE</kbd><span>Hold to look back</span><kbd>R</kbd><span>Recover here</span><kbd>SHIFT + R</kbd><span>Return to start</span><kbd>ESC</kbd><span>Pause</span></div>
+          <div class="key-grid"><kbd>W / S</kbd><span>Throttle / brake and reverse</span><kbd>A / D</kbd><span>Steer</span><kbd>SPACE</kbd><span>Handbrake</span><kbd>T</kbd><span>Automatic / manual gearbox</span><kbd>Q / E</kbd><span>Shift down / up</span><kbd>1 / 2 / 3</kbd><span>ABS / traction / stability aids</span><kbd>H</kbd><span>Horn</span><kbd>M</kbd><span>Full player map</span><kbd>L</kbd><span>Low beams / high beams / off</span><kbd>C</kbd><span>Follow / hood camera</span><kbd>MOUSE</kbd><span>Look around; cursor captured while driving</span><kbd>MIDDLE MOUSE</kbd><span>Hold to look back</span><kbd>R</kbd><span>Recover here</span><kbd>SHIFT + R</kbd><span>Return to start</span><kbd>ESC</kbd><span>Pause</span></div>
           <button id="close-controls" class="primary">BACK <b aria-hidden="true">↗</b></button>
         </div>
       </section>
@@ -171,6 +171,7 @@
             <button id="restart" class="secondary">RECOVER CAR</button>
             <button id="pause-controls" class="secondary">CONTROLS</button>
             <button id="pause-time-toggle" class="secondary" type="button" aria-pressed="false">☀ DAY MODE</button>
+            <button id="pause-mute" class="secondary" type="button" aria-pressed="false">SOUND ON</button>
           </div>
           <label class="graphics-control" for="graphics-quality">GRAPHICS
             <select id="graphics-quality">
@@ -195,6 +196,10 @@
           <label class="volume-control">ENGINE VOLUME <input id="engine-volume" type="range" min="0" max="0.65" step="0.01" value="0.32" /></label>
           <button id="exit" class="text-button">EXIT TO MAIN MENU <span aria-hidden="true">→</span></button>
         </div>
+      </section>
+      <section id="full-map" class="full-map hidden" aria-modal="true" role="dialog" aria-label="Full player map">
+        <div class="full-map-card"><div><p class="eyebrow">MULTIPLAYER / LIVE MAP</p><h2>ALL DRIVERS</h2></div><button id="full-map-close" class="secondary" type="button">BACK TO ROAD</button></div>
+        <canvas id="full-map-canvas" aria-label="Full city map with all players"></canvas>
       </section>
       <div id="hud" class="hidden">
         <div class="event-chip"><span class="event-signal" aria-hidden="true"></span><div><small>FREE ROAM <i>●</i> LIVE</small><strong>BAKU CITY CIRCUIT</strong></div></div>

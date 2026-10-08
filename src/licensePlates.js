@@ -251,10 +251,14 @@ function carrier(vehicle, vehicleId, side, settings, calibration) {
     addMesh(rig, new THREE.BoxGeometry(.0032, .00065, .00015), f.black, 'Screw slot', sx, sy, .0012);
   }
   if (side === 'rear') {
-    for (const x of [-.075, .075]) {
-      const lamp = new THREE.SpotLight(0xeaf1ff, vehicle.userData.plateLightsEnabled ? .012 : 0, .45, .85, .8, 2);
-      lamp.name = 'Rear registration lamp'; lamp.position.set(x, d.height / 2 + .012, .018);
-      lamp.target.position.set(x * .4, -d.height * .28, 0);
+    // Place each LED over its half of the registration plate and aim it
+    // inward.  The broad, overlapping cones keep the outer characters as
+    // legible as the centre instead of concentrating both beams on the middle.
+    for (const sideSign of [-1, 1]) {
+      const lamp = new THREE.SpotLight(0xeef3ff, vehicle.userData.plateLightsEnabled ? .009 : 0, .45, 1.26, .72, 2);
+      lamp.name = 'Rear registration lamp';
+      lamp.position.set(sideSign * d.width * .32, d.height / 2 + .018, .13);
+      lamp.target.position.set(sideSign * d.width * .10, -d.height * .16, 0);
       rig.add(lamp, lamp.target);
     }
   }

@@ -208,6 +208,10 @@ export class NetClient {
 
     switch (msg.t) {
       case 'welcome':
+        // Establish a usable clock immediately; the following ping samples
+        // refine it with RTT compensation. Remote interpolation must not wait
+        // for that first ping when players join from differently-set clocks.
+        if (Number.isFinite(msg.serverTime)) this.timeOffset = msg.serverTime - Date.now();
         this.onWelcome?.(msg);
         break;
       case 'joined':

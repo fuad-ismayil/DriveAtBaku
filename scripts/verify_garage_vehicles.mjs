@@ -70,6 +70,11 @@ for (const id of ['amg', 'prado']) {
   assert.ok(model.userData.paintMaterials.length > 0, 'garage recoloring has a body paint target');
   assert.ok(model.userData.paintMaterials.every(m => m.isMeshPhysicalMaterial && !m.transparent));
   assert.ok(model.userData.headlightMaterials.length > 0 && model.userData.brakeLights.length > 0, 'authored lamps are connected');
+  const tailLamps = Array.isArray(model.userData.brakeLights) ? model.userData.brakeLights : [model.userData.brakeLights];
+  setHeadlightBulbs(model, 1);
+  assert.ok(tailLamps.every(material => Math.abs(material.emissiveIntensity - .72) < 1e-9), 'headlights enable one-fifth-brightness tail lamps');
+  setHeadlightBulbs(model, 0);
+  assert.ok(tailLamps.every(material => Math.abs(material.emissiveIntensity - .3) < 1e-9), 'tail lamps return to their unlit resting level');
   if (id === 'prado') {
     const cover = model.getObjectByName('Object_72'), innerLens = model.getObjectByName('Object_114');
     assert.ok(cover.material.transparent && !cover.material.depthWrite && cover.material.opacity < .2, 'front covers reveal the authored headlight structure');

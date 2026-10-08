@@ -18,7 +18,7 @@ const elantra = accelerate(VEHICLES.elantra);
 const ferrariZeroTo30 = accelerate(VEHICLES.ferrari, 30);
 const elantraZeroTo30 = accelerate(VEHICLES.elantra, 30);
 assert.ok(ferrariZeroTo30.seconds < 2.2, 'Ferrari should pull away promptly from a standstill');
-assert.ok(elantraZeroTo30.seconds < 3.6, 'Elantra should launch without excessive hesitation');
+assert.ok(elantraZeroTo30.seconds < 2.6, 'Elantra torque converter should pull cleanly away from a stop');
 assert.ok(ferrari.seconds > 3 && ferrari.seconds < 8, 'Ferrari launch should reach 100 km/h');
 assert.ok(elantra.seconds > ferrari.seconds && elantra.seconds < 17, 'sedan should accelerate more slowly');
 assert.ok(ferrari.state.gear >= 3 && elantra.state.gear >= 3, 'automatic gearbox should upshift');

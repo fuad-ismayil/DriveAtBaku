@@ -1,6 +1,7 @@
 import { engineLayerGains, engineMixTargets } from './engineMix.js';
 
 const ROOT = '/assets/audio/engines/';
+const TIRE_SQUEAL_URL = '/assets/audio/tires/tires-squeal-loop.wav';
 export const ENGINE_BANKS = {
   ferrari: {
     idle: { file: 'car-rpm-0.wav', rpm: 950, level: 1.7 },
@@ -77,7 +78,7 @@ function smoothBuffer(context, original) {
   return result;
 }
 
-function noiseLayer(context, noise, type, frequency, q, destination) {
+function noiseLayer(context, noise, type, frequency, q, destination, offset = 0) {
   const source = context.createBufferSource();
   source.buffer = noise;
   source.loop = true;
@@ -88,8 +89,23 @@ function noiseLayer(context, noise, type, frequency, q, destination) {
   const gain = context.createGain();
   gain.gain.value = 0;
   source.connect(filter).connect(gain).connect(destination);
-  source.start();
+  source.start(0, offset);
   return { filter, gain };
+}
+
+function tireSquealLayer(context, buffer, destination) {
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  const tone = context.createBiquadFilter();
+  tone.type = 'lowpass';
+  tone.frequency.value = 4200;
+  tone.Q.value = 0.5;
+  const gain = context.createGain();
+  gain.gain.value = 0;
+  source.connect(tone).connect(gain).connect(destination);
+  source.start(0, Math.random() * buffer.duration);
+  return { source, filter: tone, gain };
 }
 
 export class EngineAudio {
@@ -134,10 +150,17 @@ export class EngineAudio {
 
     const noise = context.createBuffer(1, context.sampleRate, context.sampleRate);
     const samples = noise.getChannelData(0);
-    for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+    // A little correlated content removes the brittle, all-white-noise sound
+    // before the tyre filters shape it into asphalt scrub.
+    let low = 0;
+    for (let i = 0; i < samples.length; i++) {
+      const white = Math.random() * 2 - 1;
+      low += (white - low) * 0.035;
+      samples[i] = white * 0.68 + low * 0.32;
+    }
     this.noiseBuffer = noise;
     this.wind = noiseLayer(context, noise, 'lowpass', 450, 0.6, master);
-    this.skid = noiseLayer(context, noise, 'bandpass', 850, 3, master);
+    this.skid = null;
 
     const hornGain = context.createGain();
     hornGain.gain.value = 0;
@@ -159,12 +182,20 @@ export class EngineAudio {
   async loadBanks() {
     const context = this.context;
     const files = [...new Set(Object.values(ENGINE_BANKS).flatMap(bank => [bank.idle, ...bank.on, ...bank.off, bank.character].filter(Boolean).map(layer => layer.file)))];
-    const decoded = new Map(await Promise.all(files.map(async file => {
+    const [decodedEntries, tireSqueal] = await Promise.all([
+      Promise.all(files.map(async file => {
       const response = await fetch(ROOT + file);
       if (!response.ok) throw new Error(`${file}: HTTP ${response.status}`);
       const buffer = await context.decodeAudioData(await response.arrayBuffer());
       return [file, smoothBuffer(context, buffer)];
-    })));
+      })),
+      fetch(TIRE_SQUEAL_URL).then(async response => {
+        if (!response.ok) throw new Error(`tire squeal: HTTP ${response.status}`);
+        return context.decodeAudioData(await response.arrayBuffer());
+      }),
+    ]);
+    const decoded = new Map(decodedEntries);
+    this.skid = tireSquealLayer(context, tireSqueal, this.master);
     for (const [id, config] of Object.entries(ENGINE_BANKS)) {
       const bus = context.createGain();
       bus.gain.value = 0;
@@ -255,8 +286,14 @@ export class EngineAudio {
     this.wind.gain.gain.setTargetAtTime(active ? Math.min(0.13, 0.12 * (speed / 170) ** 2) : 0, now, 0.12);
     this.wind.filter.frequency.setTargetAtTime(260 + speed * 5, now, 0.1);
     const sliding = Math.max(...state.wheels.map(wheel => wheel.grounded ? Math.max(0, wheel.slideSpeed - 2.2) / 8 : 0));
-    this.skid.gain.gain.setTargetAtTime(active ? Math.min(0.16, sliding * 0.14) : 0, now, 0.06);
-    this.skid.filter.frequency.setTargetAtTime(770 + 400 * Math.min(sliding, 1), now, 0.08);
+    if (this.skid) {
+      // A real, looped rubber-on-asphalt recording replaces the papery noise
+      // synthesis. Pitch and top-end open up with the severity of the slide.
+      const skidLevel = Math.min(0.16, sliding * 0.14);
+      this.skid.gain.gain.setTargetAtTime(active ? skidLevel : 0, now, 0.06);
+      this.skid.filter.frequency.setTargetAtTime(3000 + 1800 * Math.min(sliding, 1), now, 0.08);
+      this.skid.source.playbackRate.setTargetAtTime(0.9 + 0.18 * Math.min(sliding, 1), now, 0.08);
+    }
     this.horn.gain.setTargetAtTime(active && state.horn ? 0.2 : 0, now, 0.025);
     if (active && this.lastGear !== null && state.gear !== this.lastGear && state.gear > 1 && speed > 7) {
       this.shiftSound(0.014 * (vehicle.soundVol ?? 1));

@@ -96,9 +96,12 @@ function integrateWheel(wheel, index, tireForce, longitudinal, driveTorque, over
       ? groundOmega : wheel.omega + reaction;
   }
   let brakeTorque = brake * settings.brakeTorqueMax * (wheel.front ? settings.brakeBias : 1 - settings.brakeBias);
-  if (state.aids.abs && brakeTorque > 0 && wheel.grounded && state.velocity.lengthSq() > 9) {
-    if (wheel.slipRatio < -0.18) { wheel.absFactor = 0.1; state.absActive = true; }
-    else wheel.absFactor = Math.min(1, wheel.absFactor + 9 * dt);
+  if (state.aids.abs && brakeTorque > 0 && wheel.grounded && state.velocity.lengthSq() > 4) {
+    // Hold the tyre near peak braking force rather than releasing it almost
+    // completely after a lock.  This makes the pedal more immediate and cuts
+    // wheel slip while retaining a natural, progressive stop.
+    if (wheel.slipRatio < -0.12) { wheel.absFactor = 0.38; state.absActive = true; }
+    else wheel.absFactor = Math.min(1, wheel.absFactor + 14 * dt);
     brakeTorque *= wheel.absFactor;
   } else wheel.absFactor = 1;
   brakeTorque += state.escBrake[index];
@@ -124,7 +127,7 @@ export function stepDynamics(state, input, dt, settings = VEHICLES.ferrari, samp
   state.steer = approach(state.steer, clamp(input.steer ?? 0, -1, 1) * limit, 4.2 * dt);
   const throttleTarget = clamp(input.throttle ?? 0, 0, 1), brakeTarget = clamp(input.brake ?? 0, 0, 1);
   state.throttle = approach(state.throttle, throttleTarget, (throttleTarget > state.throttle ? 7 : 8) * dt);
-  state.braking = approach(state.braking, brakeTarget, (brakeTarget > state.braking ? 5 : 9) * dt);
+  state.braking = approach(state.braking, brakeTarget, (brakeTarget > state.braking ? 9 : 11) * dt);
   state.handbrake = Boolean(input.handbrake);
   state.horn = Boolean(input.horn);
 
@@ -187,7 +190,9 @@ export function stepDynamics(state, input, dt, settings = VEHICLES.ferrari, samp
   coupled = state.gear !== 1 && state.shiftTimer <= 0 && !input.clutch;
   let engineTorque = 0, engineOverrun = 0;
   if (coupled && state.rpm < settings.redlineRpm + 150) {
-    engineTorque = torqueAt(settings.torqueCurve, state.rpm) * effectiveGas;
+    const launchAssist = 1 + ((settings.launchTorqueMultiplier ?? 1) - 1)
+      * (1 - smooth(3, 12, Math.abs(speedBefore)));
+    engineTorque = torqueAt(settings.torqueCurve, state.rpm) * effectiveGas * launchAssist;
     engineOverrun = settings.engineBraking * state.rpm / settings.redlineRpm * (1 - effectiveGas);
   }
   const driveTorque = engineTorque * ratio * settings.drivelineEff;

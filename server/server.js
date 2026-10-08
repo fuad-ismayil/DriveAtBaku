@@ -5,7 +5,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 const PORT = Number(process.env.PORT) || 8787;
 const PROTOCOL_VERSION = 1;
 const MAX_PLAYERS = 32;
-const SERVER_TICK_HZ = 20;
+const SERVER_TICK_HZ = 30;
 const TICK_INTERVAL_MS = Math.round(1000 / SERVER_TICK_HZ);
 const MAX_MSG_BYTES = 4096;
 const HEARTBEAT_INTERVAL_MS = 15000;
@@ -85,8 +85,9 @@ function sanitizeState(raw) {
     br: Number.isFinite(raw.in.br) ? Math.max(0, Math.min(1, raw.in.br)) : 0,
     st: Number.isFinite(raw.in.st) ? Math.max(-1, Math.min(1, raw.in.st)) : 0,
     hb: raw.in.hb ? 1 : 0,
+    hn: raw.in.hn ? 1 : 0,
     rev: raw.in.rev ? 1 : 0,
-  } : { th: 0, br: 0, st: 0, hb: 0, rev: 0 };
+  } : { th: 0, br: 0, st: 0, hb: 0, hn: 0, rev: 0 };
 
   const li = raw.li && typeof raw.li === 'object' ? {
     head: Number.isFinite(raw.li.head) ? raw.li.head : 0,
@@ -184,7 +185,9 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocketServer({ server });
 
 function safeSend(ws, payload) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
+  // Do not let a throttled tab turn into an unbounded send queue. A later
+  // snapshot supersedes every queued transform it would have received.
+  if (ws && ws.readyState === WebSocket.OPEN && ws.bufferedAmount < 128 * 1024) {
     try {
       ws.send(typeof payload === 'string' ? payload : JSON.stringify(payload));
     } catch {
@@ -329,7 +332,7 @@ wss.on('connection', (ws, req) => {
         stateRateCount = 0;
       }
       stateRateCount++;
-      if (stateRateCount > 30) {
+      if (stateRateCount > 45) {
         // Rate-limit exceeded: drop state packet
         return;
       }
@@ -380,7 +383,9 @@ wss.on('connection', (ws, req) => {
   ws.on('error', cleanup);
 });
 
-// Snapshot broadcast tick (20 Hz)
+// Snapshot broadcast tick. Serialize once and send the same immutable packet
+// to everyone; clients already ignore their own id. This avoids constructing
+// and encoding N nearly-identical snapshots for N connected players.
 const snapshotInterval = setInterval(() => {
   if (players.size === 0) return;
 
@@ -394,23 +399,8 @@ const snapshotInterval = setInterval(() => {
 
   if (Object.keys(states).length === 0) return;
 
-  for (const [id, player] of players) {
-    if (player.ws.readyState !== WebSocket.OPEN) continue;
-    // Build snapshot without player's own state
-    const remoteStates = {};
-    for (const [remoteId, st] of Object.entries(states)) {
-      if (remoteId !== id) {
-        remoteStates[remoteId] = st;
-      }
-    }
-    if (Object.keys(remoteStates).length > 0) {
-      safeSend(player.ws, {
-        t: 'snapshot',
-        ts: now,
-        states: remoteStates,
-      });
-    }
-  }
+  const serialized = JSON.stringify({ t: 'snapshot', ts: now, states });
+  for (const player of players.values()) safeSend(player.ws, serialized);
 }, TICK_INTERVAL_MS);
 
 // Heartbeat & liveness check (15s)

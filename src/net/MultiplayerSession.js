@@ -15,6 +15,7 @@ export class MultiplayerSession {
 
     this.client = new NetClient();
     this.remotes = new Map(); // id -> RemotePlayer
+    this.mapPlayers = [];
     this.ownId = null;
     this.ownColor = null;
     this.spawnIndex = 0;
@@ -159,7 +160,7 @@ export class MultiplayerSession {
           // Player joined before we received a joined message
           remote = this._createRemote({ id, nick: 'Player', state });
         }
-        remote.pushState(state);
+        remote.pushState(state, data.ts, this.client.timeOffset);
       }
     };
   }
@@ -173,6 +174,21 @@ export class MultiplayerSession {
     });
     this.remotes.set(info.id, remote);
     return remote;
+  }
+
+  getMapPlayers() {
+    let index = 0;
+    for (const remote of this.remotes.values()) {
+      const q = remote.currentQuaternion;
+      const forwardX = 2 * (q.x * q.y - q.z * q.w);
+      const forwardY = 1 - 2 * (q.x * q.x + q.z * q.z);
+      const marker = this.mapPlayers[index] || {};
+      marker.id = remote.id; marker.nick = remote.nick; marker.color = remote.color;
+      marker.position = remote.currentPosition; marker.heading = Math.atan2(-forwardX, forwardY);
+      this.mapPlayers[index++] = marker;
+    }
+    this.mapPlayers.length = index;
+    return this.mapPlayers;
   }
 
   _updatePlayerListUI() {
@@ -214,7 +230,9 @@ export class MultiplayerSession {
     // 1. Gather and send local state
     if (this.localVehicle?.getNetState && this.client.status === 'connected') {
       const rawState = this.localVehicle.getNetState();
-      const currentLightHash = `${rawState.li?.head}-${rawState.li?.brake}-${rawState.li?.rev}`;
+      // Horn is an edge-sensitive multiplayer sound, so it bypasses the
+      // stationary keep-alive interval just like brake and headlight changes.
+      const currentLightHash = `${rawState.li?.head}-${rawState.li?.brake}-${rawState.li?.rev}-${rawState.in?.hn}`;
       const lightsChanged = currentLightHash !== this.lastLightHash;
 
       // Rate limit send rate

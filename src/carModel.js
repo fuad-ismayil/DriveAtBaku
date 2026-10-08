@@ -3,9 +3,19 @@ import { installLicensePlates, setLicensePlateLighting } from './licensePlates.j
 
 export function setHeadlightBulbs(vehicle, mode) {
   setLicensePlateLighting(vehicle, mode > 0);
+  // Tail lamps have a distinct parking-light filament.  It is roughly a third
+  // of brake intensity, rather than the faint reflector-like glow used when
+  // every exterior lamp is off.
+  vehicle.userData.tailLightIntensity = mode > 0 ? 0.72 : 0.3;
+  for (const material of Array.isArray(vehicle.userData.brakeLights)
+    ? vehicle.userData.brakeLights : vehicle.userData.brakeLights ? [vehicle.userData.brakeLights] : []) {
+    material.emissiveIntensity = vehicle.userData.brakesApplied ? 3.6 : vehicle.userData.tailLightIntensity;
+  }
   for (const material of vehicle.userData.headlightMaterials ?? []) {
     const enabled = mode > 0 && (!material.userData.highBeamOnly || mode === 2);
-    material.emissiveIntensity = enabled ? (mode === 1 ? 3.2 : 5.2)
+    // Lens and reflector details should be visible; a lamp should not read as
+    // a flat, white projector disk in the daytime or at close range.
+    material.emissiveIntensity = enabled ? (mode === 1 ? 1.575 : 2.775)
       * (material.userData.headlightScale ?? 1) : 0;
   }
 }
@@ -156,9 +166,10 @@ export function animateCarModel(vehicle, state, dt) {
     wheel.spinPivot.rotation.x = physical.spinAngle * (wheel.spinDirection ?? 1);
   }
   const brakes = vehicle.userData.brakeLights;
+  vehicle.userData.brakesApplied = state.brakeForceInput > 0.1 || state.handbrake;
   for (const material of Array.isArray(brakes) ? brakes : brakes ? [brakes] : []) {
     material.emissiveIntensity = THREE.MathUtils.damp(
-      material.emissiveIntensity, state.brakeForceInput > 0.1 || state.handbrake ? 3.6 : 0.3, 16, dt,
+      material.emissiveIntensity, vehicle.userData.brakesApplied ? 3.6 : (vehicle.userData.tailLightIntensity ?? 0.3), 16, dt,
     );
   }
   const reverse = state.gear === 0;

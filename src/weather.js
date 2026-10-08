@@ -60,6 +60,7 @@ export function createWeather(scene, sky) {
     if ((!material.isMeshStandardMaterial && !material.isMeshPhysicalMaterial) || material.transparent || material.userData.weatherSurface) return false;
     material.userData.weatherSurface = true;
     const previous = material.onBeforeCompile, key = material.customProgramCacheKey();
+    const isRoadSurface = Boolean(material.userData.dryRoadSurface);
     material.onBeforeCompile = (shader, renderer) => {
       previous.call(material, shader, renderer);
       shader.uniforms.weatherWetness = wetness; shader.uniforms.weatherSnow = snowCover;
@@ -88,10 +89,12 @@ export function createWeather(scene, sky) {
           float weatherTop=smoothstep(.45,.92,dot(normal,mat3(viewMatrix)*vec3(0,0,1)));
           float weatherPatch=weatherNoise(vWeatherPosition.xy*.34);
           float wetSurface=weatherWetness*mix(.12,1.0,weatherTop);
-          float puddle=smoothstep(.56,.78,weatherPatch)*weatherTop*weatherWetness;
+          // Small, irregular pools are restricted to asphalt. They only gain
+          // the flat reflective water surface when wet roads or rain are on.
+          float puddle=${isRoadSurface ? 'smoothstep(.60,.78,weatherPatch*.56+weatherNoise(vWeatherPosition.xy*.78+vec2(13.7,4.1))*.44)*weatherTop*weatherWetness' : '0.0'};
           diffuseColor.rgb *= mix(1.0,.68,wetSurface);
-          roughnessFactor=mix(roughnessFactor,mix(.34,.14,puddle),wetSurface);
-          normal=normalize(mix(normal,normalize(mat3(viewMatrix)*vec3(0,0,1)),puddle*.5));
+          roughnessFactor=mix(roughnessFactor,mix(.30,.055,puddle),wetSurface);
+          normal=normalize(mix(normal,normalize(mat3(viewMatrix)*vec3(0,0,1)),puddle*.68));
           float settledSnow=0.0;
           if(weatherSnow>0.0) settledSnow=weatherSnow*weatherTop*mix(.78,1.0,weatherNoise(vWeatherPosition.xy*.9));
           diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.84,.88,.92),settledSnow);
@@ -108,7 +111,7 @@ export function createWeather(scene, sky) {
           reflectedLight.indirectSpecular *= roadSheen;
         `);
     };
-    material.customProgramCacheKey = () => `${key}:weather-surface-v2`;
+    material.customProgramCacheKey = () => `${key}:weather-surface-v3:${isRoadSurface ? 'road-puddles' : 'surface'}`;
     material.needsUpdate = true; return true;
   }
   function setMode(value) {

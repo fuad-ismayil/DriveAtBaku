@@ -1,8 +1,12 @@
 export const PROTOCOL_VERSION = 1;
-export const NET_SEND_HZ = 20;
+// A 30 Hz stream removes the visible 50 ms stepping at motorway speeds while
+// remaining comfortably below the relay's per-client state budget.
+export const NET_SEND_HZ = 30;
 export const NET_SEND_INTERVAL_MS = Math.round(1000 / NET_SEND_HZ);
-export const SERVER_TICK_HZ = 20;
-export const INTERP_DELAY_MS = 100;
+export const SERVER_TICK_HZ = 30;
+// Keep a short, stable history buffer.  The renderer interpolates from server
+// time, so this is latency smoothing rather than an extra source of jitter.
+export const INTERP_DELAY_MS = 120;
 export const REMOTE_CARS_COLLIDE = false;
 
 // 16 staggered grid spawn slots along the Baku starting straight
@@ -59,6 +63,7 @@ export function formatStatePayload(seq, ts, raw) {
       br: round(raw.in.br, 2),
       st: round(raw.in.st, 2),
       hb: raw.in.hb ? 1 : 0,
+      hn: raw.in.hn ? 1 : 0,
       rev: raw.in.rev ? 1 : 0,
     },
     li: {

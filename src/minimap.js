@@ -116,7 +116,30 @@ export function minimapView(position, heading, speedMps = 0, size = MAP_SIZE) {
   };
 }
 
-export function drawMinimap(canvas, map, route, position, heading, speedMps = 0) {
+function drawRemoteMarkers(context, view, players, radius, label = false) {
+  if (!players?.length) return;
+  for (const player of players) {
+    if (!player?.position) continue;
+    const [x, y] = view.project(player.position.x, player.position.y);
+    if (Math.hypot(x - view.center, y - view.center) > radius - 8) continue;
+    context.save();
+    context.translate(x, y);
+    context.rotate(player.heading ?? 0);
+    context.fillStyle = player.color || '#f4c56a';
+    context.strokeStyle = '#071722';
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.moveTo(0, -6); context.lineTo(-4.5, 5); context.lineTo(4.5, 5);
+    context.closePath(); context.fill(); context.stroke();
+    context.restore();
+    if (label) {
+      context.fillStyle = '#f5fbfc'; context.font = '700 11px sans-serif'; context.textAlign = 'center';
+      context.fillText(player.nick || 'PLAYER', x, y - 10);
+    }
+  }
+}
+
+export function drawMinimap(canvas, map, route, position, heading, speedMps = 0, players = []) {
   const context = canvas.getContext('2d');
   const pixelRatio = Math.min(globalThis.devicePixelRatio ?? 1, 2);
   const resolution = Math.round(MAP_SIZE * pixelRatio);
@@ -155,6 +178,8 @@ export function drawMinimap(canvas, map, route, position, heading, speedMps = 0)
     }
   }
 
+  drawRemoteMarkers(context, view, players, radius);
+
   context.save();
   context.translate(playerX, playerY);
   context.fillStyle = 'rgba(142, 231, 234, 0.12)';
@@ -182,4 +207,35 @@ export function drawMinimap(canvas, map, route, position, heading, speedMps = 0)
   context.restore();
   context.strokeStyle = 'rgba(172, 224, 229, 0.35)'; context.lineWidth = 1;
   context.beginPath(); context.arc(center, center, radius, 0, Math.PI * 2); context.stroke();
+}
+
+// The full map deliberately uses the cached map atlas rather than rebuilding
+// world geometry, so it remains responsive with a room full of drivers.
+export function drawFullMap(canvas, map, localPlayer, players = []) {
+  if (!canvas || !map) return;
+  const context = canvas.getContext('2d');
+  const cssWidth = canvas.clientWidth || 760, cssHeight = canvas.clientHeight || 560;
+  const pixelRatio = Math.min(globalThis.devicePixelRatio ?? 1, 2);
+  const width = Math.round(cssWidth * pixelRatio), height = Math.round(cssHeight * pixelRatio);
+  if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.clearRect(0, 0, cssWidth, cssHeight);
+  context.fillStyle = '#071923'; context.fillRect(0, 0, cssWidth, cssHeight);
+  const pad = 26, mapWidth = map.bounds.maxX - map.bounds.minX, mapHeight = map.bounds.maxY - map.bounds.minY;
+  const scale = Math.min((cssWidth - pad * 2) / mapWidth, (cssHeight - pad * 2) / mapHeight);
+  const drawWidth = mapWidth * scale, drawHeight = mapHeight * scale;
+  const originX = (cssWidth - drawWidth) / 2, originY = (cssHeight - drawHeight) / 2;
+  context.drawImage(map.canvas, originX, originY, drawWidth, drawHeight);
+  const project = point => [originX + (point.x - map.bounds.minX) * scale, originY + (map.bounds.maxY - point.y) * scale];
+  const all = [...players, { ...localPlayer, color: '#ffffff', nick: 'YOU' }];
+  for (const player of all) {
+    if (!player?.position) continue;
+    const [x, y] = project(player.position);
+    context.save(); context.translate(x, y); context.rotate(player.heading ?? 0);
+    context.fillStyle = player.color || '#f4c56a'; context.strokeStyle = '#071722'; context.lineWidth = 2;
+    context.beginPath(); context.moveTo(0, -8); context.lineTo(-5.5, 6); context.lineTo(5.5, 6); context.closePath(); context.fill(); context.stroke();
+    context.restore();
+    context.fillStyle = '#ffffff'; context.font = '700 11px sans-serif'; context.textAlign = 'center';
+    context.fillText(player.nick || 'PLAYER', x, y - 12);
+  }
 }

@@ -132,6 +132,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .pause-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin: .6rem 0 1.4rem; }
 .pause-actions button { min-height: 3rem; padding: .8rem 1rem; font-size: .65rem; }
 .pause-actions button[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: #74dbe626; }
+.full-map { position: fixed; z-index: 12; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 1rem; padding: clamp(1rem, 3vw, 2.4rem); background: rgba(3, 13, 20, .94); }
+.full-map.hidden { display: none; }
+.full-map-card { display: flex; align-items: end; justify-content: space-between; gap: 1rem; }
+.full-map-card h2 { margin: .18rem 0 0; font-size: clamp(2rem, 5vw, 4rem); }
+.full-map-card .secondary { min-width: 9rem; }
+#full-map-canvas { display: block; width: min(100%, 1200px); height: 100%; min-height: 300px; justify-self: center; border: 1px solid var(--edge); background: #071923; }
 .volume-control { display: grid; gap: .65rem; margin: 0 0 1.3rem; color: #b6cbd3; font-size: .65rem; font-weight: 700; letter-spacing: .13em; }
 .volume-control input { width: 100%; accent-color: var(--accent); }
 .graphics-control { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 0 1.3rem; color: #b6cbd3; font-size: .65rem; font-weight: 700; letter-spacing: .13em; }
@@ -421,4 +427,3 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   letter-spacing: 0.06em;
   pointer-events: auto;
 }
-
