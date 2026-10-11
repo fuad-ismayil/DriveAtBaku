@@ -1,0 +1,40 @@
+name: Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+      - run: npm ci
+      - run: npm ci --prefix server
+      - run: npm run verify
+      - run: npm run build
+      - name: Verify local relay traffic
+        shell: bash
+        run: |
+          PORT=8788 node server/server.js > relay.log 2>&1 &
+          relay_pid=$!
+          trap 'kill "$relay_pid"' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8788/health; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8788/health
+          SERVER_URL=ws://127.0.0.1:8788 CLIENTS=4 DURATION=3 npm run loadtest --prefix server

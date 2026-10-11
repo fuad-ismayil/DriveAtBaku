@@ -39,4 +39,34 @@ export class SpatialIndex {
     }
     return output;
   }
+
+  // Classify each hierarchy node once. An entirely inside node can append its
+  // descendants without repeating six plane tests for every static chunk.
+  // Intersecting leaves retain exactly Three's conservative AABB criterion.
+  queryFrustum(frustum, output) {
+    output.length = 0;
+    const stack = this.stack;
+    stack.length = 0;
+    if (this.root) stack.push(this.root);
+    while (stack.length) {
+      const node = stack.pop(), min = node.bounds.min, max = node.bounds.max;
+      let outside = false, inside = true;
+      for (const plane of frustum.planes) {
+        const n = plane.normal;
+        if (n.x * (n.x > 0 ? max.x : min.x) + n.y * (n.y > 0 ? max.y : min.y)
+          + n.z * (n.z > 0 ? max.z : min.z) + plane.constant < 0) { outside = true; break; }
+        if (n.x * (n.x > 0 ? min.x : max.x) + n.y * (n.y > 0 ? min.y : max.y)
+          + n.z * (n.z > 0 ? min.z : max.z) + plane.constant < 0) inside = false;
+      }
+      if (outside) continue;
+      if (inside) {
+        for (let i = node.start; i < node.end; i++) output.push(this.entries[i]);
+      } else if (node.left) stack.push(node.left, node.right);
+      else for (let i = node.start; i < node.end; i++) {
+        const entry = this.entries[i];
+        if (frustum.intersectsBox(entry.bounds)) output.push(entry);
+      }
+    }
+    return output;
+  }
 }

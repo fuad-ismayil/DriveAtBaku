@@ -1,16 +1,9 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const require = createRequire(import.meta.url);
-const bundledModules = process.env.PLAYWRIGHT_MODULES ?? `${process.env.USERPROFILE}/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules`;
-const { PNG } = require(`${bundledModules}/pngjs`);
-let playwright;
-try { playwright = require('playwright'); }
-catch {
-  playwright = require(`${bundledModules}/playwright`);
-}
+import { PNG } from 'pngjs';
+import playwright from 'playwright';
 const output = resolve('artifacts/weather');
 mkdirSync(output, { recursive: true });
 const browser = await playwright.chromium.launch({ channel: 'chrome', headless: true });

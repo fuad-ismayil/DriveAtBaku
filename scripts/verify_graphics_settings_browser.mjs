@@ -1,12 +1,8 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const require = createRequire(import.meta.url);
-let playwright;
-try { playwright = require('playwright'); }
-catch { playwright = require(`${process.env.PLAYWRIGHT_MODULES ?? `${process.env.USERPROFILE}/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules`}/playwright`); }
+import playwright from 'playwright';
 const url = process.env.GAME_URL ?? 'http://localhost:5173';
 const output = resolve(process.env.SETTINGS_REPORT ?? 'artifacts/distance-settings/browser');
 const openView = process.env.TEST_VIEW === 'open';

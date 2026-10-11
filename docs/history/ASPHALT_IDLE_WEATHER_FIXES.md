@@ -1,5 +1,7 @@
 # Asphalt shimmer, idle drivetrain and precipitation control
 
+> Historical engineering report. Settings, measurements and verification counts describe the recorded development stage. See [current rendering](../RENDERING.md) and [verification](../VERIFICATION.md) for the maintained implementation and commands. Referenced `artifacts/` evidence is generated locally and is not included in Git.
+
 Implemented and verified on 1 October 2026. This is a narrow correction to the existing graphics/vehicle package.
 
 ## Changes
@@ -26,16 +28,16 @@ Direct comparison with the source saved immediately before this correction:
 | Ferrari braking distance from 100 km/h | 41.687 m | 41.613 m |
 | Elantra braking distance from 100 km/h | 48.764 m | 48.617 m |
 
-The Elantra launch difference is three 120 Hz physics steps. Two-second ordinary forward/reverse coasting and moderate-braking comparisons starting at 15 m/s match exactly; partial-throttle differences are floating-point roundoff. Ferrari steering-position differences in the sampled moderate turn remain below 0.002 mm. Low-speed corrections account for the small full-stop differences. No general handling or acceleration retuning was applied. The local [comparison data](C:/Users/Fuad/Desktop/DriveAtBaku/artifacts/idle-drivetrain-comparison.json) contains the scenarios and before/after traces.
+The Elantra launch difference is three 120 Hz physics steps. Two-second ordinary forward/reverse coasting and moderate-braking comparisons starting at 15 m/s match exactly; partial-throttle differences are floating-point roundoff. Ferrari steering-position differences in the sampled moderate turn remain below 0.002 mm. Low-speed corrections account for the small full-stop differences. No general handling or acceleration retuning was applied. The local comparison data: `artifacts/idle-drivetrain-comparison.json` (local only) contains the scenarios and before/after traces.
 
 ## Live browser verification
 
 The actual WebGL renderer reports **NVIDIA GeForce RTX 3050 Laptop GPU through ANGLE Direct3D11**. Tests used Cinematic, 150% render scale, daytime Sunny and AO enabled at a 1543 × 884 viewport.
 
-- Quick left/right native mouse movement was recorded before and after the asphalt correction. After-recording frames were decoded and visually inspected: road grain is subdued instead of showing the previous bright specks. The retained [before clip](C:/Users/Fuad/Desktop/DriveAtBaku/artifacts/shimmer-before.webm) and [after clip](C:/Users/Fuad/Desktop/DriveAtBaku/artifacts/shimmer-after.webm) are illustrative motion checks, with different motion paths/durations, rather than a performance benchmark.
+- Quick left/right native mouse movement was recorded before and after the asphalt correction. After-recording frames were decoded and visually inspected: road grain is subdued instead of showing the previous bright specks. The retained before clip: `artifacts/shimmer-before.webm` (local only) and after clip: `artifacts/shimmer-after.webm` (local only) are illustrative motion checks, with different motion paths/durations, rather than a performance benchmark.
 - On the actual circuit, both cars in manual Reverse and first gear at zero throttle show **0 rad/s on all four wheels**, including the corresponding Elantra visual pivots. After returning to spawn, wheel spin angles remain zero. Existing terrain settling produces only about 0.00006 km/h of numerical body drift, below 0.1 mm over each five-second sample. Flat-ground 60-second fixtures remain exactly stationary.
 - The Elantra audio context is running with bank gain 1.6 and engine bus approximately 2.052, compared with approximately 1.667 before this correction. This verifies the gain change; subjective listening is not an automated check.
-- Snow at 50% draws 600 flakes in Cinematic. Snow at 0% hides falling particles while preserving snow cover 0.9 and wetness 0.25; 200% draws 2400 flakes. Rain at 50% draws 280/520/800 droplets in Performance/Balanced/Cinematic while preserving wetness 1 and snow cover 0. The 50% choice survives a page reload. All amounts reuse the same allocated buffers. See [live precipitation data](C:/Users/Fuad/Desktop/DriveAtBaku/artifacts/precipitation-live-verification.json).
+- Snow at 50% draws 600 flakes in Cinematic. Snow at 0% hides falling particles while preserving snow cover 0.9 and wetness 0.25; 200% draws 2400 flakes. Rain at 50% draws 280/520/800 droplets in Performance/Balanced/Cinematic while preserving wetness 1 and snow cover 0. The 50% choice survives a page reload. All amounts reuse the same allocated buffers. See live precipitation data: `artifacts/precipitation-live-verification.json` (local only).
 - WebGL error checks return 0. Temporary inspection hooks are removed before returning the preview to normal play. The development preview was restarted to clear stale source-module caching before final verification.
 
 These are targeted visual and behavior checks; no sustained FPS claim is made by this correction. Screenshots and videos are local verification artifacts excluded from Git.

@@ -187,7 +187,11 @@
                 <select id="graphics-quality"><option value="performance">Performance</option><option value="balanced" selected>Balanced</option><option value="cinematic">Cinematic</option></select>
               </div>
               <div class="setting-row">
-                <label for="render-scale" class="setting-copy">Render resolution<small>Extra clarity uses more GPU power</small></label>
+                <label for="rendering-resolution" class="setting-copy">Rendering Resolution<small>Fits the view without changing the window</small></label>
+                <select id="rendering-resolution"><option value="native">Native</option><option value="1920x1080">1920×1080</option><option value="1600x900">1600×900</option><option value="1280x720">1280×720</option></select>
+              </div>
+              <div class="setting-row">
+                <label for="render-scale" class="setting-copy">Native render scale<small>Extra clarity uses more GPU power</small></label>
                 <select id="render-scale"><option value="1">Native</option><option value="1.25">125%</option><option value="1.5">150%</option></select>
               </div>
               <div class="setting-slider">
@@ -244,7 +248,7 @@
       </section>
       <div id="hud" class="hidden">
         <div class="event-chip"><span class="event-signal" aria-hidden="true"></span><div><small>FREE ROAM <i>●</i> LIVE</small><strong>BAKU CITY CIRCUIT</strong></div></div>
-        <div class="map-panel"><div class="map-heading"><span>CIRCUIT MAP</span><span>HEADING UP ↗</span></div><canvas id="minimap" width="256" height="256" aria-label="Heading-up map showing the actual circuit, surrounding roads and your car, with a 100 metre scale"></canvas><div class="map-footer"><span>BAKU / AZE</span><span>6.003 KM</span></div></div>
+        <div class="map-panel"><div class="map-heading"><span>CITY MAP</span><span>HEADING UP ↗</span></div><canvas id="minimap" width="256" height="256" aria-label="Heading-up city map showing streets and your car, with a 100 metre scale"></canvas><div class="map-footer"><span>BAKU / AZE</span><span>FREE ROAM</span></div></div>
         <div class="telemetry-panel"><div class="speed"><strong id="speed">0</strong><span>KM/H</span><em id="gear">N</em></div><div class="engine-readout"><small>ENGINE</small><strong><span id="rpm">900</span> <em>RPM</em></strong><span id="transmission">AUTO</span><span id="headlight-mode">LIGHTS OFF</span></div></div>
         <div class="dynamics-panel"><small>CHASSIS / ASSISTS</small><div class="suspension-bars"><i id="susp-0"></i><i id="susp-1"></i><i id="susp-2"></i><i id="susp-3"></i></div><div class="aid-buttons"><button id="aid-abs" type="button">ABS</button><button id="aid-tcs" type="button">TCS</button><button id="aid-esc" type="button">ESC</button></div></div>
       </div>

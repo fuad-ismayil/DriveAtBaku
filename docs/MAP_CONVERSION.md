@@ -8,6 +8,27 @@ The source is meter-scale, Z-up, and approximately 2.8 × 2.1 km across for coll
 
 ## Conversion
 
+A normal clone already contains the packed runtime assets. Regeneration requires
+the separately obtained original source at `levels/baku`, Python 3.10+ and the
+conversion packages:
+
+```sh
+python -m pip install trimesh pycollada Pillow numpy
+npm run convert-map
+npm run pack-assets
+```
+
+`pack-assets` verifies gzip round-tripping and writes parts below GitHub's
+single-file limit. Its `--clean` option removes unpacked GLBs and intermediate
+textures after packing; the npm script includes this option. Keep the manifest,
+compressed parts, collision GLB and route JSON together in Git.
+Route JSON uses LF line endings on every platform so its manifest byte count
+matches fresh checkouts as well as local conversions.
+
+The Elantra bundle can be rebuilt separately from an original showroom export:
+`npm run extract-elantra -- /path/to/elantra.html`. This reads the supplied file
+without modifying it; the showroom source is not included in the repository.
+
 `scripts/convert_map.py` reads the source without modifying it. It:
 
 1. Converts the principal circuit and buildings from Collada to GLB.
@@ -18,9 +39,9 @@ The source is meter-scale, Z-up, and approximately 2.8 × 2.1 km across for coll
 
 ## Preserved and pending
 
-Preserved now: circuit geometry, buildings, UV layout, most diffuse textures, source scale and orientation, collision geometry, spawn, and checkpoint order.
+The conversion preserves circuit geometry, buildings, UV layout, most diffuse textures, source scale and orientation, collision geometry, spawn, and checkpoint order. The playable city loader then excludes the independently audited Formula 1 primitives without editing these original converted assets. See [the city map audit](CITY_MAP.md) for the removals, neutral curb finish and verification.
 
-Trackside fences and barriers use their visible geometry to supplement the supplied collision mesh at runtime. The boundary families include `FENCE`, `BARRIER`, `PITWALL`, `ARMCO`, `TWALL`, `CMWL`/`CMWLA`, and concrete bollards. These static meshes get accelerated triangle queries without changing the visual index order or requiring a map reconversion. Wheel/road queries still use the original collision mesh.
+In the original event map, trackside fences and barriers supplement the supplied collision mesh. The city loader removes audited race boundaries, raised racing strips and both invisible event enclosures before colliders are registered. Ordinary road collision remains exact, and gaps exposed by race-strip deletion receive independent continuous asphalt support. Visible city facades provide spatially indexed wall collision; tree trunks use finite cylinders. See [the second cleanup report](CITY_CLEANUP.md). The existing boundary-collision implementation also remains available for original-asset regression checks.
 
 Vehicle-body contact uses a swept, oriented box sized for the selected car. The continuous translation check prevents tunnelling through thin barriers, and bounded rotational sweeps protect the corners. Impacts remove velocity into the wall while retaining movement along it; sloping rail faces do not lift the car over the barrier. Actual openings remain open, and low curbs stay with the suspension/road system. This is an approximation of the vehicle body, not a deformation or damage simulation.
 

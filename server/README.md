@@ -1,106 +1,73 @@
-# DriveAtBaku Multiplayer Server
+# Multiplayer relay
 
-Lightweight real-time relay server for DriveAtBaku using native Node.js and the `ws` WebSocket library.
+A Node.js HTTP/WebSocket relay using `ws`. Static Netlify/Vercel deployments serve the client; run this service separately for multiplayer. See [the architecture guide](../docs/MULTIPLAYER.md) for replication and limits.
 
-## Quick Start (Local Server)
+## Run locally
 
-```bash
-cd server
-npm install
-npm start
+From the repository root:
+
+```sh
+npm ci --prefix server
+npm start --prefix server
 ```
 
-Default port is `8787`. You can verify that the server is alive by opening:
-`http://localhost:8787/health`
-Response: `{"ok":true,"players":0,"uptime":...}`
+The default port is **8787**. Open `http://localhost:8787/health` for JSON containing `ok`, player count and uptime. With the client development server running, open `http://localhost:5173/?server=ws://localhost:8787` and choose Multiplayer.
 
-To test connecting locally in the browser:
-Open `http://localhost:5173/?server=ws://localhost:8787` (when running `npm run dev` on the client).
+| Variable | Purpose |
+| --- | --- |
+| `PORT` | Listening port; default 8787 |
+| `ALLOWED_ORIGINS` | Additional comma-separated origins or hostnames |
 
----
+The game domains, localhost/127.0.0.1 and `*.trycloudflare.com` are allowed by the existing origin policy. Clients without an Origin header are accepted. `ALLOWED_ORIGINS` extends this policy; it does not replace the built-in allowances or provide authentication.
 
-## Exposing to the Internet via Cloudflare Tunnel
+The relay allows 32 players, broadcasts at 30 Hz, limits messages to 4096 bytes, rate-limits clients and sends heartbeat pings every 15 seconds. These limits are defined in `server.js`.
 
-Since the game site is deployed over HTTPS (`https://driveatbaku.netlify.app` / `https://driveatbaku.vercel.app`), the browser requires secure WebSockets (`wss://`). Browsers will block unencrypted `ws://` on an HTTPS page.
+## Public connections
 
-Cloudflare Tunnel provides free HTTPS/WSS tunneling without port forwarding or a public static IP.
+An HTTPS game page needs **secure WebSockets (`wss://`)**. Terminate TLS at a reverse proxy or tunnel forwarding to the local relay. The default client configuration is `public/multiplayer-config.json`; query parameters and saved settings take precedence.
 
-### Option A: Quick Tunnel (Ephemeral URL, no Cloudflare account needed)
+For a temporary Cloudflare tunnel, install `cloudflared` separately and run:
 
-Run in a separate terminal:
-```bash
+```sh
 cloudflared tunnel --url http://localhost:8787
 ```
 
-`cloudflared` will print a URL like:
-```text
-https://random-words-1234.trycloudflare.com
-```
+Use the generated HTTPS hostname with the `wss://` scheme. Quick-tunnel addresses change on restart. For a stable domain, create a named tunnel:
 
-Change `https://` to `wss://`:
-```text
-wss://random-words-1234.trycloudflare.com
-```
-
-Share this URL or open the game once with:
-```text
-https://driveatbaku.netlify.app/?server=wss://random-words-1234.trycloudflare.com
-```
-The game will automatically save this server address in `localStorage` for future visits.
-
-### Option B: Named Tunnel (Stable Custom Domain)
-
-With your own domain on Cloudflare:
-```bash
-# 1. Login to Cloudflare
+```sh
 cloudflared tunnel login
-
-# 2. Create named tunnel
 cloudflared tunnel create driveatbaku
-
-# 3. Create config.yml
-# tunnel: <tunnel-uuid-or-name>
-# credentials-file: /path/to/<uuid>.json
-# ingress:
-#   - hostname: dab-mp.yourdomain.com
-#     service: http://localhost:8787
-#   - service: http_status:404
-
-# 4. Route DNS to your tunnel
-cloudflared tunnel route dns driveatbaku dab-mp.yourdomain.com
-
-# 5. Run tunnel
-cloudflared tunnel run driveatbaku
+cloudflared tunnel route dns driveatbaku relay.example.com
 ```
 
-Set `dab-mp.yourdomain.com` in `public/multiplayer-config.json`:
-```json
-{
-  "serverUrl": "wss://dab-mp.yourdomain.com"
-}
-```
-All users opening the game will connect to your stable server automatically without query parameters!
+Configure your local Cloudflare tunnel file using the returned tunnel ID and credentials path:
 
----
-
-## Load Testing
-
-To test server stability and snapshot throughput under load:
-
-```bash
-cd server
-npm run loadtest
-```
-or customize:
-```bash
-CLIENTS=20 DURATION=15 npm run loadtest
+```yaml
+tunnel: <tunnel-id>
+credentials-file: /path/to/credentials.json
+ingress:
+  - hostname: relay.example.com
+    service: http://localhost:8787
+  - service: http_status:404
 ```
 
----
+Then run `cloudflared tunnel run driveatbaku`. Add the game host to `ALLOWED_ORIGINS` when using a different client domain. Tunnel credentials and machine-specific configuration stay outside Git.
 
-## Protocol Overview
+## Load test
 
-- **Port**: Single port (8787) handles both HTTP (`/health`) and WebSocket upgrades.
-- **Tick rate**: 20 Hz snapshot broadcasts to all players (configurable `SERVER_TICK_HZ = 20`).
-- **Heartbeat**: Ping/pong every 15s to keep Cloudflare tunnels alive (avoiding the 100s idle timeout).
-- **Security & Limits**: Max 32 players, rate limiting, origin verification, and message size limits.
+Start a local relay first, then use a second terminal:
+
+```sh
+npm run loadtest --prefix server
+```
+
+The defaults are 10 clients for 10 seconds against `ws://localhost:8787`, sending synthetic states at 20 Hz. In PowerShell:
+
+```powershell
+$env:SERVER_URL = 'ws://localhost:8787'
+$env:CLIENTS = '20'
+$env:DURATION = '15'
+npm run loadtest --prefix server
+```
+
+In POSIX shells, use `SERVER_URL=ws://localhost:8787 CLIENTS=20 DURATION=15 npm run loadtest --prefix server`. Successful runs report nonzero sent states/received snapshots and zero errors; connection errors or missing traffic cause a nonzero exit status.

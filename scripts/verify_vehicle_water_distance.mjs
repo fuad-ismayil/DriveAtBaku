@@ -1,13 +1,9 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const require = createRequire(import.meta.url);
-const modules = process.env.PLAYWRIGHT_MODULES ?? `${process.env.USERPROFILE}/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules`;
-let playwright;
-try { playwright = require('playwright'); } catch { playwright = require(`${modules}/playwright`); }
-const { PNG } = require(`${modules}/pngjs`);
+import playwright from 'playwright';
+import { PNG } from 'pngjs';
 const baseline = process.env.WATER_BASELINE === '1';
 const output = resolve(`artifacts/vehicle-water-distance/${baseline ? 'before' : 'after'}`);
 mkdirSync(output, { recursive: true });

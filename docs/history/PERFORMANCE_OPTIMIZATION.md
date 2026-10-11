@@ -1,5 +1,7 @@
 # Performance Optimization
 
+> Historical engineering report. Settings, measurements and verification counts describe the recorded development stage. See [current rendering](../RENDERING.md) and [verification](../VERIFICATION.md) for the maintained implementation and commands. Referenced `artifacts/` evidence is generated locally and is not included in Git.
+
 The optimization preserves the existing graphics presets, render resolution,
 texture filtering, lighting, 4096-pixel cinematic shadows, draw distance, bloom,
 ambient occlusion, MSAA/SMAA, weather, vehicle models, physics and controls.

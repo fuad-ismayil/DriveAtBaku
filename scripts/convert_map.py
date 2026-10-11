@@ -2,7 +2,7 @@
 
 The source under levels/ is read-only. Generated assets go to public/generated/;
 conversion reports go to the ignored artifacts/map-conversion/ directory.
-Requires trimesh, pycollada, Pillow and numpy (available in the Codex runtime).
+Requires trimesh, pycollada, Pillow and numpy; see docs/MAP_CONVERSION.md.
 """
 from __future__ import annotations
 
@@ -171,7 +171,7 @@ def write_route() -> None:
         ),
         "checkpoints": [node["pos"] for node in race["pathnodes"]],
     }
-    (OUTPUT / "route.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
+    (OUTPUT / "route.json").write_text(json.dumps(data, indent=2), encoding="utf-8", newline="\n")
 
 
 def main() -> None:

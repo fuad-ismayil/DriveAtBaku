@@ -1,6 +1,8 @@
-# DriveAtBAku: practical graphics realism roadmap
+# DriveAtBaku: practical graphics realism roadmap
 
-Research date: 1 October 2026. Target: a powerful gaming PC, with visual quality prioritized. The audit below records the research baseline and installed Three.js 0.180.0. Three implementation packages are now in the working tree; their status and limits are recorded here. Earlier lighting work is described separately in [GRAPHICS_RESEARCH.md](C:/Users/Fuad/Desktop/DriveAtBaku/docs/GRAPHICS_RESEARCH.md).
+> Historical engineering report. Settings, measurements and verification counts describe the recorded development stage. See [current rendering](../RENDERING.md) and [verification](../VERIFICATION.md) for the maintained implementation and commands. Referenced `artifacts/` evidence is generated locally and is not included in Git.
+
+Research date: 1 October 2026. Target: a powerful gaming PC, with visual quality prioritized. The audit below records the research baseline and installed Three.js 0.180.0. Three implementation packages are now in the working tree; their status and limits are recorded here. Earlier lighting work is described separately in [GRAPHICS_RESEARCH.md](GRAPHICS_RESEARCH.md).
 
 ## First implementation package
 
@@ -37,7 +39,7 @@ Build and all **nine** suites pass, including the new realism checks. Live RTX 3
 
 `npm run verify-world-graphics` checks the packed map, preserving all **2,385,404 triangles**, their authored normals, UVs, winding and world transforms in both cell-size paths. The multi-draw path contains **10,480 culling chunks in 633 render objects**, including 321 material batches; the regular-mesh fallback contains 3,538 chunks. The fixture identifies 127 opaque materials eligible for backface culling, and 115 nearby shadow chunks at spawn. Synthetic checks cover actual openings, near-plane/edge cases, mirrored/back-facing facades, camera turns, independent shadow/reflection visibility, and collision with hidden render geometry. Reflection tests cover partial-capture isolation, six-frame publication, caching, teleport/night invalidation, garage fallback, quality changes and renderer-state cleanup.
 
-Across 14 sampled route views, the original mesh-frustum estimate was approximately **1.29–2.25 million triangles**; the new conservative main-view candidate estimate is approximately **0.31–1.95 million**. Occlusion rejected up to 2,025 chunks in a sampled view. This is a CPU geometry comparison, not an FPS claim. Timing results in the local [verification report](C:/Users/Fuad/Desktop/DriveAtBaku/artifacts/world-graphics-verification.json) include startup/JIT/GC effects and are not a target-PC benchmark.
+Across 14 sampled route views, the original mesh-frustum estimate was approximately **1.29–2.25 million triangles**; the new conservative main-view candidate estimate is approximately **0.31–1.95 million**. Occlusion rejected up to 2,025 chunks in a sampled view. This is a CPU geometry comparison, not an FPS claim. Timing results in the local verification report: `artifacts/world-graphics-verification.json` (local only) include startup/JIT/GC effects and are not a target-PC benchmark.
 
 Production build and all eight verification suites pass. **Browser verification succeeded on retry on 1 October 2026:** both cars were inspected by day and night at all 14 authored route checkpoints. All 56 fixed-view occlusion-on/off comparisons were pixel-identical outside the changing diagnostics and toast areas. Runtime inspection confirmed local reflections, the actual 4096-pixel Cinematic shadow target, and stable renderer resource counts across three quality cycles. No rendering errors appeared; Balanced retains the previously observed FXAA compiler warnings. See [the browser verification report](GRAPHICS_BROWSER_VERIFICATION.md) for screenshots, methodology, and timing evidence. The screenshots later in this roadmap still show the research baseline.
 
@@ -74,11 +76,11 @@ The audit includes the renderer, car materials, sky, map converter, packed GLB m
 
 Baseline day view:
 
-![Current day graphics at the starting straight](C:/Users/Fuad/Desktop/DriveAtBaku/artifacts/research-current-day.png)
+Current day graphics at the starting straight: `artifacts/research-current-day.png` (local only)
 
 Baseline night view with low beams:
 
-![Current night graphics with low beams](C:/Users/Fuad/Desktop/DriveAtBaku/artifacts/research-current-night.png)
+Current night graphics with low beams: `artifacts/research-current-night.png` (local only)
 
 ## Required optimization track
 
@@ -164,7 +166,7 @@ First replace the blanket size exclusion with spatial chunks or simplified shado
 
 Next evaluate three cascades over approximately 250–350 m, initially at 2048 pixels per cascade. Keep the nearest cascade detailed and fade transitions. The project's 6000 m camera range serves the skyline and should not dictate detailed shadow coverage. Three.js CSM requires material setup and an update each frame. Preserve existing car shader customizations when integrating it. [CSM documentation](https://threejs.org/docs/pages/CSM.html)
 
-Two relevant r180 details: `shadow.radius` has no effect with the current `PCFSoftShadowMap`; and the documented shadow-map sizes are powers of two, unlike the existing 1536/3072 presets. Use supported sizes and tune coverage/bias against actual fence and tire silhouettes. [Installed LightShadow source](C:/Users/Fuad/Desktop/DriveAtBaku/node_modules/three/src/lights/LightShadow.js:67)
+Two relevant r180 details: `shadow.radius` has no effect with the current `PCFSoftShadowMap`; and the documented shadow-map sizes are powers of two, unlike the existing 1536/3072 presets. Use supported sizes and tune coverage/bias against actual fence and tire silhouettes. Installed LightShadow source (installed dependency: `three/src/lights/LightShadow.js:67`)
 
 Then prototype modest GTAO for tire contact, wall bases, and architectural creases. Start at half width and height, with a small world-space radius, and inspect denoising while moving. GTAO offers higher quality than the built-in SSAO pass at greater cost. [GTAOPass](https://threejs.org/docs/pages/GTAOPass.html)
 

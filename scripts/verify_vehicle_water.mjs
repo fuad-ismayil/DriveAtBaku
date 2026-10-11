@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as THREE from 'three';
@@ -76,11 +75,8 @@ console.log('Vehicle water: accumulation, drying, paint/glass preservation, spee
 
 // Compile and render the actual four car assets. The existing fitting viewer
 // supplies the loader/lighting; interception changes only this verification tab.
-const require = createRequire(import.meta.url);
-const modules = process.env.PLAYWRIGHT_MODULES ?? `${process.env.USERPROFILE}/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules`;
-let playwright;
-try { playwright = require('playwright'); } catch { playwright = require(`${modules}/playwright`); }
-const { PNG } = require(`${modules}/pngjs`);
+import playwright from 'playwright';
+import { PNG } from 'pngjs';
 const output = resolve('artifacts/vehicle-water'); mkdirSync(output, { recursive: true });
 const browser = await playwright.chromium.launch({ channel: 'chrome', headless: true });
 const errors = [], reports = [];

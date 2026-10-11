@@ -1,6 +1,6 @@
 """Extract the user-supplied showroom mesh bundle for the local game.
 
-Usage: python scripts/extract_elantra.py "C:/path/to/elantra.html"
+Usage: python scripts/extract_elantra.py /path/to/elantra.html
 The HTML is only read; its embedded gzip payload is copied without alteration.
 """
 
@@ -11,7 +11,9 @@ import sys
 from pathlib import Path
 
 
-source = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / "Desktop/car showcase/elantra.html"
+if len(sys.argv) != 2:
+    raise SystemExit("Usage: python scripts/extract_elantra.py /path/to/elantra.html")
+source = Path(sys.argv[1])
 output = Path(__file__).resolve().parents[1] / "public/assets/vehicles/elantra-showroom.bin"
 
 with source.open(encoding="utf-8") as showroom:

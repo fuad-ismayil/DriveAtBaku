@@ -87,5 +87,5 @@ setTimeout(() => {
   console.log(`Snapshots received: ${snapshotsReceived} (${(snapshotsReceived / elapsed).toFixed(1)}/s)`);
   console.log(`Errors: ${errors}`);
   for (const client of clients) client.close();
-  process.exit(0);
+  process.exit(errors > 0 || statesSent === 0 || snapshotsReceived === 0 ? 1 : 0);
 }, DURATION_SEC * 1000);

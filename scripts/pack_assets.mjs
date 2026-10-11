@@ -26,6 +26,10 @@ for (const name of ['baku', 'buildings']) {
 }
 
 // File sizes let startup report actual aggregate download progress before fetching.
+// Git stores route JSON with LF endings. Measure the same bytes on every platform.
+const routeFile = join(output, 'route.json');
+const routeText = readFileSync(routeFile, 'utf8');
+if (routeText.includes('\r\n')) writeFileSync(routeFile, routeText.replaceAll('\r\n', '\n'));
 const files = {};
 for (const relative of ['generated/route.json', 'generated/collision.glb', ...readdirSync(join(root, 'public', 'assets', 'vehicles')).filter(name => /\.(glb|bin)$/.test(name)).map(name => `assets/vehicles/${name}`)]) {
   files[`/${relative}`] = statSync(join(root, 'public', relative)).size;

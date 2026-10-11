@@ -1,8 +1,10 @@
 # Graphics research and implemented direction
 
+> Historical engineering report. Settings, measurements and verification counts describe the recorded development stage. See [current rendering](../RENDERING.md) and [verification](../VERIFICATION.md) for the maintained implementation and commands. Referenced `artifacts/` evidence is generated locally and is not included in Git.
+
 Research date: 1 October 2026. Implementation targets the project's installed Three.js r180 API.
 
-This note records the earlier sky/lighting package and its browser validation. Current quality settings, culling, surface detail, local reflections, and their validation limits are documented in the [graphics roadmap](C:/Users/Fuad/Desktop/DriveAtBaku/docs/GRAPHICS_REALISM_ROADMAP.md). Browser results below apply to the earlier package.
+This note records the earlier sky/lighting package and its browser validation. Current quality settings, culling, surface detail, local reflections, and their validation limits are documented in the [graphics roadmap](GRAPHICS_REALISM_ROADMAP.md). Browser results below apply to the earlier package.
 
 ## Findings
 

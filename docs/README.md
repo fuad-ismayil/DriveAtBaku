@@ -1,0 +1,25 @@
+# Documentation
+
+Start with the [root README](../README.md) to run the game and [contributing guide](../CONTRIBUTING.md) for the development workflow.
+
+| Guide | Contents |
+| --- | --- |
+| [Rendering](RENDERING.md) | Current presets, resolution, post-processing, visibility, shadows and reflections |
+| [Verification](VERIFICATION.md) | Repeatable automated checks, browser prerequisites and profiling |
+| [Multiplayer](MULTIPLAYER.md) | State replication, interpolation and known limits |
+| [Relay setup](../server/README.md) | Local server, configuration, tunnels and load testing |
+| [Map conversion](MAP_CONVERSION.md) | Optional source conversion, packing and collision pipeline |
+| [City map audit](CITY_MAP.md) | Audited event geometry exclusions and preservation checks |
+| [City collisions](CITY_CLEANUP.md) | Event-enclosure removal, visible facades and tree trunks |
+| [Ground surfaces](GROUND_SURFACES.md) | Asphalt, street markings, curb seams and terrain contact |
+| [Graphics settings](GRAPHICS_SETTINGS_UPDATE.md) | Independent distance controls, UI and browser checks |
+| [Foliage lighting](FOLIAGE_LIGHTING.md) | Authored canopy normals and leaf material treatment |
+| [License plates](AZERBAIJANI_LICENSE_PLATES.md) | Plate geometry, per-car mounting and garage controls |
+| [Loading](LOADING_EXPERIENCE.md) | Streaming progress, preparation, errors and retry |
+| [Asset credits](ASSET_CREDITS.md) | Provenance, individual licenses and unresolved asset terms |
+
+## Historical reports
+
+[history/](history/README.md) preserves earlier rendering research, model-fitting decisions and measured investigations. These reports describe particular development stages and hardware, rather than the current defaults or universal performance guarantees. Screenshots, raw measurements and comparison baselines referenced there are local files under ignored `artifacts/`; they are not published evidence in this repository.
+
+The gameplay preview in `images/` is the selected public screenshot. Runtime collision audits in `src/` are executable data used to validate the supplied map, rather than temporary reports.

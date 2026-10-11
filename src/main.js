@@ -19,7 +19,6 @@ import { createGraphics, createSkyEnvironments } from './graphics.js';
 import { accelerationPullback, chaseCameraOffset } from './cameraTuning.js';
 import { DriveCameraControls } from './driveCameraControls.js';
 import { BarrierCollision } from './barrierCollision.js';
-import { GroundSampler } from './groundSampler.js';
 import { createShadowCache } from './shadowCache.js';
 import { isTrackBoundary, createShadowCandidate, updateShadowCandidates } from './trackBoundaries.js';
 import { partitionMesh, canCullBackfaces, WorldOptimization, freezeStaticWorld } from './worldOptimization.js';
@@ -32,6 +31,8 @@ import { applyFoliageLighting } from './foliageLighting.js';
 import { createTireEffects } from './tireEffects.js';
 import { loadingScreen } from './loadingScreen.js';
 import { fetchAssetBytes } from './assetTransfer.js';
+import { createCityMapPlugin } from './cityMap.js';
+import { buildCityCollisions } from './cityCollisions.js';
 import './style.css';
 
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
@@ -152,6 +153,7 @@ const availableVehicles = new Set(['ferrari']);
 const carCache = new Map();
 const shadowCandidates = [];
 const barrierCollision = new BarrierCollision();
+let cityCollisions;
 const nightMaterials = [];
 let selectingVehicle = false;
 const cameraLook = new THREE.Vector3();
@@ -218,6 +220,7 @@ weather.setQuality(graphics.quality);
 const weatherSelectors = [document.getElementById('menu-weather'), document.getElementById('pause-weather')];
 const aoControl = document.getElementById('ambient-occlusion');
 const scaleControl = document.getElementById('render-scale');
+const resolutionControl = document.getElementById('rendering-resolution');
 const precipitationControl = document.getElementById('precipitation-intensity');
 const precipitationAmount = document.getElementById('precipitation-amount');
 const distanceControls = { renderDistance: document.getElementById('render-distance'), propsDistance: document.getElementById('props-distance') };
@@ -247,6 +250,7 @@ try {
   weather.setIntensity(localStorage.getItem('baku-precipitation-intensity') ?? 1);
   aoControl.checked = localStorage.getItem('baku-ambient-occlusion') !== 'false';
   scaleControl.value = String(graphics.setRenderScale(localStorage.getItem('baku-render-scale') ?? 1));
+  resolutionControl.value = graphics.setRenderingResolution(localStorage.getItem('baku-rendering-resolution') ?? 'native');
 } catch { /* storage is optional */ }
 precipitationControl.value = String(weather.intensity * 100);
 precipitationAmount.value = `${Math.round(weather.intensity * 100)}%`;
@@ -284,6 +288,13 @@ aoControl.onchange = () => {
 scaleControl.onchange = () => {
   scaleControl.value = String(graphics.setRenderScale(scaleControl.value));
   try { localStorage.setItem('baku-render-scale', scaleControl.value); } catch { /* storage is optional */ }
+};
+function updateResolutionControl() { scaleControl.disabled = resolutionControl.value !== 'native'; }
+updateResolutionControl();
+resolutionControl.onchange = () => {
+  resolutionControl.value = graphics.setRenderingResolution(resolutionControl.value);
+  updateResolutionControl();
+  try { localStorage.setItem('baku-rendering-resolution', resolutionControl.value); } catch { /* storage is optional */ }
 };
 const graphicsDiagnostics = createGraphicsDiagnostics(renderer, worldOptimization, localReflections, graphics, graphicsOptions.has('graphicsDebug'));
 graphicsQuality.onchange = () => {
@@ -438,7 +449,12 @@ async function loadGLB(url, onProgress) {
     buffer = await new Response(stream).arrayBuffer();
     if (buffer.byteLength !== packed.originalBytes) throw new Error(`Map asset ${name} was incomplete.`);
   }
-  return loader.parseAsync(buffer, url.slice(0, url.lastIndexOf('/') + 1));
+  const mapAsset = /^\/generated\/(baku|buildings|collision)\.glb$/.exec(url)?.[1];
+  const assetLoader = mapAsset
+    ? new GLTFLoader(loader.manager).setMeshoptDecoder(MeshoptDecoder).setDRACOLoader(draco)
+      .register(parser => createCityMapPlugin(parser, mapAsset))
+    : loader;
+  return assetLoader.parseAsync(buffer, url.slice(0, url.lastIndexOf('/') + 1));
 }
 
 async function tuneMap(root) {
@@ -526,11 +542,10 @@ async function boot() {
     route = JSON.parse(new TextDecoder().decode(routeBytes));
     loadingScreen.stage('Loading Baku streets…', '01 / 05 · THE STREETS', 'Downloading the streets and their textures.', true);
     const map = await loadGLB('/generated/baku.glb');
-    loadingScreen.stage('Mapping Baku streets…', '01 / 05 · THE STREETS', 'Tracing the circuit and its surrounding roads.');
+    loadingScreen.stage('Mapping Baku streets…', '01 / 05 · THE STREETS', 'Tracing the city streets.');
     minimap = await createMinimap(map.scene);
-    await tuneMap(map.scene);
     loadingScreen.stage('Loading the city skyline…', '02 / 05 · THE SKYLINE', 'Bringing the city into view.', true);
-    const buildings = await loadGLB('/generated/buildings.glb'); await tuneMap(buildings.scene);
+    const buildings = await loadGLB('/generated/buildings.glb');
     loadingScreen.stage('Preparing road contact…', '03 / 05 · THE ROAD', 'Downloading the road surface.', true);
     const collision = await loadGLB('/generated/collision.glb');
     loadingScreen.stage('Preparing road contact…', '03 / 05 · THE ROAD', 'Building the surfaces your tires will meet.');
@@ -544,8 +559,11 @@ async function boot() {
     }
     scene.add(collision.scene);
     collision.scene.updateMatrixWorld(true);
-    groundSampler = new GroundSampler(collisionMeshes);
     for (const mesh of collisionMeshes) barrierCollision.addMesh(mesh);
+    cityCollisions = await buildCityCollisions([map.scene,buildings.scene],collisionMeshes,barrierCollision,
+      {repairSources:map.userData.roadRepairSources,yieldFrame:nextPaint});
+    groundSampler = cityCollisions.sampler;
+    await tuneMap(map.scene); await tuneMap(buildings.scene);
     freezeStaticWorld(collision.scene);
     loadingScreen.stage('Preparing your car…', '04 / 05 · YOUR CAR', 'Downloading your first ride.', true);
     const carAsset = await loadGLB('/assets/vehicles/ferrari-458.glb');
@@ -569,7 +587,7 @@ async function boot() {
     loadingScreen.stage('Preparing city lighting…', '05 / 05 · THE ATMOSPHERE', 'Finishing shaders, reflections, and the first view.');
     await nextPaint();
     updateCamera(1 / 60); scene.updateMatrixWorld(true); updateSceneLighting(1 / 60); worldOptimization.update();
-    await renderer.compileAsync(scene, camera);
+    await tireEffects.warmup(() => graphics.warmup());
     ui.menu.inert = true;
     ui.menu.classList.remove('hidden'); mode = 'menu';
     // Two presented frames warm the post-processing targets before the dissolve.
@@ -803,7 +821,7 @@ function updateCar(dt) {
   }
   for (let i = 0; i < 4; i++) ui[`susp-${i}`].style.height = `${Math.round(100 * THREE.MathUtils.clamp(handling.wheels[i].compression / activeVehicle.suspTravel, 0, 1))}%`;
   minimapForward.set(0, 1, 0).applyQuaternion(car.quaternion);
-  drawMinimap(ui.minimap, minimap, route, car.position, Math.atan2(-minimapForward.x, minimapForward.y), Math.hypot(handling.velocity.x, handling.velocity.y), multiplayerSession?.getMapPlayers());
+  drawMinimap(ui.minimap, minimap, car.position, Math.atan2(-minimapForward.x, minimapForward.y), Math.hypot(handling.velocity.x, handling.velocity.y), multiplayerSession?.getMapPlayers());
 }
 
 function updateHUDText(element, value) {
@@ -1206,6 +1224,7 @@ function frame() {
   }
   if (mode === 'map') renderFullMap();
   worldOptimization.update(dt);
+  graphicsDiagnostics.startGPU();
   localReflections.update(dt, car, carCache.values(), mode === 'garage' || mode === 'loading');
   graphics.render(dt);
   graphicsDiagnostics.end();

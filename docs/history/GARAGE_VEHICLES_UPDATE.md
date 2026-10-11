@@ -1,5 +1,7 @@
 # AMG and Prado garage update
 
+> Historical engineering report. Settings, measurements and verification counts describe the recorded development stage. See [current rendering](../RENDERING.md) and [verification](../VERIFICATION.md) for the maintained implementation and commands. Referenced `artifacts/` evidence is generated locally and is not included in Git.
+
 Verified locally on October 2, 2026.
 
 The garage now offers Mercedes-AMG and Toyota Prado alongside the existing Ferrari and Elantra. Each new car uses its supplied body and wheel GLBs, supports paint presets/custom colors, and saves its own paint and the selected car. Models load on first selection and are cached for subsequent switches. Four choices fit in a two-column desktop layout; narrow screens retain a single column.

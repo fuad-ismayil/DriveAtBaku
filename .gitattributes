@@ -1,0 +1,22 @@
+* text=auto
+*.js text eol=lf
+*.mjs text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.glb binary
+*.bin binary
+*.part* binary
+*.wasm binary
+*.wav binary
+*.ttf binary
+*.webp binary
+*.png binary
+LICENSE text eol=lf
+.editorconfig text eol=lf
+.gitattributes text eol=lf
+.gitignore text eol=lf

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export function surfaceKind(name = '') {
-  if (/^ROAD_(?:AZER|OFFTRACK_[AB])(?:-|$)/i.test(name)) return 'asphalt';
+  if (/^ROAD_(?:AZER|OFFTRACK_[AB])(?:-|$)/i.test(name) || /^BAK_OFFTRACK_B(?:-|$)/i.test(name)) return 'asphalt';
   if (/^BAK_PAVEMENT_[ABCD](?:-|$)/i.test(name)) return 'pavement';
   return null;
 }

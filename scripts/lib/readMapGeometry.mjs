@@ -1,17 +1,28 @@
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import * as THREE from 'three';
+import { filterCityMapDocument } from '../../src/cityMap.js';
 
-// Read geometry directly for real-asset checks without a browser or image decoder.
-export function readMapGeometry(asset, include = () => true) {
+function readMapBytes(asset) {
   const root = new URL('../../public/generated/', import.meta.url);
   const manifest = JSON.parse(readFileSync(new URL('asset-manifest.json', root)));
   const packed = manifest.assets[asset];
-  const bytes = packed
+  return packed
     ? gunzipSync(Buffer.concat(packed.parts.map(part => readFileSync(new URL(part, root)))))
     : readFileSync(new URL(`${asset}.glb`, root));
+}
+
+export function readMapDocument(asset) {
+  const bytes = readMapBytes(asset);
+  return JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString());
+}
+
+// Read geometry directly for real-asset checks without a browser or image decoder.
+export function readMapGeometry(asset, include = () => true, { city = false } = {}) {
+  const bytes = readMapBytes(asset);
   const jsonLength = bytes.readUInt32LE(12);
   const gltf = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString());
+  if (city) filterCityMapDocument(gltf, asset);
   const binaryOffset = 20 + jsonLength + 8;
   const types = { 5121: Uint8Array, 5123: Uint16Array, 5125: Uint32Array, 5126: Float32Array };
   const sizes = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 };

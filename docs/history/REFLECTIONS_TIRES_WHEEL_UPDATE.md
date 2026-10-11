@@ -1,5 +1,7 @@
 # Reflections, tire effects and supplied Elantra wheel
 
+> Historical engineering report. Settings, measurements and verification counts describe the recorded development stage. See [current rendering](../RENDERING.md) and [verification](../VERIFICATION.md) for the maintained implementation and commands. Referenced `artifacts/` evidence is generated locally and is not included in Git.
+
 Implemented and checked locally on 1 October 2026.
 
 ## Result

@@ -1,5 +1,7 @@
 # Wheels, grounding, antialiasing, AO and weather — 1 October 2026
 
+> Historical engineering report. Settings, measurements and verification counts describe the recorded development stage. See [current rendering](../RENDERING.md) and [verification](../VERIFICATION.md) for the maintained implementation and commands. Referenced `artifacts/` evidence is generated locally and is not included in Git.
+
 The later [reflections, tires and supplied-wheel update](REFLECTIONS_TIRES_WHEEL_UPDATE.md) supersedes this package's generated Elantra wheels and reflection scheduling, and adds rubber marks/smoke. This report retains the measurements for this earlier package.
 
 The second graphics package adds detailed Elantra alloys, removes the Ferrari's attached shadow rectangle, improves antialiasing, introduces ambient occlusion, neutralizes the orange sunlight, and adds all five requested weather modes.
@@ -23,9 +25,9 @@ The second graphics package adds detailed Elantra alloys, removes the Ferrari's 
 
 Rain and snow use bounded particle fields following the camera, with reduced density on lower presets. Precipitation is hidden in the garage. Existing road detail, authored textures, cutouts and collision geometry are retained.
 
-![Elantra split-spoke alloys](../artifacts/elantra-new-alloys.png)
+Elantra split-spoke alloys: `artifacts/elantra-new-alloys.png` (local only)
 
-Additional captures: [Ferrari without the shadow rectangle](../artifacts/ferrari-real-ground-shadow.png), [sunny](../artifacts/realism-sunny-elantra.png), [overcast](../artifacts/realism-overcast-elantra.png), [wet roads](../artifacts/realism-wet-elantra.png), [rain](../artifacts/realism-rain-elantra.png), [refined snow](../artifacts/realism-snow-elantra.png), [Elantra rainy night](../artifacts/realism-elantra-rain-night.png), [Ferrari rainy night](../artifacts/realism-ferrari-rain-night.png).
+Additional captures: Ferrari without the shadow rectangle: `artifacts/ferrari-real-ground-shadow.png` (local only), sunny: `artifacts/realism-sunny-elantra.png` (local only), overcast: `artifacts/realism-overcast-elantra.png` (local only), wet roads: `artifacts/realism-wet-elantra.png` (local only), rain: `artifacts/realism-rain-elantra.png` (local only), refined snow: `artifacts/realism-snow-elantra.png` (local only), Elantra rainy night: `artifacts/realism-elantra-rain-night.png` (local only), Ferrari rainy night: `artifacts/realism-ferrari-rain-night.png` (local only).
 
 ## Verification and performance
 
@@ -51,7 +53,7 @@ After loading both cars and warming the bounded weather-environment cache, three
 | Balanced | 748 | 947 |
 | Cinematic | 749 | 947 |
 
-These are resource counts, not VRAM bytes or a long-duration leak test. Raw evidence: [realism-weather-verification.json](../artifacts/realism-weather-verification.json). Screenshots and raw evidence stay local under ignored `artifacts/`. Temporary inspection/timing hooks, focus and viewport overrides were removed; Elantra, day, Sunny, headlights off, Cinematic, native resolution and AO on were restored.
+These are resource counts, not VRAM bytes or a long-duration leak test. Raw evidence: realism-weather-verification.json: `artifacts/realism-weather-verification.json` (local only). Screenshots and raw evidence stay local under ignored `artifacts/`. Temporary inspection/timing hooks, focus and viewport overrides were removed; Elantra, day, Sunny, headlights off, Cinematic, native resolution and AO on were restored.
 
 ## Next realism work
 

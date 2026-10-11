@@ -1,5 +1,7 @@
 # Graphics browser verification — 1 October 2026
 
+> Historical engineering report. Settings, measurements and verification counts describe the recorded development stage. See [current rendering](../RENDERING.md) and [verification](../VERIFICATION.md) for the maintained implementation and commands. Referenced `artifacts/` evidence is generated locally and is not included in Git.
+
 This report records the original **Intel Iris Xe** run. After changing the application's GPU preference, the [RTX 3050 verification report](GRAPHICS_RTX_VERIFICATION.md) confirms NVIDIA rendering and records short native-1080p samples at approximately 78–79 FPS in Cinematic. The Intel results below remain historical evidence.
 
 The local game opened successfully on the retry. Rendering and the sampled culling comparisons pass. The measured adapter does **not** meet a sustained 60 FPS Cinematic target, and the current occlusion implementation did not improve frame time in the two short controlled comparisons.
@@ -31,9 +33,9 @@ Runtime inspection confirmed:
 
 Representative inspected view:
 
-![Ferrari at the old-city turn](../artifacts/graphics-verified-ferrari-narrow-street.png)
+Ferrari at the old-city turn: `artifacts/graphics-verified-ferrari-narrow-street.png` (local only)
 
-Route contact sheets: [Ferrari day](../artifacts/graphics-route-ferrari-day-overview.png), [Ferrari night](../artifacts/graphics-route-ferrari-night-overview.png), [Elantra day](../artifacts/graphics-route-elantra-day-overview.png), [Elantra night](../artifacts/graphics-route-elantra-night-overview.png).
+Route contact sheets: Ferrari day: `artifacts/graphics-route-ferrari-day-overview.png` (local only), Ferrari night: `artifacts/graphics-route-ferrari-night-overview.png` (local only), Elantra day: `artifacts/graphics-route-elantra-day-overview.png` (local only), Elantra night: `artifacts/graphics-route-elantra-night-overview.png` (local only).
 
 ## Short timing samples
 
@@ -67,4 +69,4 @@ The night views also retain existing lighting limitations: headlights are unshad
 
 Production build and all eight suites passed again: handling, camera, drive-camera, engine audio, minimap, graphics, barriers, and world graphics. The build retains its bundle-size warning. World-graphics checks still validate both partition paths, authored triangle data, openings, mirrored faces, independent shadow/reflection visibility, collision independence, shader composition, and reflection cleanup. The regular-mesh fallback was checked by that suite, rather than a second live GPU/browser configuration.
 
-Raw evidence is stored locally in [browser-graphics-verification.json](../artifacts/browser-graphics-verification.json), [graphics-image-comparison.json](../artifacts/graphics-image-comparison.json), and [world-graphics-verification.json](../artifacts/world-graphics-verification.json). Screenshots and these generated artifacts remain local under the ignored `artifacts/` directory.
+Raw evidence is stored locally in browser-graphics-verification.json: `artifacts/browser-graphics-verification.json` (local only), graphics-image-comparison.json: `artifacts/graphics-image-comparison.json` (local only), and world-graphics-verification.json: `artifacts/world-graphics-verification.json` (local only). Screenshots and these generated artifacts remain local under the ignored `artifacts/` directory.

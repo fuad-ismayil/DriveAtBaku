@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { MeshBVH } from 'three-mesh-bvh';
 import { SpatialIndex } from './spatialIndex.js';
+import { CylinderCollision } from './cylinderCollision.js';
 
 const SKIN = 0.025;
 
@@ -54,6 +55,7 @@ function sweepTriangle(triangle, center, half, axes, travel, scratch, margin) {
 export class BarrierCollision {
   constructor() {
     this.colliders = [];
+    this.trunks = new CylinderCollision();
     this.triangle = new THREE.Triangle();
     this.localQuery = new THREE.Box3();
     this.worldQuery = new THREE.Box3();
@@ -90,6 +92,8 @@ export class BarrierCollision {
     });
     this.index = null;
   }
+
+  addCylinder(trunk) { this.trunks.add(trunk); }
 
   sweep(position, quaternion, travel, settings, comHeight, angularMargin = 0) {
     const { width, length, height } = settings.dims;
@@ -130,6 +134,10 @@ export class BarrierCollision {
           return false;
         },
       });
+    }
+    const trunk = this.trunks.sweep(this.center,this.half,this.axes,this.worldHalf,travel,this.worldQuery,angularMargin);
+    if(trunk && (trunk.time<bestTime || (trunk.time===bestTime&&trunk.depth>bestDepth))) {
+      bestTime=trunk.time;bestDepth=trunk.depth;this.hitNormal.copy(trunk.normal);
     }
     return bestTime === Infinity ? null : { time: bestTime, depth: bestDepth, normal: this.hitNormal.clone() };
   }

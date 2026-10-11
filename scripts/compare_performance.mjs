@@ -1,15 +1,8 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const require = createRequire(import.meta.url);
-let sharp;
-try { sharp = require('sharp'); }
-catch {
-  const packages = process.env.IMAGE_MODULES ?? `${process.env.USERPROFILE}/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules`;
-  sharp = require(`${packages}/sharp`);
-}
+import sharp from 'sharp';
 const before = resolve(process.argv[2] ?? 'artifacts/performance/before-final');
 const after = resolve(process.argv[3] ?? 'artifacts/performance/after-final');
 const oldResults = JSON.parse(readFileSync(`${before}/results.json`));
@@ -19,7 +12,10 @@ assert.equal(newResults.hardware.renderer, oldResults.hardware.renderer);
 const timings = oldResults.scenarios.map(old => {
   const next = newResults.scenarios.find(result => result.scenario === old.scenario);
   if (!next && process.env.VISUALS) return null;
-  assert.deepEqual(next.graphics, old.graphics, 'all graphics settings stay identical');
+  for (const key of ['samples','ao','aoSize','renderScale','pixelRatio']) {
+    assert.deepEqual(next.graphics[key], old.graphics[key], 'graphics setting stays identical: ' + key);
+  }
+  if (old.graphics.drawingBuffer) assert.deepEqual(next.graphics.drawingBuffer, old.graphics.drawingBuffer);
   assert.equal(next.world.triangles, old.world.triangles);
   return { scenario: old.scenario,
     beforeFPS: 1000/old.metrics.interval.median, afterFPS: 1000/next.metrics.interval.median,

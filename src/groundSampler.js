@@ -7,7 +7,7 @@ export class GroundSampler {
       mesh.geometry.computeBoundingBox();
       const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
       const name = `${mesh.name} ${material?.name ?? ''}`;
-      const mu = /grass|dirt|sand/i.test(name) ? 0.65 : /gravel/i.test(name) ? 0.75 : 1;
+      const mu = mesh.userData.groundSurfaceKind === 'terrain' || /grass|dirt|sand/i.test(name) ? 0.65 : /gravel/i.test(name) ? 0.75 : 1;
       return { mesh, order, bounds: mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld), mu, rr: mu < 1 ? 0.045 : 0.013 };
     });
     this.index = new SpatialIndex(entries);
@@ -39,5 +39,27 @@ export class GroundSampler {
     const normal = best.face?.normal?.clone().transformDirection(best.object.matrixWorld) ?? new THREE.Vector3(0, 0, 1);
     if (normal.z < 0) normal.negate();
     return { distance: best.distance, point: best.point, normal, mu: surface.mu, rr: surface.rr };
+  }
+}
+
+// Prefer the authored original at ties. A higher visible curb/terrain surface
+// must take precedence over lower road support; fallback-only sampling caused
+// wheels to miss raised edges and green areas overlapping coarse source floors.
+export class LayeredGroundSampler {
+  constructor(...layers) { this.layers=layers; }
+  sample(origin,direction,maxDistance) {
+    let best=null;
+    for(const layer of this.layers){const hit=layer.sample(origin,direction,maxDistance);if(hit&&(!best||hit.distance<best.distance-1e-4))best=hit;}
+    return best;
+  }
+}
+
+export class InlayGroundSampler {
+  constructor(ground,inlays) { this.ground=ground;this.inlays=inlays; }
+  sample(origin,direction,maxDistance) {
+    const hit=this.ground.sample(origin,direction,maxDistance),inlay=this.inlays.sample(origin,direction,maxDistance);
+    // Ordinary paint floated a few millimetres above a road is artwork, not a
+    // speed bump. Where its road backing is absent or far below, it is support.
+    return inlay&&(!hit||hit.distance-inlay.distance>.04)?inlay:hit;
   }
 }

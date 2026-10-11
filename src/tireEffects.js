@@ -115,5 +115,20 @@ export function createTireEffects(scene) {
     for (let i = 0; i < SMOKE_LIMIT; i++) if (particles.getZ(i) > 0 && time - particles.getX(i) < particles.getY(i)) stats.activeSmoke++;
     smoke.visible = outside && stats.activeSmoke > 0;
   }
-  return { update, reset, stats, dispose() { marks.removeFromParent(); smoke.removeFromParent(); marksGeometry.dispose(); marksMaterial.dispose(); smokeGeometry.dispose(); smokeMaterial.dispose(); } };
+  return { update, reset, stats,
+    async warmup(render) {
+      const markVisible = marks.visible, smokeVisible = smoke.visible;
+      const markRange = { ...marksGeometry.drawRange }, smokeRange = { ...smokeGeometry.drawRange };
+      // Zero draw ranges compile/upload the real variants without emitting a
+      // mark or puff, advancing time, or changing any tire/physics state.
+      marks.visible = smoke.visible = true;
+      marksGeometry.setDrawRange(0, 0); smokeGeometry.setDrawRange(0, 0);
+      try { await render(); }
+      finally {
+        marks.visible = markVisible; smoke.visible = smokeVisible;
+        marksGeometry.setDrawRange(markRange.start, markRange.count);
+        smokeGeometry.setDrawRange(smokeRange.start, smokeRange.count);
+      }
+    },
+    dispose() { marks.removeFromParent(); smoke.removeFromParent(); marksGeometry.dispose(); marksMaterial.dispose(); smokeGeometry.dispose(); smokeMaterial.dispose(); } };
 }

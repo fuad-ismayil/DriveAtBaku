@@ -200,6 +200,7 @@ export class WorldOptimization {
   constructor(camera, { occlusion = true } = {}) {
     this.camera = camera;
     this.occlusion = occlusion;
+    this.hierarchicalFrustum = true;
     this.entries = [];
     this.occluderCells = new Map();
     this.occluders = [];
@@ -438,7 +439,8 @@ export class WorldOptimization {
       projected.length = Math.min(projected.length, 48);
     }
     this.index ??= new SpatialIndex(this.entries);
-    this.index.query(this.intersectsView, this.candidates);
+    if (this.hierarchicalFrustum) this.index.queryFrustum(this.frustum, this.candidates);
+    else this.index.query(this.intersectsView, this.candidates);
     this.stats.frustum = this.entries.length - this.candidates.length;
     this.stats.occluded = this.stats.mainTriangles = this.stats.distance = this.stats.props = 0;
     for (const entry of this.entries) {

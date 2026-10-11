@@ -1,5 +1,7 @@
 # Vehicle camera research: GTA V and Baku
 
+> Historical engineering report. Settings, measurements and verification counts describe the recorded development stage. See [current rendering](../RENDERING.md) and [verification](../VERIFICATION.md) for the maintained implementation and commands. Referenced `artifacts/` evidence is generated locally and is not included in Git.
+
 ## What is documented
 
 - Rockstar's GTA V vehicle controls distinguish **rotate camera**, **look behind**, **cycle camera modes**, and **brake/reverse when stopped**. Reverse and look-behind are separate controls; the manual does not establish that selecting reverse automatically flips the camera. Source: [GTA V Game Help, In Vehicle Controls](https://dlassets-ssl.xboxlive.com/public/content/4f0a3089-ba2c-4f3d-9e38-102a41cbd885/GameManual/bffef18e-3f19-4190-a9b1-75402359b13b/en-CA/index.html).

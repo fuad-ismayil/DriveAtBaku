@@ -1,22 +1,16 @@
-import { createRequire } from 'node:module';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const require = createRequire(import.meta.url);
-let playwright;
-try { playwright = require('playwright'); }
-catch {
-  const packages = process.env.PLAYWRIGHT_MODULES ?? `${process.env.USERPROFILE}/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules`;
-  playwright = require(`${packages}/playwright`);
-}
+import playwright from 'playwright';
 const output = resolve(process.argv[2] ?? 'artifacts/performance/current');
 const url = process.env.GAME_URL ?? 'http://localhost:5173';
 mkdirSync(output, { recursive: true });
 const instrumentation = `
+import { GpuTimer } from '/src/gpuTimer.js';
+import { summarizeFrames } from '/scripts/lib/performanceMetrics.mjs';
 clock.getDelta = () => 1 / 60;
-const profile = { rows: [], pending: [], phases: {}, remaining: 0, resolve: null, last: 0 };
-const glProfile = renderer.getContext(), timerProfile = glProfile.getExtension('EXT_disjoint_timer_query_webgl2');
-profile.disjoint = 0;
+const profile = { rows: [], phases: {}, remaining: 0, resolve: null, last: 0 };
+const profileGpu = new GpuTimer(renderer.getContext());
 renderer.info.autoReset = false;
 function wrapProfile(owner, key, label = key) {
   const original = owner[key];
@@ -34,47 +28,45 @@ wrapProfile(worldOptimization, 'update', 'culling');
 wrapProfile(localReflections, 'update', 'reflections');
 wrapProfile(graphics, 'render', 'render');
 graphicsDiagnostics.begin = () => {
+  profileGpu.poll();
   profile.phases = {}; renderer.info.reset();
   profile.start = performance.now();
-  if (timerProfile && profile.remaining) {
-    profile.query = glProfile.createQuery();
-    glProfile.beginQuery(timerProfile.TIME_ELAPSED_EXT, profile.query);
+  profile.gpuRow = profile.remaining ? { pending: 0 } : null;
+};
+let lastGpuRow;
+graphicsDiagnostics.startGPU = () => {
+  if (profile.gpuRow && lastGpuRow !== profile.gpuRow) {
+    profileGpu.begin('frame', profile.gpuRow); lastGpuRow = profile.gpuRow;
   }
 };
+const originalReflectionUpdate = localReflections.update;
+localReflections.update = function(...args) {
+  graphicsDiagnostics.startGPU(); return originalReflectionUpdate.apply(this, args);
+};
 graphicsDiagnostics.end = () => {
+  profileGpu.end(); profileGpu.poll();
   const now = performance.now();
-  const row = { cpu: now - profile.start, interval: now - profile.last,
+  const row = Object.assign(profile.gpuRow ?? {}, { cpu: now - profile.start, interval: profile.last ? now - profile.last : null,
     ...profile.phases, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
-    geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures };
+    geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures });
   profile.last = now;
-  if (profile.query) {
-    glProfile.endQuery(timerProfile.TIME_ELAPSED_EXT);
-    profile.pending.push({ query: profile.query, row }); profile.query = null;
-  }
-  const disjoint = timerProfile && glProfile.getParameter(timerProfile.GPU_DISJOINT_EXT);
-  if (disjoint) profile.disjoint++;
-  while (profile.pending.length && glProfile.getQueryParameter(profile.pending[0].query, glProfile.QUERY_RESULT_AVAILABLE)) {
-    const { query, row: pendingRow } = profile.pending.shift();
-    if (!disjoint) pendingRow.gpu = glProfile.getQueryParameter(query, glProfile.QUERY_RESULT) / 1e6;
-    glProfile.deleteQuery(query);
-  }
   if (profile.remaining) {
     profile.rows.push(row);
-    if (--profile.remaining === 0) {
-      const result = {};
-      for (const key of new Set(profile.rows.flatMap(row => Object.keys(row)))) {
-        const values = profile.rows.map(row => row[key]).filter(Number.isFinite).sort((a,b) => a-b);
-        if (values.length) result[key] = { median: values[Math.floor(values.length*.5)], p95: values[Math.floor(values.length*.95)] };
-      }
-      profile.resolve({ metrics: result, graphics: graphics.stats, world: {...worldOptimization.stats}, reflections: {...localReflections.stats},
-        shadow: typeof shadowCache === 'undefined' ? null : {...shadowCache.stats}, queries: { pending: profile.pending.length, disjoint: profile.disjoint } });
+    if (--profile.remaining === 0) profile.finishedAt = now;
+  }
+  if (profile.resolve && !profile.remaining) {
+    if (now - profile.finishedAt > 5000 && profileGpu.pending.length) profileGpu.discard();
+    if (profile.rows.every(row => !row.pending)) {
+      const result = summarizeFrames(profile.rows);
+      profile.resolve({ ...result, graphics: graphics.stats, world: {...worldOptimization.stats}, reflections: {...localReflections.stats},
+        shadow: typeof shadowCache === 'undefined' ? null : {...shadowCache.stats}, queries: { supported: profileGpu.supported, pending: profileGpu.pending.length, ...profileGpu.stats } });
       profile.resolve = null;
     }
   }
 };
 window.__gameProfile = {
   ready: () => mode !== 'loading',
-  measure: frames => new Promise(resolve => { profile.rows = []; profile.remaining = frames; profile.resolve = resolve; }),
+  measure: frames => new Promise(resolve => { profile.rows = []; profile.last = 0; profile.remaining = frames; profile.resolve = resolve; }),
   scenario: value => {
     keys.clear(); setWeather(value === 'rain' ? 'rain' : 'sunny', false); setNightMode(value === 'night', false);
     if (mode === 'garage') closeGarage();
@@ -142,6 +134,7 @@ try {
     return { renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
       timerQueries: !!gl.getExtension('EXT_disjoint_timer_query_webgl2') };
   });
+  if (/SwiftShader|llvmpipe|Software Rasterizer/i.test(hardware.renderer)) throw new Error('Software renderer rejected: ' + hardware.renderer);
   const scenarios = process.env.SNAPSHOT_ONLY && existsSync(output + '/results.json')
     ? JSON.parse(readFileSync(output + '/results.json')).scenarios : [];
   const cdp = await page.context().newCDPSession(page);

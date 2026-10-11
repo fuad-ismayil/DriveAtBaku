@@ -36,9 +36,10 @@ Props fade over the final 28% of their range using fixed ordered coverage.
 The shader retains depth writing and authored alpha cutouts, and reuses the
 existing PBR view-position varying. It adds no transparent sorting or animated
 random noise. MSAA/SMAA remain available through the existing quality presets.
-Sun shadows and reflection views retain their own visibility rules. All
-2,385,404 authored map triangles, collision geometry and multiplayer state are
-preserved.
+Sun shadows and reflection views retain their own visibility rules. The
+distance-setting implementation preserves authored map geometry, collision
+data and multiplayer state. Subsequent audited event exclusions are described
+in [the city map guide](CITY_MAP.md).
 
 ## Rendering investigation
 

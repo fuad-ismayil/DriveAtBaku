@@ -1,5 +1,7 @@
 # RTX 3050 browser verification — 1 October 2026
 
+> Historical engineering report. Settings, measurements and verification counts describe the recorded development stage. See [current rendering](../RENDERING.md) and [verification](../VERIFICATION.md) for the maintained implementation and commands. Referenced `artifacts/` evidence is generated locally and is not included in Git.
+
 This report records the first graphics package before the newer rims, MSAA, AO and weather effects. See [the current graphics/weather report](GRAPHICS_WEATHER_UPDATE.md) for the heavier combined configuration and its timings. The results below remain historical adapter/baseline evidence.
 
 The Codex in-app browser now renders the game on **NVIDIA GeForce RTX 3050 Laptop GPU**. At native **1920 × 1080**, the short Cinematic starting-straight samples averaged approximately **78–79 FPS**, with about **6.6 ms median GPU time**. This view meets the 16.7 ms frame budget for 60 FPS. Sustained driving and full-route performance acceptance remain outstanding.
@@ -50,11 +52,11 @@ At this position, occlusion rejected 161–164 chunks, reducing candidate triang
 
 The inspected native-resolution day and night views render the road, fence openings, car reflections, and lighting without browser errors or context loss. Balanced still emits the previously documented FXAA compiler warnings about gradients in varying loops and a potentially uninitialized variable. These warnings did not stop rendering.
 
-![Cinematic day on RTX 3050 at 1080p](../artifacts/graphics-rtx3050-cinematic-1080p.png)
+Cinematic day on RTX 3050 at 1080p: `artifacts/graphics-rtx3050-cinematic-1080p.png` (local only)
 
-![Cinematic night with low beams on RTX 3050 at 1080p](../artifacts/graphics-rtx3050-cinematic-night-1080p.png)
+Cinematic night with low beams on RTX 3050 at 1080p: `artifacts/graphics-rtx3050-cinematic-night-1080p.png` (local only)
 
-The screenshot diagnostics are separate rolling readings; the benchmark tables use the recorded 240-frame samples. Raw evidence: [rtx3050-graphics-verification.json](../artifacts/rtx3050-graphics-verification.json). Generated evidence remains local in the ignored `artifacts/` directory.
+The screenshot diagnostics are separate rolling readings; the benchmark tables use the recorded 240-frame samples. Raw evidence: rtx3050-graphics-verification.json: `artifacts/rtx3050-graphics-verification.json` (local only). Generated evidence remains local in the ignored `artifacts/` directory.
 
 Temporary timing hooks and inspection helpers were removed, the original world-update method and native animation scheduling were confirmed restored, and focus/viewport overrides were removed. Day mode, Cinematic quality, Elantra, headlights off, and the main menu were restored before closing the inspection tab. This run changed documentation only; the build and eight-suite results are recorded in the earlier report and were not rerun for the adapter switch.
 

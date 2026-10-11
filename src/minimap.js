@@ -3,13 +3,13 @@ import * as THREE from 'three';
 const MAP_SIZE = 256;
 const COLORS = {
   water: '#0d3042', land: '#172e38', grass: '#20443e',
-  pavement: '#30464f', road: '#536b74', circuit: '#98e0e3',
+  pavement: '#30464f', road: '#536b74',
 };
 const LAYERS = Object.keys(COLORS);
 
 export function minimapSurface(name = '') {
-  // Numbered ROADA materials belong to pit garages, not the circuit surface.
-  if (/^(?:ROADA_MAIN|ROAD_AZER)(?:-|$)/i.test(name)) return 'circuit';
+  // Former circuit asphalt is an ordinary street; numbered ROADA floors are garages.
+  if (/^(?:ROADA_MAIN|ROAD_AZER)(?:-|$)/i.test(name)) return 'road';
   if (/^ROAD_OFFTRACK_[AB](?:-|$)/i.test(name)) return 'road';
   if (/^BAK_PAVEMENT_[ABCD](?:-|$)/i.test(name)) return 'pavement';
   if (/^BAK_COBBLES_A(?:-|$)/i.test(name)) return 'land';
@@ -49,7 +49,7 @@ export async function collectMinimapSurfaces(root, yieldFrame = async () => {}) 
           // Consistent winding lets adjacent triangles form a solid canvas path.
           if (normal.z < 0) layers[layer].push(a.x, a.y, c.x, c.y, b.x, b.y);
           else layers[layer].push(a.x, a.y, b.x, b.y, c.x, c.y);
-          if (layer === 'circuit' || layer === 'road') {
+          if (layer === 'road') {
             bounds.minX = Math.min(bounds.minX, a.x, b.x, c.x);
             bounds.minY = Math.min(bounds.minY, a.y, b.y, c.y);
             bounds.maxX = Math.max(bounds.maxX, a.x, b.x, c.x);
@@ -139,7 +139,7 @@ function drawRemoteMarkers(context, view, players, radius, label = false) {
   }
 }
 
-export function drawMinimap(canvas, map, route, position, heading, speedMps = 0, players = []) {
+export function drawMinimap(canvas, map, position, heading, speedMps = 0, players = []) {
   const context = canvas.getContext('2d');
   const pixelRatio = Math.min(globalThis.devicePixelRatio ?? 1, 2);
   const resolution = Math.round(MAP_SIZE * pixelRatio);
@@ -163,19 +163,6 @@ export function drawMinimap(canvas, map, route, position, heading, speedMps = 0,
     context.transform(cosine * factor, sine * factor, -sine * factor, cosine * factor, originX, originY);
     context.drawImage(map.canvas, 0, 0);
     context.restore();
-  }
-
-  const start = route?.checkpoints?.[0];
-  if (start) {
-    const [x, y] = view.project(start[0], start[1]);
-    if (Math.hypot(x - center, y - center) < radius - 12 && Math.hypot(x - playerX, y - playerY) > 24) {
-      context.fillStyle = '#0a1b24';
-      context.fillRect(x - 7, y - 7, 14, 14);
-      context.fillStyle = '#fff2d4';
-      for (let row = 0; row < 2; row++) for (let col = 0; col < 2; col++) {
-        if ((row + col) % 2 === 0) context.fillRect(x - 5 + col * 5, y - 5 + row * 5, 5, 5);
-      }
-    }
   }
 
   drawRemoteMarkers(context, view, players, radius);
