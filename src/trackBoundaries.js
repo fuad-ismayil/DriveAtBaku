@@ -23,5 +23,12 @@ export function createShadowCandidate(mesh) {
 }
 
 export function updateShadowCandidates(candidates, position, distance = 150) {
-  for (const candidate of candidates) candidate.mesh.castShadow = candidate.bounds.distanceToPoint(position) < distance;
+  for (const candidate of candidates) {
+    const casts = candidate.bounds.distanceToPoint(position) < distance;
+    if (casts !== candidate.mesh.castShadow) {
+      candidate.mesh.castShadow = casts;
+      const batch = candidate.mesh.userData.shadowBatch;
+      if (batch) batch.userData.shadowVersion = (batch.userData.shadowVersion ?? 0) + 1;
+    }
+  }
 }

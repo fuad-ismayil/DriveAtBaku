@@ -14,10 +14,11 @@ import { PLATE_LETTERS, PLATE_FORMATS, normalizePlateSettings, readPlateSettings
 import { createAzerbaijaniPlate, updateLicensePlates } from '../src/licensePlates.js';
 
 assert.equal(plateRegistration({}), '10-AA-001');
-assert.equal(plateRegistration({ format: 'compact', hyphens: true }), '10 AA 001');
+assert.equal(plateRegistration({ format: 'compact', hyphens: true }), '10-AA-001');
 assert.equal(plateRegistration({ hyphens: false }), '10 AA 001');
 assert.deepEqual(normalizePlateSettings({ region: '7', letters: 'az', serial: '9' }), { enabled: true, region: '07', letters: 'AZ', serial: '009', hyphens: true, format: 'long', identity: 'older' });
 assert.equal(plateRegistration({ identity: 'new', hyphens: true }), '10 AA 001', 'new style always omits hyphens');
+assert.equal(normalizePlateSettings({ identity: 'older', hyphens: false }).identity, 'new', 'saved separators-off settings also omit RFID');
 assert.equal(readPlateSettings({ getItem: () => JSON.stringify({ identity: 'modern' }) }, 'amg').identity, 'older', 'saved RFID style migrates');
 assert.equal(readPlateSettings({ getItem: () => JSON.stringify({ identity: 'classic' }) }, 'amg').identity, 'new', 'saved plain AZ style migrates');
 for (const bad of [null, 5, '', { region: '00', serial: '000', letters: 'IW', format: 'usa', identity: 'fiction' }]) {
@@ -30,6 +31,22 @@ savePlateSettings(storage, 'ferrari', { region: '77', letters: 'XZ', serial: '77
 assert.equal(readPlateSettings(storage, 'ferrari').serial, '777'); assert.equal(readPlateSettings(storage, 'amg').serial, '001');
 stored.set('baku-plate-amg', '{broken'); assert.equal(readPlateSettings(storage, 'amg').region, '10');
 assert.equal(readPlateSettings({ getItem() { throw Error('unavailable'); } }, 'prado').letters, 'AA');
+
+// The combined detail switch must show/hide both separators and RFID in either
+// format. Raycast the separator positions on actual stamped plate geometry.
+for (const format of ['long', 'compact']) {
+  for (const enabled of [true, false]) {
+    const plate = createAzerbaijaniPlate({ format, identity: enabled ? 'older' : 'new', hyphens: enabled });
+    plate.updateMatrixWorld(true);
+    assert.equal(Boolean(plate.getObjectByName('RFID laminate inset')), enabled);
+    const ink = plate.getObjectByName('Raised black registration');
+    const locations = format === 'long' ? [[-.0585, -.001], [.0695, -.001]] : [[.047, .032], [-.0165, -.035]];
+    for (const [x, y] of locations) {
+      const ray = new THREE.Raycaster(new THREE.Vector3(x, y, .02), new THREE.Vector3(0, 0, -1));
+      assert.equal(ray.intersectObject(ink, false).length > 0, enabled, `${format}: both hyphens follow the detail switch`);
+    }
+  }
+}
 
 for (const format of Object.keys(PLATE_FORMATS)) for (const identity of ['older', 'new']) {
   const plate = createAzerbaijaniPlate({ format, identity, region: '90', letters: 'XY', serial: '987' });

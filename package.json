@@ -17,13 +17,21 @@
     "verify-engine-audio": "node scripts/verify_engine_audio.mjs",
     "verify-minimap": "node scripts/verify_minimap.mjs",
     "verify-graphics": "node scripts/verify_graphics.mjs",
+    "verify-foliage": "node scripts/verify_foliage.mjs",
     "verify-barriers": "node scripts/verify_barriers.mjs",
     "verify-world-graphics": "node scripts/verify_world_graphics.mjs",
     "verify-realism": "node scripts/verify_realism.mjs",
+    "verify-weather": "node scripts/verify_weather.mjs",
+    "verify-vehicle-water": "node scripts/verify_vehicle_water.mjs",
+    "verify-vehicle-water-distance": "node scripts/verify_vehicle_water_distance.mjs",
     "verify-tire-effects": "node scripts/verify_tire_effects.mjs",
     "verify-garage-vehicles": "node scripts/verify_garage_vehicles.mjs",
     "verify-loading": "node scripts/verify_loading.mjs",
-    "verify-license-plates": "node scripts/verify_license_plates.mjs"
+    "verify-license-plates": "node scripts/verify_license_plates.mjs",
+    "verify-performance": "node scripts/verify_performance.mjs",
+    "verify-render-distance": "node scripts/verify_render_distance.mjs",
+    "verify-graphics-settings-browser": "node scripts/verify_graphics_settings_browser.mjs",
+    "profile-performance": "node scripts/profile_performance.mjs"
   },
   "dependencies": {
     "three": "^0.180.0",

@@ -46,10 +46,11 @@ const testBatch = batchWorld.addBatchedMesh([batchedA, batchedB]);
 batchWorld.entries[0].skip = true;
 testBatch.onBeforeRender(null, null, camera, testBatch.geometry, testBatch.material);
 assert.equal(testBatch.getVisibleAt(0), false); assert.equal(testBatch.getVisibleAt(1), true);
-testBatch.onBeforeRender(null, null, new THREE.PerspectiveCamera(), testBatch.geometry, testBatch.material);
+const batchReflectionCamera = cameraAt([0, 0, 3], [0, 10, 3]);
+testBatch.onBeforeRender(null, null, batchReflectionCamera, testBatch.geometry, testBatch.material);
 assert.equal(testBatch.getVisibleAt(0), true, 'batched reflection restores hidden instance');
 batchedA.castShadow = true; batchedB.castShadow = false;
-testBatch.onBeforeShadow(null, testBatch, camera, camera, testBatch.geometry, testBatch.material);
+testBatch.onBeforeShadow(null, testBatch, camera, batchReflectionCamera, testBatch.geometry, testBatch.material);
 assert.equal(testBatch.getVisibleAt(0), true); assert.equal(testBatch.getVisibleAt(1), false, 'batch shadows use independent caster selection');
 testBatch.dispose();
 camera.lookAt(-6, -10, 3); world.update();
@@ -150,15 +151,25 @@ const schedulingRenderer = {
 const reflectivePaint = new THREE.MeshPhysicalMaterial();
 captureCar.userData.paintMaterials = [reflectivePaint];
 const scheduledReflections = createLocalReflections(schedulingRenderer, captureScene, captureSky);
+const wetRoad = new THREE.MeshStandardMaterial({ roughness: .97 });
+const dryEnvironment = new THREE.Texture(); wetRoad.envMap = dryEnvironment;
+scheduledReflections.registerRoad(wetRoad);
+scheduledReflections.setWetRoads(true);
 for (let i = 0; i < 5; i++) {
   scheduledReflections.update(0.016, captureCar, [captureCar], false);
   assert.equal(reflectivePaint.envMap, null, 'partial cubemap never reaches car materials');
+  assert.equal(wetRoad.envMap, dryEnvironment, 'partial cubemap never reaches wet roads');
 }
 scheduledReflections.update(0.016, captureCar, [captureCar], false);
 assert.deepEqual(capturedDirections, [0, 1, 2, 3, 4, 5], 'exactly one cube direction per frame');
 assert.equal(scheduledReflections.stats.captures, 1);
 const published = reflectivePaint.envMap;
 assert.ok(published?.isTexture && published.mapping === THREE.CubeUVReflectionMapping, 'complete cubemap is filtered for PBR');
+assert.equal(wetRoad.envMap, published, 'wet roads reuse the completed city reflection');
+scheduledReflections.setWetRoads(false);
+assert.equal(wetRoad.envMap, dryEnvironment, 'switching dry restores the exact original road environment');
+scheduledReflections.setWetRoads(true);
+assert.equal(wetRoad.envMap, published, 'wet roads restore reflections without an extra capture');
 assert.equal(mockTarget, null, 'PMREM also restores the main render target');
 for (let i = 0; i < 10; i++) scheduledReflections.update(0.1, captureCar, [captureCar], false);
 assert.equal(capturedDirections.length, 6, 'stationary car reuses completed reflections');
@@ -182,10 +193,12 @@ assert.equal(reflectivePaint.envMap, published, 'weather invalidation avoids a s
 for (let i = 0; i < 6; i++) scheduledReflections.update(0.016, captureCar, [captureCar], false);
 scheduledReflections.update(0.016, captureCar, [captureCar], true);
 assert.equal(reflectivePaint.envMap, null, 'garage keeps its dedicated studio environment');
+assert.equal(wetRoad.envMap, dryEnvironment, 'garage removes road reflection overrides');
 scheduledReflections.setQuality('cinematic');
 assert.equal(scheduledReflections.stats.size, 256);
 scheduledReflections.setQuality('performance');
 assert.equal(scheduledReflections.stats.size, 0);
+assert.equal(wetRoad.envMap, dryEnvironment, 'performance mode restores roads to their sky environment');
 scheduledReflections.dispose();
 
 // Hash each ordered triangle including its position, normal and UV components.

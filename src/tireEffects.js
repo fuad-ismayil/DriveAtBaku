@@ -60,6 +60,7 @@ export function createTireEffects(scene) {
   function reset() {
     for (const track of previous) { track.valid = false; track.heat = track.credit = 0; }
     for (let i = 0; i < SMOKE_LIMIT; i++) particles.setZ(i, 0);
+    particles.clearUpdateRanges(); particles.addUpdateRange(0, particles.array.length);
     particles.needsUpdate = true; stats.activeSmoke = 0;
   }
   function addMark(track, current, currentSide, normal, width, strength) {
@@ -74,6 +75,8 @@ export function createTireEffects(scene) {
     }
     cursor = (cursor + 1) % MARK_LIMIT; count = Math.min(MARK_LIMIT, count + 1); stats.marks++;
     marksGeometry.setDrawRange(0, count * 6); positions.needsUpdate = markData.needsUpdate = true;
+    positions.addUpdateRange(start * 3, 18);
+    markData.addUpdateRange(start * 4, 24);
   }
   function emit(wheel, state, strength) {
     const i = smokeCursor++ % SMOKE_LIMIT, seed = ((stats.emittedSmoke * 0.618034) % 1);
@@ -81,6 +84,7 @@ export function createTireEffects(scene) {
     drift.setXYZ(i, clamp(state.velocity.x * .035, -.6, .6) + .06, clamp(state.velocity.y * .035, -.6, .6), .16 + seed * .08);
     particles.setXYZW(i, time, .8 + seed * .35, .11 * strength, seed);
     centers.needsUpdate = drift.needsUpdate = particles.needsUpdate = true; stats.emittedSmoke++;
+    centers.addUpdateRange(i * 3, 3); drift.addUpdateRange(i * 3, 3); particles.addUpdateRange(i * 4, 4);
   }
   function update(dt, state, vehicle, weather, driving, outside = true) {
     time += dt; marksMaterial.uniforms.time.value = smokeMaterial.uniforms.time.value = time;

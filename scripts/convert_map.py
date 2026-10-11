@@ -1,6 +1,7 @@
 """Convert the supplied BeamNG/Collada Baku level into browser-ready GLB assets.
 
-The source under levels/ is read-only. Generated assets go to public/generated/.
+The source under levels/ is read-only. Generated assets go to public/generated/;
+conversion reports go to the ignored artifacts/map-conversion/ directory.
 Requires trimesh, pycollada, Pillow and numpy (available in the Codex runtime).
 """
 from __future__ import annotations
@@ -21,6 +22,7 @@ SOURCE = ROOT / "levels" / "baku"
 MODEL_DIR = SOURCE / "art" / "baku"
 OUTPUT = ROOT / "public" / "generated"
 TEXTURE_OUTPUT = OUTPUT / "textures"
+REPORT_OUTPUT = ROOT / "artifacts" / "map-conversion"
 
 
 def semantic_colour(name: str) -> tuple[int, int, int, int]:
@@ -176,7 +178,8 @@ def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
     reports = [convert_visual("baku"), convert_visual("buildings"), convert_collision()]
     write_route()
-    (OUTPUT / "conversion-report.json").write_text(json.dumps(reports, indent=2), encoding="utf-8")
+    REPORT_OUTPUT.mkdir(parents=True, exist_ok=True)
+    (REPORT_OUTPUT / "conversion-report.json").write_text(json.dumps(reports, indent=2), encoding="utf-8")
     print("Baku browser assets ready.")
 
 

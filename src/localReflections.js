@@ -12,6 +12,8 @@ export function createLocalReflections(renderer, scene, sky) {
   const lastCenter = new THREE.Vector3(Infinity, Infinity, Infinity);
   const skyPosition = new THREE.Vector3();
   const materials = new Map();
+  const roads = new Map();
+  let wetRoads = false;
   const stats = { captures: 0, faces: 0, size: 0, blend: 1 };
   const blitMaterial = new THREE.ShaderMaterial({
     uniforms: { previous: { value: null }, next: { value: null }, amount: { value: 1 } },
@@ -43,6 +45,24 @@ export function createLocalReflections(renderer, scene, sky) {
     for (const list of materials.values()) for (const { material, original } of list) {
       if (material.envMap !== original) { material.envMap = original; material.needsUpdate = true; }
     }
+    syncRoads(null);
+  }
+
+  function syncRoads(texture) {
+    for (const [material, original] of roads) {
+      const next = wetRoads && texture ? texture : original;
+      if (material.envMap !== next) { material.envMap = next; material.needsUpdate = true; }
+    }
+  }
+
+  // Wet asphalt reuses the existing, fully filtered city probe. Dry materials
+  // always recover their original environment; no extra capture pass is needed.
+  function registerRoad(material) {
+    if (!roads.has(material)) roads.set(material, material.envMap);
+  }
+  function setWetRoads(enabled) {
+    wetRoads = Boolean(enabled);
+    syncRoads(displayed?.texture ?? null);
   }
 
   function setQuality(value) {
@@ -67,19 +87,24 @@ export function createLocalReflections(renderer, scene, sky) {
     register(vehicle);
     if (garage || !cube) { clearOverrides(); dirty = true; face = -1; lastVehicle = null; return; }
     if (lastVehicle !== vehicle) { clearOverrides(); lastVehicle = vehicle; invalidate(); }
+    syncRoads(displayed?.texture ?? null);
     const displacement = face >= 0 ? captureCamera.position.distanceToSquared(vehicle.position) : lastCenter.distanceToSquared(vehicle.position);
     if (!dirty && displacement > 120 ** 2) invalidate();
     elapsed += dt;
     if (face < 0 && blendTime >= 1 && (dirty || (elapsed >= .75 && lastCenter.distanceToSquared(vehicle.position) >= 6 ** 2))) {
-      captureCamera.position.copy(vehicle.position).add(new THREE.Vector3(0, 0, 1.15));
+      captureCamera.position.copy(vehicle.position); captureCamera.position.z += 1.15;
       captureCamera.updateMatrixWorld(true);
       face = 0;
       dirty = false;
     }
+    if (face < 0 && (!displayed || blendTime >= 1)) return;
     const target = renderer.getRenderTarget(), activeFace = renderer.getActiveCubeFace(), mip = renderer.getActiveMipmapLevel();
     const xr = renderer.xr.enabled, shadows = renderer.shadowMap.autoUpdate, autoClear = renderer.autoClear;
-    const visibility = [...vehicles].map(car => [car, car.visible]);
-    for (const object of scene.children) if (object.userData.excludeFromReflection) visibility.push([object, object.visible]);
+    const visibility = [];
+    if (face >= 0) {
+      for (const car of vehicles) visibility.push([car, car.visible]);
+      for (const object of scene.children) if (object.userData.excludeFromReflection) visibility.push([object, object.visible]);
+    }
     skyPosition.copy(sky.position);
     try {
       renderer.xr.enabled = false;
@@ -111,6 +136,7 @@ export function createLocalReflections(renderer, scene, sky) {
         for (const { material } of materials.get(vehicle)) {
           if (material.envMap !== displayed.texture) { material.envMap = displayed.texture; material.needsUpdate = true; }
         }
+        syncRoads(displayed.texture);
         lastCenter.copy(captureCamera.position);
         lastCenter.z -= 1.15;
         stats.captures++; elapsed = 0; face = -1;
@@ -126,5 +152,5 @@ export function createLocalReflections(renderer, scene, sky) {
   }
 
   setQuality('balanced');
-  return { update, invalidate, setQuality, stats, dispose() { clearOverrides(); cube?.dispose(); filtered?.dispose(); history?.dispose(); displayed?.dispose(); generator?.dispose(); blit.dispose(); blitMaterial.dispose(); } };
+  return { update, invalidate, setQuality, registerRoad, setWetRoads, stats, dispose() { clearOverrides(); roads.clear(); cube?.dispose(); filtered?.dispose(); history?.dispose(); displayed?.dispose(); generator?.dispose(); blit.dispose(); blitMaterial.dispose(); } };
 }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { MeshBVH } from 'three-mesh-bvh';
+import { SpatialIndex } from './spatialIndex.js';
 
 const SKIN = 0.025;
 
@@ -67,6 +68,14 @@ export class BarrierCollision {
       testAxes: Array.from({ length: 13 }, () => new THREE.Vector3()),
     };
     this.hitNormal = new THREE.Vector3();
+    this.index = null;
+    this.candidates = [];
+    this.intersectsQuery = bounds => bounds.intersectsBox(this.worldQuery);
+    this.resolveScratch = {
+      start: new THREE.Vector3(), target: new THREE.Vector3(), totalTravel: new THREE.Vector3(),
+      stepTravel: new THREE.Vector3(), remaining: new THREE.Vector3(),
+      rotation: new THREE.Quaternion(), orientation: new THREE.Quaternion(), nextOrientation: new THREE.Quaternion(),
+    };
   }
 
   addMesh(mesh) {
@@ -74,10 +83,12 @@ export class BarrierCollision {
     mesh.geometry.computeBoundingBox();
     this.colliders.push({
       mesh,
+      order: this.colliders.length,
       matrix: mesh.matrixWorld.clone(),
       inverse: mesh.matrixWorld.clone().invert(),
       bounds: mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld),
     });
+    this.index = null;
   }
 
   sweep(position, quaternion, travel, settings, comHeight, angularMargin = 0) {
@@ -98,8 +109,10 @@ export class BarrierCollision {
       this.worldQuery.max[component] += Math.max(0, travel[component]);
     }
     let bestTime = Infinity, bestDepth = 0;
-    for (const collider of this.colliders) {
-      if (!collider.bounds.intersectsBox(this.worldQuery)) continue;
+    this.index ??= new SpatialIndex(this.colliders);
+    this.index.query(this.intersectsQuery, this.candidates);
+    this.candidates.sort((a, b) => a.order - b.order);
+    for (const collider of this.candidates) {
       this.localQuery.copy(this.worldQuery).applyMatrix4(collider.inverse);
       collider.mesh.geometry.boundsTree.shapecast({
         intersectsBounds: bounds => bounds.intersectsBox(this.localQuery),
@@ -122,21 +135,21 @@ export class BarrierCollision {
   }
 
   resolve(state, previousPosition, previousQuaternion, settings) {
-    const start = previousPosition.clone(), target = state.position.clone();
-    const rotation = state.quaternion.clone(), orientation = previousQuaternion.clone();
+    const { start, target, rotation, orientation, totalTravel, stepTravel, remaining, nextOrientation } = this.resolveScratch;
+    start.copy(previousPosition); target.copy(state.position);
+    rotation.copy(state.quaternion); orientation.copy(previousQuaternion);
     const radius = Math.hypot(settings.dims.width, settings.dims.length, settings.dims.height) / 2;
     // Bound rotational motion by expanding the swept box; subdivisions keep the
     // extra clearance below 4 cm even when the car spins beside a fence.
     const angle = orientation.angleTo(rotation);
     const steps = Math.max(1, Math.ceil(angle * radius / 0.04));
-    const totalTravel = target.clone().sub(start);
-    const stepTravel = totalTravel.clone().multiplyScalar(1 / steps);
-    const nextOrientation = new THREE.Quaternion();
+    totalTravel.copy(target).sub(start);
+    stepTravel.copy(totalTravel).multiplyScalar(1 / steps);
     let collided = false, rotationBlocked = false;
     for (let step = 0; step < steps; step++) {
       nextOrientation.slerpQuaternions(previousQuaternion, rotation, (step + 1) / steps);
       const margin = rotationBlocked ? 0 : orientation.angleTo(nextOrientation) * radius;
-      const remaining = stepTravel.clone();
+      remaining.copy(stepTravel);
       for (let iteration = 0; iteration < 4; iteration++) {
         const hit = this.sweep(start, orientation, remaining, settings, state.comHeight, iteration === 0 ? margin : 0);
         if (!hit) { start.add(remaining); break; }

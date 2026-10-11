@@ -12,20 +12,21 @@ export function normalizePlateSettings(value = {}) {
     return s && Number(s) > 0 ? s.padStart(count, '0') : fallback;
   };
   const letters = String(value.letters ?? '').toUpperCase().split('').filter(c => PLATE_LETTERS.includes(c)).slice(0, 2).join('');
-  // Preserve the appearance of previously saved modern/classic selections.
-  const identity = value.identity === 'new' || value.identity === 'classic' ? 'new' : 'older';
+  // Preserve saved style aliases while keeping RFID and separators in sync.
+  const plain = value.identity === 'new' || value.identity === 'classic' || value.hyphens === false;
+  const identity = plain ? 'new' : 'older';
   return {
     enabled: typeof value.enabled === 'boolean' ? value.enabled : DEFAULT_PLATE.enabled,
     region: digits(value.region, 2, DEFAULT_PLATE.region),
     letters: letters.length === 2 ? letters : DEFAULT_PLATE.letters,
     serial: digits(value.serial, 3, DEFAULT_PLATE.serial),
-    hyphens: identity === 'new' ? false : typeof value.hyphens === 'boolean' ? value.hyphens : DEFAULT_PLATE.hyphens,
+    hyphens: !plain,
     format: Object.hasOwn(PLATE_FORMATS, value.format) ? value.format : DEFAULT_PLATE.format,
     identity,
   };
 }
 export function plateRegistration(value) {
-  const s = normalizePlateSettings(value), separator = s.hyphens && s.format === 'long' ? '-' : ' ';
+  const s = normalizePlateSettings(value), separator = s.hyphens ? '-' : ' ';
   return [s.region, s.letters, s.serial].join(separator);
 }
 export function readPlateSettings(storage, vehicleId) {

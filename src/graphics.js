@@ -17,6 +17,32 @@ class SoftBloomPass extends UnrealBloomPass {
   setSize(width, height) { super.setSize(Math.max(1, width / 2), Math.max(1, height / 2)); }
 }
 
+class StreetComposer extends EffectComposer {
+  render(dt) {
+    const target = this.renderer.getRenderTarget();
+    try {
+      this.passes[0].render(this.renderer);
+      let input = this.passes[0].target, output = this.renderTarget1;
+      // Bloom modifies its input in place. When AO is off, resolve beauty into
+      // a single-sample buffer first rather than blending into the MSAA scene.
+      if (!this.passes[1].enabled) {
+        this.passes[0].copyTo(this.renderer, this.renderTarget2);
+        input = this.renderTarget2;
+      }
+      for (let i = 1; i < this.passes.length; i++) {
+        const pass = this.passes[i];
+        if (!pass.enabled) continue;
+        pass.renderToScreen = this.renderToScreen && this.isLastEnabledPass(i);
+        pass.render(this.renderer, output, input, dt, false);
+        if (pass.needsSwap) {
+          input = output;
+          output = output === this.renderTarget1 ? this.renderTarget2 : this.renderTarget1;
+        }
+      }
+    } finally { this.renderer.setRenderTarget(target); }
+  }
+}
+
 export function createGraphics(renderer, scene, camera, sun) {
   const hdrSupported = renderer.extensions.has('EXT_color_buffer_float');
   let composer, bloom, grade, smaa, scenePass, ao, quality = 'balanced';
@@ -30,7 +56,7 @@ export function createGraphics(renderer, scene, camera, sun) {
 
   function createComposer() {
     const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
-    composer = new EffectComposer(renderer, target);
+    composer = new StreetComposer(renderer, target);
     scenePass = new StreetScenePass(scene, camera, sampleCount(quality === 'cinematic' ? 4 : 2));
     composer.addPass(scenePass);
     ao = new StreetAOPass(scene, camera, scenePass.target.depthTexture);

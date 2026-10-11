@@ -14,6 +14,7 @@ export function createSky() {
       void main() {
         vDirection = position;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        gl_Position.z = gl_Position.w;
       }
     `,
     fragmentShader: `
@@ -58,6 +59,9 @@ export function createSky() {
         day = mix(day, mix(vec3(.39,.46,.55),vec3(.64,.69,.75),horizon) + cloudNoise(cloudUv*.55)*.12, cloudCover*.85);
         day = mix(vec3(0.11, 0.105, 0.095), day, smoothstep(-0.16, 0.02, direction.z));
 
+        if (night == 0.0) {
+          gl_FragColor = vec4(day, 1.0);
+        } else {
         vec3 afterDark = mix(vec3(0.004, 0.009, 0.026), vec3(0.040, 0.066, 0.105), horizon);
         float facingMoon = max(dot(direction, normalize(moonDirection)), 0.0);
         afterDark += vec3(0.10, 0.15, 0.25) * pow(facingMoon, 28.0);
@@ -71,6 +75,7 @@ export function createSky() {
         afterDark = mix(afterDark, vec3(0.055, 0.075, 0.11), cloud * 0.35);
         afterDark = mix(vec3(0.008, 0.012, 0.018), afterDark, smoothstep(-0.16, 0.02, direction.z));
         gl_FragColor = vec4(mix(day, afterDark, night), 1.0);
+        }
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }
@@ -81,6 +86,8 @@ export function createSky() {
   });
   const sky = new THREE.Mesh(new THREE.SphereGeometry(3500, 32, 16), material);
   sky.frustumCulled = false;
-  sky.renderOrder = -100;
+  // Opaque surfaces establish depth first, so hidden sky fragments can fail
+  // early depth testing before running the procedural cloud/star shader.
+  sky.renderOrder = 10000;
   return sky;
 }

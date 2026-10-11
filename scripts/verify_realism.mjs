@@ -66,13 +66,15 @@ const road = new THREE.MeshStandardMaterial({ name: 'ROAD_AZER-0' });
 assert.ok(detail.apply(road)); assert.ok(weather.apply(road));
 assert.equal(weather.apply(road), false, 'weather callback is installed only once');
 const shader = { uniforms: {}, vertexShader: '#include <common>\n#include <project_vertex>',
-  fragmentShader: '#include <common>\n#include <color_fragment>\n#include <normal_fragment_maps>\n#include <lights_fragment_end>' };
+  fragmentShader: '#include <common>\n#include <color_fragment>\n#include <normal_fragment_maps>\n#include <lights_physical_fragment>\n#include <lights_fragment_end>' };
 road.onBeforeCompile(shader, {});
 assert.ok(shader.uniforms.streetDetail && shader.uniforms.weatherWetness && shader.uniforms.weatherSnow, 'weather preserves the road detail shader');
 assert.ok(shader.vertexShader.includes('batchingMatrix * weatherWorld'), 'batched surfaces use world-space weather masks');
 assert.ok(shader.fragmentShader.includes('streetGrain') && shader.fragmentShader.includes('settledSnow'), 'both shader patches survive composition');
 assert.equal(road.roughness, .97, 'dry road starts with a matte finish');
 assert.ok(shader.fragmentShader.includes('roadSheen=mix(.28,1.0,weatherWetness)'), 'wet modes restore their full specular response');
+assert.ok(shader.fragmentShader.indexOf('float wetSurface=') > shader.fragmentShader.indexOf('roughnessFactor = clamp('), 'water roughness runs after the dry detail clamp');
+assert.ok(shader.fragmentShader.indexOf('float wetSurface=') < shader.fragmentShader.indexOf('#include <lights_physical_fragment>'), 'water shading reaches PBR lighting');
 const transparent = new THREE.MeshPhysicalMaterial({ transparent: true });
 assert.equal(weather.apply(transparent), false, 'glass is not whitened by opaque snow shading');
 const fence = new THREE.MeshStandardMaterial({ alphaTest: .04, side: THREE.DoubleSide });
@@ -83,6 +85,7 @@ for (const [id, preset] of Object.entries(WEATHER_PRESETS)) {
   weather.setMode(id); weather.update(.016, camera);
   assert.equal(shader.uniforms.weatherWetness.value, preset.wet);
   assert.equal(shader.uniforms.weatherSnow.value, preset.snow);
+  assert.equal(shader.uniforms.weatherRainfall.value, id === 'rain' ? weather.intensity : 0, 'still wet roads and other modes have no rain ripples');
   assert.equal(sky.material.uniforms.cloudCover.value, preset.clouds);
   assert.equal(scene.getObjectByName('weather rain').visible, id === 'rain');
   assert.equal(scene.getObjectByName('weather snow').visible, id === 'snow');
@@ -93,7 +96,7 @@ for (const [id, preset] of Object.entries(WEATHER_PRESETS)) {
 assert.equal(road.version, version, 'weather transitions change uniforms without recompiling every map material');
 weather.setMode('unknown'); assert.equal(weather.mode, 'sunny');
 weather.setQuality('performance');
-assert.equal(scene.getObjectByName('weather rain').geometry.drawRange.count, 1120);
+assert.equal(scene.getObjectByName('weather rain').geometry.drawRange.count, 3360);
 const rain = scene.getObjectByName('weather rain'), snow = scene.getObjectByName('weather snow');
 const rainPositions = rain.geometry.getAttribute('position'), snowPositions = snow.geometry.getAttribute('position');
 for (const [quality, density] of [['performance', .35], ['balanced', .65], ['cinematic', 1]]) {
@@ -101,12 +104,13 @@ for (const [quality, density] of [['performance', .35], ['balanced', .65], ['cin
   for (const intensity of [0, .25, 1, 2]) for (const mode of ['rain', 'snow']) {
     weather.setMode(mode); weather.setIntensity(intensity); weather.update(.016, camera);
     assert.equal(weather.intensity, intensity);
-    assert.equal(rain.geometry.drawRange.count, Math.floor(1600 * density * intensity) * 2);
+    assert.equal(rain.geometry.drawRange.count, Math.floor(1600 * density * intensity) * 6);
     assert.equal(snow.geometry.drawRange.count, Math.floor(1200 * density * intensity));
     assert.equal(rain.visible, mode === 'rain' && intensity > 0);
     assert.equal(snow.visible, mode === 'snow' && intensity > 0);
     assert.equal(shader.uniforms.weatherWetness.value, WEATHER_PRESETS[mode].wet, 'amount does not change wetness');
     assert.equal(shader.uniforms.weatherSnow.value, WEATHER_PRESETS[mode].snow, 'amount does not change snow cover');
+    assert.equal(shader.uniforms.weatherRainfall.value, mode === 'rain' ? intensity : 0, 'rain ripples follow the precipitation slider');
     assert.equal(sky.material.uniforms.cloudCover.value, WEATHER_PRESETS[mode].clouds, 'amount does not change lighting');
   }
 }
@@ -121,7 +125,7 @@ const grainMap = new THREE.DataTexture(new Uint8Array(16), 2, 2);
 const grainRoad = new THREE.MeshStandardMaterial({ name: 'ROADA_MAIN-material', map: grainMap });
 detail.apply(grainRoad); weather.apply(grainRoad);
 const grainShader = { uniforms: {}, vertexShader: '#include <common>\n#include <project_vertex>',
-  fragmentShader: '#include <common>\n#include <map_fragment>\n#include <color_fragment>\n#include <normal_fragment_maps>\n#include <lights_fragment_end>' };
+  fragmentShader: '#include <common>\n#include <map_fragment>\n#include <color_fragment>\n#include <normal_fragment_maps>\n#include <lights_physical_fragment>\n#include <lights_fragment_end>' };
 grainRoad.onBeforeCompile(grainShader, {});
 assert.ok(grainShader.fragmentShader.includes('textureLod(map, vMapUv, streetMapMip)'), 'main road filters baked aggregate specks');
 assert.ok(grainShader.fragmentShader.includes('streetGrainWeight'), 'unresolved procedural grain fades with pixel footprint');

@@ -19,12 +19,16 @@ import { createGraphics, createSkyEnvironments } from './graphics.js';
 import { accelerationPullback, chaseCameraOffset } from './cameraTuning.js';
 import { DriveCameraControls } from './driveCameraControls.js';
 import { BarrierCollision } from './barrierCollision.js';
+import { GroundSampler } from './groundSampler.js';
+import { createShadowCache } from './shadowCache.js';
 import { isTrackBoundary, createShadowCandidate, updateShadowCandidates } from './trackBoundaries.js';
 import { partitionMesh, canCullBackfaces, WorldOptimization, freezeStaticWorld } from './worldOptimization.js';
+import { DISTANCE_SETTINGS, readDistances, saveDistance } from './renderDistance.js';
 import { createSurfaceDetail } from './surfaceDetail.js';
 import { createLocalReflections } from './localReflections.js';
 import { createGraphicsDiagnostics } from './graphicsDiagnostics.js';
 import { createWeather } from './weather.js';
+import { applyFoliageLighting } from './foliageLighting.js';
 import { createTireEffects } from './tireEffects.js';
 import { loadingScreen } from './loadingScreen.js';
 import { fetchAssetBytes } from './assetTransfer.js';
@@ -63,11 +67,12 @@ const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.15, 6
 camera.up.set(0, 0, 1);
 const graphicsOptions = new URLSearchParams(location.search);
 const worldOptimization = new WorldOptimization(camera, { occlusion: graphicsOptions.get('occlusion') !== 'off' });
+worldOptimization.installSubmissionFilter(renderer);
 const multiDrawSupported = renderer.extensions.has('WEBGL_multi_draw');
 const surfaceDetail = createSurfaceDetail();
 surfaceDetail.texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 const localReflections = createLocalReflections(renderer, scene, sky);
-const weather = createWeather(scene, sky);
+const weather = createWeather(scene, sky, localReflections);
 const tireEffects = createTireEffects(scene);
 const clock = new THREE.Clock();
 const draco = new DRACOLoader().setDecoderPath('/draco/');
@@ -133,6 +138,7 @@ let assetFileBytes = {};
 let physicsAccumulator = 0, safeTimer = 0;
 let physicsPosition, previousBodyPosition, previousBodyQuaternion;
 const interpolatedBody = new THREE.Vector3(), interpolatedQuaternion = new THREE.Quaternion();
+const bodyOffset = new THREE.Vector3();
 const minimapForward = new THREE.Vector3();
 let pendingShiftUp = false, pendingShiftDown = false;
 let padShiftUpHeld = false, padShiftDownHeld = false;
@@ -201,6 +207,8 @@ scene.add(sun, sun.target);
 const shadowAnchor = new THREE.Vector3();
 const shadowOffset = new THREE.Vector3(450, 165, 310);
 const graphics = createGraphics(renderer, scene, camera, sun);
+const shadowCache = createShadowCache(scene, sun, camera);
+worldOptimization.installDistanceFog(scene);
 const graphicsQuality = document.getElementById('graphics-quality');
 let savedQuality = 'cinematic';
 try { savedQuality = localStorage.getItem('baku-graphics-quality') ?? 'cinematic'; } catch { /* storage is optional */ }
@@ -212,6 +220,28 @@ const aoControl = document.getElementById('ambient-occlusion');
 const scaleControl = document.getElementById('render-scale');
 const precipitationControl = document.getElementById('precipitation-intensity');
 const precipitationAmount = document.getElementById('precipitation-amount');
+const distanceControls = { renderDistance: document.getElementById('render-distance'), propsDistance: document.getElementById('props-distance') };
+try { worldOptimization.setDistances(readDistances(localStorage)); } catch { /* storage is optional */ }
+function updateRangeAppearance(control) {
+  const progress = (Number(control.value) - Number(control.min)) / (Number(control.max) - Number(control.min));
+  control.style.setProperty('--range-progress', `${Math.max(0, Math.min(1, progress)) * 100}%`);
+}
+for (const [name, control] of Object.entries(distanceControls)) {
+  const spec = DISTANCE_SETTINGS[name], amount = document.getElementById(`${control.id}-amount`);
+  control.min = spec.min; control.max = spec.max; control.step = spec.step;
+  const refresh = () => {
+    control.value = worldOptimization.distances[name];
+    const text = `${Number(control.value).toLocaleString('en-US')} m`;
+    amount.value = text; control.setAttribute('aria-valuetext', text);
+    updateRangeAppearance(control);
+  };
+  refresh();
+  control.oninput = () => {
+    worldOptimization.setDistances({ [name]: control.value });
+    try { saveDistance(localStorage, name, control.value); } catch { /* storage is optional */ }
+    refresh();
+  };
+}
 try {
   weather.setMode(localStorage.getItem('baku-weather') ?? 'sunny');
   weather.setIntensity(localStorage.getItem('baku-precipitation-intensity') ?? 1);
@@ -220,13 +250,29 @@ try {
 } catch { /* storage is optional */ }
 precipitationControl.value = String(weather.intensity * 100);
 precipitationAmount.value = `${Math.round(weather.intensity * 100)}%`;
+updateRangeAppearance(precipitationControl);
 precipitationControl.oninput = () => {
   const intensity = weather.setIntensity(Number(precipitationControl.value) / 100);
   precipitationAmount.value = `${Math.round(intensity * 100)}%`;
+  updateRangeAppearance(precipitationControl);
   try { localStorage.setItem('baku-precipitation-intensity', String(intensity)); } catch { /* storage is optional */ }
 };
 graphics.setAO(aoControl.checked);
 aoControl.disabled = !graphics.aoAvailable;
+function updateAODescription() {
+  document.getElementById('ao-description').textContent = graphics.aoAvailable
+    ? 'Adds depth around surfaces' : graphics.quality === 'performance'
+      ? 'Available in Balanced or Cinematic' : 'Unavailable on this graphics device';
+}
+updateAODescription();
+const volumeAmount = document.getElementById('engine-volume-amount');
+function updateVolumeControl() {
+  const control = ui['engine-volume'];
+  engineAudio.setVolume(control.value);
+  volumeAmount.value = `${Math.round(engineAudio.volume / .65 * 100)}%`;
+  updateRangeAppearance(control);
+}
+updateVolumeControl();
 for (const selector of weatherSelectors) {
   selector.value = weather.mode;
   selector.onchange = () => setWeather(selector.value);
@@ -245,6 +291,7 @@ graphicsQuality.onchange = () => {
   localReflections.setQuality(graphics.quality);
   weather.setQuality(graphics.quality);
   aoControl.disabled = !graphics.aoAvailable;
+  updateAODescription();
   try { localStorage.setItem('baku-graphics-quality', graphicsQuality.value); } catch { /* storage is optional */ }
 };
 
@@ -411,6 +458,7 @@ async function tuneMap(root) {
       if (/water/i.test(m.name)) { m.roughness = 0.16; m.metalness = 0.18; m.envMapIntensity = 0.55; }
       surfaceDetail.apply(m);
       weather.apply(m);
+      applyFoliageLighting(m);
       if (/window|glass/i.test(m.name)) { m.roughness = 0.22; m.metalness = 0.24; m.envMapIntensity = 0.62; }
       if (/window|building.*lights/i.test(m.name) && m.emissive && !m.transparent && !nightMaterials.includes(m)) {
         m.emissive.set(0xffd7a3);
@@ -437,7 +485,7 @@ async function tuneMap(root) {
     if (isTrackBoundary(o)) barrierCollision.addMesh(o);
     const chunks = partitionMesh(o, multiDrawSupported ? 96 : 256);
     if (chunks[0] !== o) {
-      if (multiDrawSupported && !o.material.transparent) o.parent.add(worldOptimization.addBatchedMesh(chunks));
+      if (!o.material.transparent) o.parent.add(worldOptimization.addBatchedMesh(chunks));
       else for (const chunk of chunks) { o.parent.add(chunk); worldOptimization.addMesh(chunk); }
       if (isTrackBoundary(o)) o.visible = false;
       else { o.removeFromParent(); o.geometry.dispose(); }
@@ -446,6 +494,7 @@ async function tuneMap(root) {
       const candidate = createShadowCandidate(chunk);
       if (candidate) shadowCandidates.push(candidate);
     }
+    worldOptimization.releaseBatchedSources(chunks);
     if (performance.now() - yieldedAt > 20) { await nextPaint(); yieldedAt = performance.now(); }
   }
   freezeStaticWorld(root);
@@ -495,6 +544,7 @@ async function boot() {
     }
     scene.add(collision.scene);
     collision.scene.updateMatrixWorld(true);
+    groundSampler = new GroundSampler(collisionMeshes);
     for (const mesh of collisionMeshes) barrierCollision.addMesh(mesh);
     freezeStaticWorld(collision.scene);
     loadingScreen.stage('Preparing your car…', '04 / 05 · YOUR CAR', 'Downloading your first ride.', true);
@@ -531,24 +581,9 @@ async function boot() {
   } catch(err) { loadingScreen.fail(err); console.error(err); }
 }
 
-const groundRay = new THREE.Raycaster();
-groundRay.firstHitOnly = true;
+let groundSampler;
 function sampleGround(origin, direction, maxDistance) {
-  groundRay.set(origin, direction);
-  groundRay.near = 0;
-  groundRay.far = maxDistance;
-  let best = null;
-  for (const mesh of collisionMeshes) {
-    const hit = groundRay.intersectObject(mesh, false)[0];
-    if (hit && (!best || hit.distance < best.distance)) best = hit;
-  }
-  if (!best) return null;
-  const normal = best.face?.normal?.clone().transformDirection(best.object.matrixWorld) ?? new THREE.Vector3(0, 0, 1);
-  if (normal.z < 0) normal.negate();
-  const material = Array.isArray(best.object.material) ? best.object.material[0] : best.object.material;
-  const name = `${best.object.name} ${material?.name ?? ''}`;
-  const mu = /grass|dirt|sand/i.test(name) ? 0.65 : /gravel/i.test(name) ? 0.75 : 1;
-  return { distance: best.distance, point: best.point, normal, mu, rr: mu < 1 ? 0.045 : 0.013 };
+  return groundSampler?.sample(origin, direction, maxDistance) ?? null;
 }
 function groundHeight(x, y, from = 8) {
   return sampleGround(new THREE.Vector3(x, y, from), new THREE.Vector3(0, 0, -1), 16)?.point.z;
@@ -601,8 +636,8 @@ function releaseDrivePointer() {
   if (document.pointerLockElement === canvas) document.exitPointerLock?.();
 }
 function startDrive(){mode='drive';driveCamera.reset();cameraReady=false;cameraTransition=null;pointerSeen=false;pointerEdgeX=pointerEdgeY=0;ui.menu.classList.add('hidden');ui.hud.classList.remove('hidden');captureDrivePointer();engineAudio.activate().catch(console.warn);clock.getDelta();}
-function pause(){if(mode!=='drive')return;mode='pause';keys.clear();driveCamera.setRearHeld(false);pointerSeen=false;pointerEdgeX=pointerEdgeY=0;ui.pause.classList.remove('hidden');releaseDrivePointer();}
-function resume(){if(mode!=='pause')return;mode='drive';ui.pause.classList.add('hidden');captureDrivePointer();engineAudio.activate().catch(console.warn);clock.getDelta();}
+function pause(){if(mode!=='drive')return;mode='pause';keys.clear();driveCamera.setRearHeld(false);pointerSeen=false;pointerEdgeX=pointerEdgeY=0;ui.pause.classList.remove('hidden');releaseDrivePointer();ui.resume.focus({preventScroll:true});}
+function resume(){if(mode!=='pause')return;mode='drive';ui.pause.classList.add('hidden');document.activeElement?.blur();captureDrivePointer();engineAudio.activate().catch(console.warn);clock.getDelta();}
 function setAudioMuted(muted) {
   audioMuted = Boolean(muted);
   engineAudio.setEnabled(!audioMuted && !document.hidden);
@@ -741,7 +776,7 @@ function updateCar(dt) {
     previousBodyQuaternion.copy(handling.quaternion);
     stepDynamics(handling, drivingInput(), FIXED_STEP, activeVehicle, sampleGround);
     barrierCollision.resolve(handling, previousBodyPosition, previousBodyQuaternion, activeVehicle);
-    physicsPosition.copy(handling.position).add(new THREE.Vector3(0, 0, -handling.comHeight).applyQuaternion(handling.quaternion));
+    physicsPosition.copy(handling.position).add(bodyOffset.set(0, 0, -handling.comHeight).applyQuaternion(handling.quaternion));
     if (!handling.groundedWheels && handling.position.z < -4) { resetCar(); return; }
     if (handling.groundedWheels >= 3 && handling.velocity.length() < 34) {
       safeTimer += FIXED_STEP;
@@ -755,13 +790,13 @@ function updateCar(dt) {
   const alpha = THREE.MathUtils.clamp(physicsAccumulator / FIXED_STEP, 0, 1);
   interpolatedBody.copy(previousBodyPosition).lerp(handling.position, alpha);
   interpolatedQuaternion.copy(previousBodyQuaternion).slerp(handling.quaternion, alpha);
-  car.position.copy(interpolatedBody).add(new THREE.Vector3(0, 0, -handling.comHeight).applyQuaternion(interpolatedQuaternion));
+  car.position.copy(interpolatedBody).add(bodyOffset.set(0, 0, -handling.comHeight).applyQuaternion(interpolatedQuaternion));
   car.quaternion.copy(interpolatedQuaternion);
   animateCarModel(car, handling, dt);
-  ui.speed.textContent = Math.round(Math.hypot(handling.velocity.x, handling.velocity.y) * 3.6);
-  ui.gear.textContent = GEAR_LABELS[handling.gear] ?? '?';
-  ui.rpm.textContent = Math.round(handling.rpm);
-  ui.transmission.textContent = handling.autoTransmission ? 'AUTO' : 'MANUAL';
+  updateHUDText(ui.speed, Math.round(Math.hypot(handling.velocity.x, handling.velocity.y) * 3.6));
+  updateHUDText(ui.gear, GEAR_LABELS[handling.gear] ?? '?');
+  updateHUDText(ui.rpm, Math.round(handling.rpm));
+  updateHUDText(ui.transmission, handling.autoTransmission ? 'AUTO' : 'MANUAL');
   for (const aid of ['abs', 'tcs', 'esc']) {
     ui[`aid-${aid}`].classList.toggle('active', handling.aids[aid]);
     ui[`aid-${aid}`].classList.toggle('working', handling[`${aid}Active`]);
@@ -769,6 +804,11 @@ function updateCar(dt) {
   for (let i = 0; i < 4; i++) ui[`susp-${i}`].style.height = `${Math.round(100 * THREE.MathUtils.clamp(handling.wheels[i].compression / activeVehicle.suspTravel, 0, 1))}%`;
   minimapForward.set(0, 1, 0).applyQuaternion(car.quaternion);
   drawMinimap(ui.minimap, minimap, route, car.position, Math.atan2(-minimapForward.x, minimapForward.y), Math.hypot(handling.velocity.x, handling.velocity.y), multiplayerSession?.getMapPlayers());
+}
+
+function updateHUDText(element, value) {
+  const text = String(value);
+  if (element.textContent !== text) element.textContent = text;
 }
 
 function updateSceneLighting(dt) {
@@ -957,6 +997,13 @@ function toggleTransmission() {
   toast(handling.autoTransmission ? 'AUTOMATIC GEARBOX' : 'MANUAL GEARBOX');
 }
 addEventListener('keydown',e=>{
+  if (e.code === 'Tab' && !ui.pause.classList.contains('hidden')) {
+    const controls = [...ui.pause.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled)')];
+    const first = controls[0], last = controls.at(-1);
+    if (e.shiftKey && (document.activeElement === first || !ui.pause.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || !ui.pause.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+    return;
+  }
   if (mode !== 'drive' && e.target.matches?.('input, select, textarea, button') && e.code !== 'Escape') return;
   // Let the precipitation slider use its native arrow-key adjustment while paused.
   if (mode !== 'drive' && e.target === precipitationControl && e.code !== 'Escape') return;
@@ -1016,7 +1063,7 @@ document.addEventListener('mouseup', e => {
   driveCamera.setRearHeld(false);
 }, { capture: true });
 document.addEventListener('auxclick', e => { if (mode === 'drive' && e.button === 1) e.preventDefault(); });
-ui['drive-button'].onclick=startDrive;ui['garage-button'].onclick=openGarage;ui['time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-garage'].onclick=openGarage;ui['garage-back'].onclick=closeGarage;ui['controls-button'].onclick=openControls;ui['pause-controls'].onclick=openControls;ui['close-controls'].onclick=closeControls;ui.resume.onclick=resume;ui.restart.onclick=()=>{recoverInPlace();resume()};ui.exit.onclick=exitToMenu;ui['engine-volume'].oninput=e=>engineAudio.setVolume(e.target.value);ui['pause-mute'].onclick=()=>setAudioMuted(!audioMuted);ui['full-map-close'].onclick=closeFullMap;
+ui['drive-button'].onclick=startDrive;ui['garage-button'].onclick=openGarage;ui['time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-time-toggle'].onclick=()=>setNightMode(!nightMode);ui['pause-garage'].onclick=openGarage;ui['garage-back'].onclick=closeGarage;ui['controls-button'].onclick=openControls;ui['pause-controls'].onclick=openControls;ui['close-controls'].onclick=closeControls;ui.resume.onclick=resume;ui.restart.onclick=()=>{recoverInPlace();resume()};ui.exit.onclick=exitToMenu;ui['engine-volume'].oninput=updateVolumeControl;ui['pause-mute'].onclick=()=>setAudioMuted(!audioMuted);ui['full-map-close'].onclick=closeFullMap;
 for (const [id, button] of garageChoices) button.onclick = () => selectVehicle(id);
 for (const swatch of document.querySelectorAll('.paint-swatch')) swatch.onclick=()=>choosePaint(swatch.dataset.paint);
 ui['custom-paint'].oninput=e=>choosePaint(e.target.value);
@@ -1153,8 +1200,12 @@ function frame() {
   engineAudio.update(handling, activeVehicle, mode === 'drive', dt);
   tireEffects.update(dt, handling, activeVehicle, weather.preset, mode === 'drive', mode !== 'garage' && mode !== 'loading');
   if (isMultiplayer && multiplayerSession) multiplayerSession.update(dt);
+  weather.updateVehicle(car, dt, handling?.velocity, mode !== 'garage' && mode !== 'loading');
+  if (isMultiplayer && multiplayerSession) for (const remote of multiplayerSession.remotes.values()) {
+    weather.updateVehicle(remote.car, dt, remote.currentVelocity, mode !== 'garage' && mode !== 'loading');
+  }
   if (mode === 'map') renderFullMap();
-  worldOptimization.update();
+  worldOptimization.update(dt);
   localReflections.update(dt, car, carCache.values(), mode === 'garage' || mode === 'loading');
   graphics.render(dt);
   graphicsDiagnostics.end();

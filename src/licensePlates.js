@@ -116,10 +116,14 @@ function characters(group, layout, settings) {
     if (settings.hyphens) line('--', [-.0585, .0695], -.001, .015, .010);
   } else {
     // AZS Type III: region on the top row; two letters + three digits below.
-    // No hyphens on the compact plate. Its RFID label is at the upper right.
+    // The compact plate's RFID label is at the upper right.
     line(settings.region, [-.0215, .0155], .033, .029, .050);
     line(settings.letters, [-.091, -.047], -.034, .036, .050);
     line(settings.serial, [.014, .051, .088], -.034, .029, .050);
+    if (settings.hyphens) {
+      line('-', [.047], .032, .015, .010);
+      line('-', [-.0165], -.035, .015, .010);
+    }
   }
   // ExtrudeGeometry groups are per shape. Merge into two material batches.
   const batches = [[], []];

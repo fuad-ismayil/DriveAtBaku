@@ -1,44 +1,69 @@
 import { PLATE_LETTERS, normalizePlateSettings, plateRegistration } from './licensePlateSettings.js';
 export function createLicensePlateControls(root, { getSettings, onChange, onInspect }) {
   const find = id => root.querySelector(`#plate-${id}`);
-  const ui = Object.fromEntries(['enabled', 'options', 'region', 'letters', 'serial', 'hyphens', 'format', 'identity', 'preview', 'fit-note'].map(id => [id, find(id)]));
+  const ui = Object.fromEntries(['enabled', 'options', 'region', 'letters', 'serial', 'details', 'format', 'preview', 'fit-note', 'disabled-note'].map(id => [id, find(id)]));
+  // Keep unfinished edits visible without saving an invalid registration.
+  let editing = null;
+  const setToggle = (button, checked) => {
+    button.setAttribute('aria-checked', String(checked));
+    button.querySelector('.plate-toggle-state').textContent = checked ? 'ON' : 'OFF';
+  };
   function render() {
     const s = getSettings();
-    ui.enabled.setAttribute('aria-checked', String(s.enabled)); ui.enabled.textContent = s.enabled ? 'ON' : 'OFF';
+    setToggle(ui.enabled, s.enabled);
     ui.options.hidden = !s.enabled;
-    for (const key of ['region', 'letters', 'serial', 'format', 'identity']) if (ui[key].value !== s[key]) ui[key].value = s[key];
-    ui.hyphens.disabled = s.format === 'compact' || s.identity === 'new';
-    ui.hyphens.setAttribute('aria-checked', String(s.hyphens && s.format === 'long'));
-    ui.hyphens.textContent = s.format === 'compact' ? 'OFF' : s.hyphens ? 'ON' : 'OFF';
-    const preview = ui.preview, separator = s.hyphens && s.format === 'long' ? '-' : ' ';
+    ui['disabled-note'].hidden = s.enabled;
+    for (const key of ['region', 'letters', 'serial', 'format']) if (key !== editing && ui[key].value !== s[key]) ui[key].value = s[key];
+    setToggle(ui.details, s.identity === 'older');
+    const preview = ui.preview;
     preview.dataset.format = s.format; preview.dataset.identity = s.identity;
-    preview.querySelector('.plate-preview-region').textContent = s.region + (s.format === 'long' ? separator : '');
-    preview.querySelector('.plate-preview-letters').textContent = s.letters;
-    preview.querySelector('.plate-preview-separator').textContent = separator;
-    preview.querySelector('.plate-preview-serial').textContent = s.serial;
-    preview.setAttribute('aria-label', `Azerbaijani plate ${plateRegistration(s)}`);
-    ui['fit-note'].textContent = s.format === 'compact' ? 'Two-row Azerbaijani layout uses no hyphens. Both mounts adapt to the taller plate.'
-      : s.identity === 'new' ? 'New style: straight flag and AZ, without hyphens or an RFID panel.'
-      : 'Older style: straight flag and RFID panel. Both plates fitted individually to this car.';
+    preview.querySelectorAll('.plate-preview-separator').forEach(separator => { separator.textContent = s.hyphens ? '-' : ''; });
+    preview.setAttribute('aria-label', `Edit Azerbaijani plate ${plateRegistration(s)}`);
+    ui['fit-note'].textContent = s.format === 'compact' ? 'Square plate · two rows' : 'Long plate · one row';
   }
   const commit = patch => { onChange(normalizePlateSettings({ ...getSettings(), ...patch })); render(); };
   ui.enabled.onclick = () => {
     const enabled = !getSettings().enabled; commit({ enabled });
     if (!enabled) { resetView(); onInspect('car'); }
   };
-  ui.hyphens.onclick = () => commit({ hyphens: !getSettings().hyphens });
+  ui.details.onclick = () => {
+    const enabled = getSettings().identity !== 'older';
+    commit({ identity: enabled ? 'older' : 'new', hyphens: enabled });
+  };
   ui.format.onchange = () => commit({ format: ui.format.value });
-  ui.identity.onchange = () => commit({ identity: ui.identity.value, hyphens: ui.identity.value === 'older' });
   for (const [key, count] of [['region', 2], ['letters', 2], ['serial', 3]]) {
-    ui[key].oninput = () => {
-      const value = key === 'letters' ? ui[key].value.toUpperCase().split('').filter(c => PLATE_LETTERS.includes(c)).join('').slice(0, count)
-        : ui[key].value.replace(/\D/g, '').slice(0, count);
-      ui[key].value = value;
-      if (value.length === count && (key === 'letters' || Number(value) > 0)) commit({ [key]: value });
+    const input = ui[key];
+    const sanitize = value => key === 'letters'
+      ? value.toUpperCase().split('').filter(c => PLATE_LETTERS.includes(c)).join('').slice(0, count)
+      : value.replace(/\D/g, '').slice(0, count);
+    input.onfocus = () => { editing = key; input.select(); };
+    input.oninput = event => {
+      if (event.isComposing) return;
+      const raw = input.value, cursor = input.selectionStart, value = sanitize(raw);
+      if (raw !== value) {
+        input.value = value;
+        const position = sanitize(raw.slice(0, cursor)).length;
+        input.setSelectionRange(position, position);
+      }
+      editing = key;
+      // Pad partial digits and retain the saved second letter while typing.
+      // Every valid keystroke updates the mounted plate through the same path.
+      if (value && (key === 'letters' || Number(value) > 0)) {
+        commit({ [key]: key === 'letters' ? value + getSettings().letters.slice(value.length) : value });
+      }
     };
-    ui[key].onblur = () => {
-      const value = ui[key].value;
-      if (value && (key !== 'letters' || value.length === count)) commit({ [key]: value }); else render();
+    input.oncompositionend = () => input.oninput({ isComposing: false });
+    input.onblur = () => { editing = null; render(); };
+    input.onkeydown = event => {
+      if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); input.blur(); }
+    };
+    input.onpaste = event => {
+      const match = event.clipboardData?.getData('text').trim().toUpperCase().match(/^(\d{2})[\s-]*([A-Z]{2})[\s-]*(\d{3})$/);
+      if (!match || ![...match[2]].every(c => PLATE_LETTERS.includes(c)) || !Number(match[1]) || !Number(match[3])) return;
+      event.preventDefault();
+      editing = null;
+      commit({ region: match[1], letters: match[2], serial: match[3] });
+      ui.serial.focus(); ui.serial.select();
     };
   }
   const views = [...root.querySelectorAll('[data-plate-view]')];

@@ -2,19 +2,37 @@
 node_modules/
 dist/
 .vite/
+.vite-temp/
+.cache/
 
 # Local previews, temporary exports, and Python cache
 artifacts/
 *.log
 *.pyc
+*.pyo
 __pycache__/
 .DS_Store
 Thumbs.db
+Desktop.ini
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Generated coverage and browser-verification reports
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
 
 # Machine-specific settings and secrets
 .env
 .env.*
 !.env.example
+!.env.*.example
 .vscode/
 .idea/
 
@@ -26,3 +44,4 @@ levels/
 public/generated/baku.glb
 public/generated/buildings.glb
 public/generated/textures/
+public/generated/conversion-report.json

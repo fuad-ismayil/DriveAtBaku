@@ -147,6 +147,9 @@ export function createCarModel(gltf) {
   visual.traverse(object => {
     if (!object.isMesh) return;
     const materials = Array.isArray(object.material) ? object.material : [object.material];
+    if (/^(body|glass|headlight_covers|lights_red|brakes|lights|leds)$|mirror/i.test(object.name)) {
+      for (const material of materials) material.userData.vehicleWaterExterior = true;
+    }
     object.castShadow = !materials.every(material => material.transparent);
     object.receiveShadow = true;
   });

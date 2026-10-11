@@ -14,7 +14,7 @@ The source is meter-scale, Z-up, and approximately 2.8 × 2.1 km across for coll
 2. Preserves UVs and material groups, resolves the source's stale absolute texture references by filename, converts DDS textures to optimized 1024 px JPEGs or alpha-preserving PNGs, and embeds the resulting materials. Foliage receives a cutout threshold suited to its texture; road and marking textures use the source material's much lower alpha threshold.
 3. Converts the supplied collision geometry separately for invisible, accelerated road-contact queries.
 4. Extracts the original spawn and ordered checkpoints into `route.json`, and derives the starting heading from the first two checkpoints.
-5. Writes measured output statistics to `conversion-report.json`.
+5. Writes measured output statistics to the local, ignored `artifacts/map-conversion/conversion-report.json`.
 
 ## Preserved and pending
 

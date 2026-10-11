@@ -79,6 +79,10 @@ function materialFor(part, entry, index, textures, brakeMaterials, paintMaterial
     depthWrite: rgba[3] === 255, side: rgba[3] < 255 ? THREE.DoubleSide : THREE.FrontSide,
     envMapIntensity: 0.72,
   });
+  // Authored exterior body, lamps and mirrors; cabin fabrics and trim retain
+  // their original dry appearance behind the windows.
+  result.userData.vehicleWaterExterior = [1, 14, 15, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 29].includes(part.id)
+    && !['ss', 's', 'sss'].includes(textureName);
   if (part.id === 18 && index === 3) {
     result.emissive.set(0x9e0905);
     result.emissiveIntensity = 0.2;

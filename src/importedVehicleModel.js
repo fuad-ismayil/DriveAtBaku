@@ -124,6 +124,8 @@ function finishMaterial(source, role, paints, headlights, brakes, reverse, setti
     material.customProgramCacheKey = () => `prado-reverse-${role}`;
     reverse.push(material);
   }
+  material.userData.vehicleWaterExterior = role !== 'rubber' && role !== 'rim' && !/interior|_int\b/i.test(source.name);
+  material.userData.vehicleWaterGlass = role === 'glass' || role === 'headlight-cover' || role === 'reverse-cover';
   return material;
 }
 
