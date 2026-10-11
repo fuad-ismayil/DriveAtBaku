@@ -1,6 +1,7 @@
 import http from 'http';
 import { randomBytes } from 'crypto';
 import { WebSocketServer, WebSocket } from 'ws';
+import { INDICATOR_MODES, isNewerSequence } from '../src/net/indicatorProtocol.js';
 
 const PORT = Number(process.env.PORT) || 8787;
 const PROTOCOL_VERSION = 1;
@@ -98,7 +99,10 @@ function sanitizeState(raw) {
     head: Number.isFinite(raw.li.head) ? raw.li.head : 0,
     brake: raw.li.brake ? 1 : 0,
     rev: raw.li.rev ? 1 : 0,
-  } : { head: 0, brake: 0, rev: 0 };
+    sig: INDICATOR_MODES.includes(raw.li.sig) ? raw.li.sig : 'off',
+    sigRev: Number.isFinite(raw.li.sigRev) ? raw.li.sigRev >>> 0 : 0,
+    sigAt: Number.isFinite(raw.li.sigAt) ? raw.li.sigAt : 0,
+  } : { head: 0, brake: 0, rev: 0, sig: 'off', sigRev: 0, sigAt: 0 };
 
   const wheels = [];
   if (Array.isArray(raw.w)) {
@@ -344,6 +348,16 @@ wss.on('connection', (ws, req) => {
 
       const validatedState = sanitizeState(msg);
       if (validatedState) {
+        if (player.lastState && !isNewerSequence(validatedState.seq, player.lastState.seq)) return;
+        const li = validatedState.li, previous = player.lastState?.li;
+        if (previous && player.lastState.cid === validatedState.cid
+          && li.sig === previous.sig && li.sigRev === previous.sigRev) {
+          li.sigAt = previous.sigAt;
+        } else {
+          // Timestamp is in the server clock domain (client RTT clock sync).
+          // Bound malformed clocks; unchanged modes keep their first reference.
+          li.sigAt = li.sigAt > now - 7 * 86400000 && li.sigAt <= now + 1000 ? li.sigAt : now;
+        }
         player.lastState = validatedState;
       }
       return;

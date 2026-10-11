@@ -15,6 +15,7 @@ export class NetClient {
     this.rtt = 0;
     this.rttSamples = [];
     this.timeOffset = 0; // serverTime - localTime
+    this.serverClock = null;
 
     // Event callbacks
     this.onWelcome = null;
@@ -38,7 +39,13 @@ export class NetClient {
   }
 
   getServerTime() {
+    if (this.serverClock) return this.serverClock.epoch + performance.now() - this.serverClock.local;
     return Date.now() + this.timeOffset;
+  }
+
+  _setServerClock(epoch, movementOffset = epoch - Date.now()) {
+    this.timeOffset = movementOffset;
+    this.serverClock = { epoch, local: performance.now() };
   }
 
   /**
@@ -211,7 +218,7 @@ export class NetClient {
         // Establish a usable clock immediately; the following ping samples
         // refine it with RTT compensation. Remote interpolation must not wait
         // for that first ping when players join from differently-set clocks.
-        if (Number.isFinite(msg.serverTime)) this.timeOffset = msg.serverTime - Date.now();
+        if (Number.isFinite(msg.serverTime)) this._setServerClock(msg.serverTime);
         this.onWelcome?.(msg);
         break;
       case 'joined':
@@ -232,8 +239,8 @@ export class NetClient {
 
         // Estimated server time offset
         if (msg.serverTime) {
-          const estimatedLocalReceive = now - (this.rtt / 2);
-          this.timeOffset = msg.serverTime - estimatedLocalReceive;
+          // Keep the existing averaged offset for movement interpolation.
+          this._setServerClock(msg.serverTime + rtt / 2, msg.serverTime - now + this.rtt / 2);
         }
         break;
       }

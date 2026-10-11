@@ -6,6 +6,7 @@ export class MultiplayerSession {
   constructor(options) {
     this.scene = options.scene;
     this.localVehicle = options.localVehicle;
+    this.indicatorState = options.indicatorState;
     this.baseAssetScene = options.baseAssetScene;
     this.camera = options.camera;
     this.onToast = options.onToast || console.log;
@@ -104,6 +105,9 @@ export class MultiplayerSession {
     };
 
     this.client.onWelcome = data => {
+      for (const remote of this.remotes.values()) remote.dispose();
+      this.remotes.clear();
+      if (this.indicatorState) this.indicatorState.serverAt = null;
       this.ownId = data.id;
       this.ownColor = data.color;
       this.spawnIndex = data.spawnIndex ?? 0;
@@ -154,7 +158,13 @@ export class MultiplayerSession {
 
     this.client.onSnapshot = data => {
       for (const [id, state] of Object.entries(data.states || {})) {
-        if (id === this.ownId) continue;
+        if (id === this.ownId) {
+          if (this.indicatorState && state.li?.sigRev === this.indicatorState.revision
+            && state.li.sig === this.indicatorState.mode && Number.isFinite(state.li.sigAt)) {
+            this.indicatorState.serverAt = state.li.sigAt;
+          }
+          continue;
+        }
         let remote = this.remotes.get(id);
         if (!remote) {
           // Player joined before we received a joined message
@@ -171,6 +181,7 @@ export class MultiplayerSession {
       baseAssetScene: this.baseAssetScene,
       createVehicleModel: this.createVehicleModel,
       engineAudio: this.engineAudio,
+      getServerTime: () => this.client.getServerTime(),
     });
     this.remotes.set(info.id, remote);
     return remote;
@@ -214,6 +225,10 @@ export class MultiplayerSession {
     this.hudList.innerHTML = html;
   }
 
+  _lightHash(raw) {
+    return `${raw.li?.head}-${raw.li?.brake}-${raw.li?.rev}-${raw.in?.hn}-${raw.li?.sig}-${raw.li?.sigRev}`;
+  }
+
   sendImmediateState() {
     if (this.localVehicle?.getNetState && this.client.status === 'connected') {
       const now = performance.now();
@@ -221,6 +236,9 @@ export class MultiplayerSession {
       const rawState = this.localVehicle.getNetState();
       const payload = formatStatePayload(this.seq, now, rawState);
       this.client.sendState(payload);
+      this.lastLightHash = this._lightHash(rawState);
+      this.lastStateSentTime = now;
+      this.sendAccumulator = 0;
     }
   }
 
@@ -232,7 +250,7 @@ export class MultiplayerSession {
       const rawState = this.localVehicle.getNetState();
       // Horn is an edge-sensitive multiplayer sound, so it bypasses the
       // stationary keep-alive interval just like brake and headlight changes.
-      const currentLightHash = `${rawState.li?.head}-${rawState.li?.brake}-${rawState.li?.rev}-${rawState.in?.hn}`;
+      const currentLightHash = this._lightHash(rawState);
       const lightsChanged = currentLightHash !== this.lastLightHash;
 
       // Rate limit send rate
@@ -267,6 +285,10 @@ export class MultiplayerSession {
   }
 
   stop() {
+    if (this.indicatorState && this.indicatorState.serverAt !== null) {
+      this.indicatorState.startedAt = performance.now() - (this.client.getServerTime() - this.indicatorState.serverAt);
+      this.indicatorState.serverAt = null;
+    }
     this.client.disconnect();
     for (const remote of this.remotes.values()) {
       remote.dispose();

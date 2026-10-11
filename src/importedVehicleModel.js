@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { repairMissingNormals } from './elantraModel.js';
 import { installLicensePlates } from './licensePlates.js';
+import { installVehicleIndicators } from './vehicleIndicators.js';
 
 // Bake the export transforms before fitting. Both supplied bodies are Y-up and
 // nose +Z; the existing animation rig is Y-up/nose -Z inside a Z-up car group.
@@ -216,6 +217,7 @@ export function createImportedVehicle(bodySource, wheelSource, settings) {
   vehicle.userData.brakeLights = brakes;
   vehicle.userData.reverseLightMaterials = reverse;
   vehicle.userData.modelScale = scale;
+  installVehicleIndicators(vehicle, settings.id);
   installLicensePlates(vehicle, settings.id);
   return vehicle;
 }

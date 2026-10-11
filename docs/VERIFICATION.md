@@ -1,6 +1,6 @@
 # Verification
 
-Install the locked client dependencies with `npm ci`. `npm run verify` runs all 21 non-browser suites sequentially and stops on the first failure. These cover vehicle handling and idle drivetrain, both cameras, engine audio, minimap, models/plates/loading, ground and world collision, rendering invariants, foliage, tire effects, culling/distance, and GPU-timer/resolution logic.
+Install the locked client dependencies with `npm ci` and relay dependencies with `npm ci --prefix server`. `npm run verify` runs all 23 non-browser suites sequentially and stops on the first failure. These cover vehicle handling and idle drivetrain, both cameras, engine audio, minimap, models/plates/loading, ground and world collision, rendering invariants, foliage, tire effects, culling/distance, GPU-timer/resolution logic, indicator state/lens fitment and an isolated three-client indicator relay test.
 
 ```sh
 npm run verify
@@ -30,6 +30,7 @@ npm run verify-city-cleanup-browser
 npm run verify-weather
 npm run verify-vehicle-water
 npm run verify-vehicle-water-distance
+npm run verify-indicators-browser
 ```
 
 In POSIX shells, use `export GAME_URL=http://127.0.0.1:5186` before the same commands. Generated screenshots/JSON remain in ignored `artifacts/`.
@@ -43,8 +44,11 @@ In POSIX shells, use `export GAME_URL=http://127.0.0.1:5186` before the same com
 | `verify-weather` | Rain, wet-road reflections and dry restoration |
 | `verify-vehicle-water` | Water, drying and unchanged dry pixels on all four cars |
 | `verify-vehicle-water-distance` | Droplet detail versus wet film across cars, views, paints and lighting |
+| `verify-indicators-browser` | Four cars, all five weather presets/day/night, lamp pixels, mode/input guards, garage/pause/reset, stable resources and real two-client replication/reconnect/loading cleanup |
 
 Set `HEADED=1` for `verify-resolution-browser` to exercise native normal/maximized/fullscreen window states. Set `CITY_MAP_FALLBACK=1` for the city-map check or `MULTI_DRAW_OFF=1` for the graphics-settings check to test the non-multi-draw path.
+
+For the indicator browser suite, run the updated relay with `npm start --prefix server` first. Its default address is `ws://127.0.0.1:8787`; `INDICATOR_TEST_SERVER` overrides it. The standalone `verify-indicator-network` test starts its own relay on an available port, so it does not need a separately running server. Screenshots and results stay under ignored `artifacts/indicators/`.
 
 For the two-client case, start the relay with `PORT=8788`, then set `CITY_MULTIPLAYER_TEST=1` and run `verify-city-cleanup-browser`. `CITY_TEST_SERVER` overrides the default `ws://127.0.0.1:8788`. The [relay load test](../server/README.md#load-test) is separate.
 

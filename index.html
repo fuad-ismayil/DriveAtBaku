@@ -158,7 +158,7 @@
       <section id="controls" class="modal hidden" aria-modal="true" role="dialog">
         <div class="modal-card">
           <p class="eyebrow">DRIVER BRIEFING / 01</p><h2>CONTROLS</h2>
-          <div class="key-grid"><kbd>W / S</kbd><span>Throttle / brake and reverse</span><kbd>A / D</kbd><span>Steer</span><kbd>SPACE</kbd><span>Handbrake</span><kbd>T</kbd><span>Automatic / manual gearbox</span><kbd>Q / E</kbd><span>Shift down / up</span><kbd>1 / 2 / 3</kbd><span>ABS / traction / stability aids</span><kbd>H</kbd><span>Horn</span><kbd>M</kbd><span>Full player map</span><kbd>L</kbd><span>Low beams / high beams / off</span><kbd>C</kbd><span>Follow / hood camera</span><kbd>MOUSE</kbd><span>Look around; cursor captured while driving</span><kbd>MIDDLE MOUSE</kbd><span>Hold to look back</span><kbd>R</kbd><span>Recover here</span><kbd>SHIFT + R</kbd><span>Return to start</span><kbd>ESC</kbd><span>Pause</span></div>
+          <div class="key-grid"><kbd>W / S</kbd><span>Throttle / brake and reverse</span><kbd>A / D</kbd><span>Steer</span><kbd>SPACE</kbd><span>Handbrake</span><kbd>T</kbd><span>Automatic / manual gearbox</span><kbd>Q / E</kbd><span>Shift down / up</span><kbd>1 / 2 / 3</kbd><span>ABS / traction / stability aids</span><kbd>H</kbd><span>Horn</span><kbd>M</kbd><span>Full player map</span><kbd>L</kbd><span>Low beams / high beams / off</span><kbd>, / .</kbd><span>Left / right turn signal</span><kbd>/</kbd><span>Hazard lights</span><kbd>C</kbd><span>Follow / hood camera</span><kbd>MOUSE</kbd><span>Look around; cursor captured while driving</span><kbd>MIDDLE MOUSE</kbd><span>Hold to look back</span><kbd>R</kbd><span>Recover here</span><kbd>SHIFT + R</kbd><span>Return to start</span><kbd>ESC</kbd><span>Pause</span></div>
           <button id="close-controls" class="primary">BACK <b aria-hidden="true">↗</b></button>
         </div>
       </section>
@@ -247,7 +247,6 @@
         <canvas id="full-map-canvas" aria-label="Full city map with all players"></canvas>
       </section>
       <div id="hud" class="hidden">
-        <div class="event-chip"><span class="event-signal" aria-hidden="true"></span><div><small>FREE ROAM <i>●</i> LIVE</small><strong>BAKU CITY CIRCUIT</strong></div></div>
         <div class="map-panel"><div class="map-heading"><span>CITY MAP</span><span>HEADING UP ↗</span></div><canvas id="minimap" width="256" height="256" aria-label="Heading-up city map showing streets and your car, with a 100 metre scale"></canvas><div class="map-footer"><span>BAKU / AZE</span><span>FREE ROAM</span></div></div>
         <div class="telemetry-panel"><div class="speed"><strong id="speed">0</strong><span>KM/H</span><em id="gear">N</em></div><div class="engine-readout"><small>ENGINE</small><strong><span id="rpm">900</span> <em>RPM</em></strong><span id="transmission">AUTO</span><span id="headlight-mode">LIGHTS OFF</span></div></div>
         <div class="dynamics-panel"><small>CHASSIS / ASSISTS</small><div class="suspension-bars"><i id="susp-0"></i><i id="susp-1"></i><i id="susp-2"></i><i id="susp-3"></i></div><div class="aid-buttons"><button id="aid-abs" type="button">ABS</button><button id="aid-tcs" type="button">TCS</button><button id="aid-esc" type="button">ESC</button></div></div>

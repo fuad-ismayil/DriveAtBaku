@@ -53,11 +53,14 @@ See [map conversion](docs/MAP_CONVERSION.md) for optional asset regeneration and
 | 1 / 2 / 3 | Toggle ABS / traction / stability aids |
 | C; mouse; middle mouse | Follow/hood camera; look around; hold to look behind |
 | L; H | Cycle low beams / high beams / off; horn |
+| Comma (,); Period (.); Slash (/) | Left turn signal; right turn signal; hazard lights |
 | M | Full map |
 | R; Shift+R | Recover in place; return to the start |
 | Esc | Pause/resume |
 
 Gamepad input supports steering, throttle, brake, handbrake, clutch and horn through the browser Gamepad API. The in-game **Controls** panel lists keyboard and mouse inputs. Graphics, atmosphere and audio settings are available in the pause menu and saved locally.
+
+Turn signals toggle off when pressed again. Selecting the other side or hazards replaces the current mode. All lamps on a car blink together (400 ms on / 400 ms off). Signals continue through pause, garage visits and recovery; changing cars clears them. Typing and held-key repeats do not toggle signals. Multiplayer needs the updated relay as well as the client; it shares the mode and blink reference with joining and existing players.
 
 ## Technology and structure
 

@@ -256,13 +256,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .text-button:hover { color: var(--accent); }
 
 #hud { z-index: 5; pointer-events: none; }
-.event-chip, .map-panel, .telemetry-panel, .dynamics-panel { background: var(--glass); border: 1px solid var(--edge); box-shadow: 0 12px 35px #0005; backdrop-filter: blur(12px); }
-.event-chip { position: absolute; top: 1.8rem; left: 1.8rem; display: flex; align-items: center; gap: .8rem; padding: .75rem 1rem; }
-.event-signal { width: 2rem; height: 2rem; border: 1px solid var(--accent); border-radius: 50%; background: radial-gradient(circle, var(--warm) 0 13%, transparent 18% 100%); box-shadow: inset 0 0 0 5px #77dce51a; }
-.event-chip div { display: grid; gap: .2rem; }
-.event-chip small { color: var(--accent); font-size: .55rem; font-weight: 700; letter-spacing: .16em; }
-.event-chip small i { margin: 0 .2rem; color: var(--warm); font-style: normal; font-size: .45rem; }
-.event-chip strong { font: 700 1.17rem 'Barlow Condensed', sans-serif; letter-spacing: .04em; }
+.map-panel, .telemetry-panel, .dynamics-panel { background: var(--glass); border: 1px solid var(--edge); box-shadow: 0 12px 35px #0005; backdrop-filter: blur(12px); }
 .map-panel { position: absolute; top: 1.8rem; right: 1.8rem; width: 258px; padding: .75rem; }
 .map-heading, .map-footer { display: flex; justify-content: space-between; align-items: center; gap: .5rem; color: #b4d3da; font-size: .51rem; font-weight: 800; letter-spacing: .1em; }
 .map-heading span:first-child { color: var(--accent); }
@@ -303,9 +297,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   .menu-footer span { display: none; }
   .map-panel { top: .8rem; right: .8rem; width: 168px; padding: .55rem; }
   .map-heading span:last-child, .map-footer { display: none; }
-  .event-chip { top: .8rem; left: .8rem; padding: .55rem .6rem; }
-  .event-chip strong { font-size: .88rem; }
-  .event-signal { width: 1.4rem; height: 1.4rem; }
   .telemetry-panel { right: .8rem; bottom: .8rem; gap: .65rem; padding: .65rem; }
   .speed { min-width: 105px; }
   .speed strong { font-size: 4.1rem; }
@@ -324,7 +315,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   .menu-actions { display: grid; }
   .menu-actions button { width: min(100%, 260px); }
   .menu-settings { flex-wrap: wrap; }
-  .event-chip { max-width: 146px; }
   .map-panel { width: 135px; }
   .engine-readout { display: none; }
   .dynamics-panel { width: 110px; }

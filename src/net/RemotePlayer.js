@@ -4,10 +4,13 @@ import { updateLicensePlates } from '../licensePlates.js';
 import { createTireEffects } from '../tireEffects.js';
 import { ENGINE_BANKS } from '../engineAudio.js';
 import { INTERP_DELAY_MS } from './protocol.js';
+import { updateVehicleIndicators, disposeVehicleIndicators, isNewerSequence } from '../vehicleIndicators.js';
 
 export class RemotePlayer {
   constructor(info, options) {
     this.id = info.id;
+    this.disposed = false;
+    this.getServerTime = options.getServerTime;
     this.nick = info.nick || 'Player';
     this.color = info.color || '#e6194b';
     this.scene = options.scene;
@@ -87,6 +90,7 @@ export class RemotePlayer {
   }
 
   async _initVehicle(carId) {
+    if (this.disposed) return;
     // Do not let the previous car's loop continue while the replacement asset
     // is downloading. A new source is created from this player's new bank
     // after the model swap completes.
@@ -111,7 +115,11 @@ export class RemotePlayer {
 
         // A more recent state arrived while this asset was loading. Do not
         // briefly install a stale car (or its stale plate fitment).
-        if (this.pendingCarId && this.pendingCarId !== requestedCarId) continue;
+        if (this.disposed || (this.pendingCarId && this.pendingCarId !== requestedCarId)) {
+          disposeVehicleIndicators(newCar);
+          if (this.disposed) break;
+          continue;
+        }
         if (!newCar) continue;
 
         // Prevent local raycasters from testing against remote vehicle.
@@ -164,7 +172,7 @@ export class RemotePlayer {
         // vehicle-change request is still in flight.
         if (this.plateData) updateLicensePlates(newCar, this.plateData);
 
-        if (this.car) this.scene.remove(this.car);
+        if (this.car) { this.scene.remove(this.car); disposeVehicleIndicators(this.car); }
         this.car = newCar;
         this.carId = requestedCarId;
         this.wheels = newCar.userData.wheels || [];
@@ -177,7 +185,7 @@ export class RemotePlayer {
     } finally {
       this.loadingCarId = null;
       this.isLoadingVehicle = false;
-      if (this.pendingCarId) this._initVehicle(this.pendingCarId);
+      if (!this.disposed && this.pendingCarId) this._initVehicle(this.pendingCarId);
     }
   }
 
@@ -260,12 +268,12 @@ export class RemotePlayer {
   }
 
   pushState(state, serverTime = Date.now(), serverTimeOffsetMs = 0) {
-    if (!state) return;
+    if (!state || this.disposed) return;
     this.serverTimeOffsetMs = Number.isFinite(serverTimeOffsetMs) ? serverTimeOffsetMs : this.serverTimeOffsetMs;
     const last = this.buffer[this.buffer.length - 1];
     // Relay snapshots repeat the latest stationary state. Keeping just the
     // newest version avoids a flat receive-time staircase in the history.
-    if (last && last.state.seq === state.seq) return;
+    if (last && !isNewerSequence(state.seq, last.state.seq)) return;
     const timestamp = Number.isFinite(serverTime) ? serverTime : Date.now() + this.serverTimeOffsetMs;
     this.buffer.push({ timestamp: Math.max(timestamp, (last?.timestamp ?? -Infinity) + 0.001), state });
     if (this.buffer.length > this.maxBufferSize) {
@@ -289,7 +297,12 @@ export class RemotePlayer {
   }
 
   update(dt, camera) {
+    if (this.disposed) return;
     this._interpolate(dt);
+    // Lighting follows the newest logical state and shared server clock,
+    // independently of movement interpolation and render distance.
+    const li = this.buffer.at(-1)?.state.li;
+    updateVehicleIndicators(this.car, li?.sig ?? 'off', li?.sigAt ?? 0, this.getServerTime?.() ?? Date.now() + this.serverTimeOffsetMs);
     this._updateEffects(dt);
     this._updateNameplate(camera?.position);
     this._updateAudio(camera);
@@ -544,6 +557,9 @@ export class RemotePlayer {
   }
 
   dispose() {
+    this.disposed = true;
+    this.pendingCarId = null;
+    disposeVehicleIndicators(this.car);
     if (this.car) this.car.removeFromParent();
     if (this.nameplate) {
       this.nameplate.removeFromParent();

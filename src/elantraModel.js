@@ -3,6 +3,7 @@ import { createElantraCaliper } from './elantraAlloys.js';
 import { loadElantraWheel } from './elantraWheel.js';
 import { fetchAssetBytes } from './assetTransfer.js';
 import { installLicensePlates } from './licensePlates.js';
+import { installVehicleIndicators } from './vehicleIndicators.js';
 
 export function repairMissingNormals(geometry) {
   const authoredNormals = geometry.getAttribute('normal');
@@ -223,6 +224,7 @@ export function createElantraModel(data, wheelGeometry, textures = {}) {
   car.userData.headlightMaterials = headlightMaterials;
   car.userData.reverseLightMaterials = reverseLightMaterials;
   car.userData.paintMaterials = paintMaterials;
+  installVehicleIndicators(car, 'elantra');
   installLicensePlates(car, 'elantra');
   return car;
 }

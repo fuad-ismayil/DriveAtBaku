@@ -68,6 +68,9 @@ export function formatStatePayload(seq, ts, raw) {
     },
     li: {
       head: raw.li.head ?? 0,
+      sig: raw.li.sig ?? 'off',
+      sigRev: raw.li.sigRev >>> 0,
+      sigAt: round(raw.li.sigAt ?? 0, 1),
       brake: raw.li.brake ? 1 : 0,
       rev: raw.li.rev ? 1 : 0,
     },

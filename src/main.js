@@ -5,6 +5,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
 import { createCarModel, animateCarModel, setHeadlightBulbs } from './carModel.js';
+import { createIndicatorState, toggleIndicator, indicatorInputMode, updateVehicleIndicators } from './vehicleIndicators.js';
 import { loadElantraModel } from './elantraModel.js';
 import { loadImportedVehicle } from './importedVehicleModel.js';
 import { createDynamicsState, stepDynamics, GEAR_LABELS } from './vehicleDynamics.js';
@@ -81,6 +82,7 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).setDRACOLoader
 const keys = new Set();
 let route, minimap, car, handling, collisionMeshes = [], mode = 'loading', cameraMode = 0, lastSafe;
 let isMultiplayer = false, multiplayerSession = null, baseCarAssetScene = null;
+const indicatorState = createIndicatorState();
 
 function attachVehicleNetHooks(vehicle) {
   if (!vehicle) return;
@@ -124,6 +126,9 @@ function attachVehicleNetHooks(vehicle) {
       },
       li: {
         head: headlightMode,
+        sig: indicatorState.mode,
+        sigRev: indicatorState.revision,
+        sigAt: indicatorState.serverAt ?? ((multiplayerSession?.client.getServerTime() ?? Date.now()) - performance.now() + indicatorState.startedAt),
         brake: isBraking ? 1 : 0,
         rev: isReverse ? 1 : 0,
       },
@@ -730,6 +735,8 @@ async function selectVehicle(id){
         : settings.wheelAsset ? await loadImportedVehicle(settings, loadGLB)
         : createCarModel(await loadGLB(settings.asset)));
       carCache.set(id, newCar);
+      updateVehicleIndicators(car, 'off', 0, 0);
+      toggleIndicator(indicatorState, 'off', performance.now());
       scene.remove(car);
       car = newCar;
       scene.add(car);
@@ -1015,6 +1022,14 @@ function toggleTransmission() {
   toast(handling.autoTransmission ? 'AUTOMATIC GEARBOX' : 'MANUAL GEARBOX');
 }
 addEventListener('keydown',e=>{
+  const signalMode = indicatorInputMode(e, mode === 'drive');
+  if (signalMode) {
+    e.preventDefault();
+    toggleIndicator(indicatorState, signalMode, performance.now());
+    multiplayerSession?.sendImmediateState();
+    toast(indicatorState.mode === 'off' ? 'INDICATORS OFF' : `${indicatorState.mode.toUpperCase()} INDICATORS`);
+    return;
+  }
   if (e.code === 'Tab' && !ui.pause.classList.contains('hidden')) {
     const controls = [...ui.pause.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled)')];
     const first = controls[0], last = controls.at(-1);
@@ -1179,6 +1194,7 @@ if (mpUi.btn) {
         scene,
         localVehicle: car,
         baseAssetScene: baseCarAssetScene,
+        indicatorState,
         createVehicleModel: createVehicleInstance,
         engineAudio,
         camera,
@@ -1213,6 +1229,9 @@ function frame() {
   graphicsDiagnostics.begin();
   const dt = Math.min(clock.getDelta(), 0.1);
   updateCar(dt); updateCamera(dt); updateSceneLighting(dt);
+  if (isMultiplayer && indicatorState.serverAt !== null) {
+    updateVehicleIndicators(car, indicatorState.mode, indicatorState.serverAt, multiplayerSession.client.getServerTime());
+  } else updateVehicleIndicators(car, indicatorState.mode, indicatorState.startedAt, performance.now());
   sky.position.copy(camera.position); sky.material.uniforms.time.value += dt;
   weather.update(dt, camera, mode !== 'garage' && mode !== 'loading');
   engineAudio.update(handling, activeVehicle, mode === 'drive', dt);

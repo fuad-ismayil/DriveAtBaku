@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { installLicensePlates, setLicensePlateLighting } from './licensePlates.js';
+import { installVehicleIndicators } from './vehicleIndicators.js';
 
 export function setHeadlightBulbs(vehicle, mode) {
   setLicensePlateLighting(vehicle, mode > 0);
@@ -156,6 +157,7 @@ export function createCarModel(gltf) {
   // Grounding comes from the car's actual sun shadows and scene-depth AO.
   // A body-attached rectangle cannot follow uneven road contact correctly.
   vehicle.userData.wheels = wheels;
+  installVehicleIndicators(vehicle, 'ferrari');
   installLicensePlates(vehicle, 'ferrari');
   return vehicle;
 }

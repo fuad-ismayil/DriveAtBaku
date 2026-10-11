@@ -6,6 +6,7 @@ const browserSuites = new Set([
   'verify-city-map-browser', 'verify-city-cleanup-browser',
   'verify-graphics-settings-browser', 'verify-resolution-browser',
   'verify-weather', 'verify-vehicle-water', 'verify-vehicle-water-distance',
+  'verify-indicators-browser',
 ]);
 const { scripts } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url)));
 let completed = 0;
