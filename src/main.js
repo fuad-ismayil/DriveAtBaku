@@ -1031,7 +1031,7 @@ addEventListener('keydown',e=>{
     return;
   }
   if (e.code === 'Tab' && !ui.pause.classList.contains('hidden')) {
-    const controls = [...ui.pause.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled)')];
+    const controls = [...ui.pause.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), a[href]')];
     const first = controls[0], last = controls.at(-1);
     if (e.shiftKey && (document.activeElement === first || !ui.pause.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && (document.activeElement === last || !ui.pause.contains(document.activeElement))) { e.preventDefault(); first.focus(); }

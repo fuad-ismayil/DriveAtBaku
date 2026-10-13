@@ -33,6 +33,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .primary b { font-size: 1.25rem; line-height: 1; }
 .secondary { display: flex; justify-content: space-between; align-items: center; min-height: 3.6rem; padding: 1rem 1.25rem; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.18); color: #eff8fa; font-size: .74rem; font-weight: 700; letter-spacing: .13em; }
 .secondary:hover { background: rgba(121,225,237,.13); border-color: var(--accent); }
+.support-button { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; min-height: 44px; margin-top: 1rem; padding: .7rem .9rem; border: 1px solid #f4765266; border-radius: 4px; background: #f4765210; color: #ffb397; font-size: .62rem; font-weight: 800; letter-spacing: .07em; text-decoration: none; transition: background .2s, border-color .2s, transform .2s; }
+.support-button:hover { border-color: var(--warm); background: #f4765226; transform: translateY(-2px); }
+.support-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.support-icon { font-size: 1rem; line-height: 1; }
+.support-arrow { margin-left: .25rem; font-size: .9rem; }
+.pause-session .support-button { width: 100%; }
 
 #menu { display: flex; align-items: center; padding: clamp(2rem, 6vw, 6rem); background: linear-gradient(90deg, #05111beF 0%, #071722e8 37%, #07172283 65%, transparent 100%), linear-gradient(0deg, #05121aa6, transparent 38%); }
 .menu-topline { position: absolute; top: 2.4rem; left: clamp(2rem, 6vw, 6rem); display: flex; align-items: center; gap: .75rem; font-size: .71rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
@@ -212,6 +218,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
   .pause-layout { grid-template-columns: 1fr 1fr; gap: 1.25rem; }
   .pause-session { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1.65fr; gap: .55rem 1rem; align-items: center; }
   .pause-session .pause-section-title { grid-column: 1 / -1; margin: 0; }
+  .pause-session .support-button { grid-column: 1 / -1; width: fit-content; margin-top: .35rem; }
   .pause-session .primary { margin-top: 0; min-height: 2.8rem; }
   .pause-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: .45rem; }
   .pause-actions button { padding: .6rem; font-size: .56rem; letter-spacing: .02em; }
