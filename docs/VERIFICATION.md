@@ -1,6 +1,6 @@
 # Verification
 
-Install the locked client dependencies with `npm ci` and relay dependencies with `npm ci --prefix server`. `npm run verify` runs all 23 non-browser suites sequentially and stops on the first failure. These cover vehicle handling and idle drivetrain, both cameras, engine audio, minimap, models/plates/loading, ground and world collision, rendering invariants, foliage, tire effects, culling/distance, GPU-timer/resolution logic, indicator state/lens fitment and an isolated three-client indicator relay test.
+Install the locked client dependencies with `npm ci` and relay dependencies with `npm ci --prefix server`. `npm run verify` runs all 26 non-browser suites sequentially and stops on the first failure. These cover vehicle handling and idle drivetrain, both cameras, engine audio, minimap, models/plates/loading, ground and world collision, rendering invariants, foliage, independent room lighting, Government House window geometry and materials, flag cloth physics, tire effects, culling/distance, GPU-timer/resolution logic, indicator state/lens fitment and an isolated three-client indicator relay test.
 
 ```sh
 npm run verify
@@ -27,6 +27,9 @@ npm run verify-resolution-browser
 npm run verify-graphics-settings-browser
 npm run verify-city-map-browser
 npm run verify-city-cleanup-browser
+npm run verify-foliage-browser
+npm run verify-government-house-browser
+npm run verify-room-lights-browser
 npm run verify-weather
 npm run verify-vehicle-water
 npm run verify-vehicle-water-distance
@@ -41,6 +44,9 @@ In POSIX shells, use `export GAME_URL=http://127.0.0.1:5186` before the same com
 | `verify-graphics-settings-browser` | Menu layout/navigation, independent distances, persistence and rendering |
 | `verify-city-map-browser` | City visibility, occlusion, weather and driver fallback |
 | `verify-city-cleanup-browser` | Audited areas, moving-camera replay and optional two-client replication |
+| `verify-foliage-browser` | Rounded crown lighting, edge-on cards, winding continuity, no emission, three presets, weather/day/night and both batching paths |
+| `verify-government-house-browser` | Landmark views, flag motion/attachment/fold lighting, night-only lighting, presets/weather, both batching paths and stable resources |
+| `verify-room-lights-browser` | Actual window pixels, independent activity, day gating, presets/weather, both batching paths and stable resources |
 | `verify-weather` | Rain, wet-road reflections and dry restoration |
 | `verify-vehicle-water` | Water, drying and unchanged dry pixels on all four cars |
 | `verify-vehicle-water-distance` | Droplet detail versus wet film across cars, views, paints and lighting |
@@ -73,3 +79,21 @@ npm run profile-engine -- artifacts/performance/release
 `node scripts/probe_adapter.mjs` compares adapter selection in default/high-performance Chrome launches. `compare_engine.mjs` and `compare_performance.mjs` require saved measurements for both variants; they cannot invent a baseline from a fresh clone. `report_engine.mjs` updates the historical 1080p report from its original comparison directories. See [that investigation](history/ENGINE_PERFORMANCE_INVESTIGATION.md) for pass profiling, repeat ordering and timing limitations.
 
 For release review, also check a production preview, required asset requests, fresh and saved settings, day/night and precipitation, camera motion, and local multiplayer. Automated checks cover specific scenarios; they do not establish full-route visual fidelity, sustained FPS or long-session stability on every device.
+
+## Environment update verification — 15 October 2026
+
+The complete environment changes since `e843971` were reviewed on Windows with Node.js 24.13.1. Browser checks used Chrome, Intel Iris Xe through ANGLE/Direct3D 11, and device pixel ratio 1. The three new environment suites each exercised both `WEBGL_multi_draw` and the forced fallback path.
+
+| Check | Result |
+| --- | --- |
+| `npm run verify` | All 26 non-browser suites passed, including collision/geometry preservation, room activity, landmark detail, flag cloth and foliage |
+| `npm run build` | Passed; the existing large JavaScript chunk warning remains |
+| `npm run build-window-lighting` | Both generated files reproduced byte for byte: 57 layouts, 139 bindings and 1,678 window templates |
+| `npm run verify-government-house-browser` | Passed at 1600 × 1000: seven views, cloth motion, three presets, day/night restoration, weather, occlusion and stable resources |
+| `npm run verify-room-lights-browser` | Passed at 1440 × 900: real window pixels, independent activity, excluded glass, day gating, presets/weather and stable resources |
+| `npm run verify-foliage-browser` | Passed at 1100 × 800: three street views, all presets, five weather modes, day/night, isolated crown depth and winding continuity |
+| Production preview | Passed at 1440 × 900: fresh startup, generated mask requests, driving/camera motion, pause, all presets, night rain/snow, saved-settings reload and return to sunny day; no asset or shader failures |
+| Local relay traffic | Four clients for three seconds; states and snapshots exchanged with zero errors |
+| Source and documentation checks | All 16 changed JavaScript modules/scripts passed syntax checks; current local documentation links resolved and `git diff --check` passed |
+
+Reports and screenshots remain in ignored `artifacts/government-house/browser/`, `artifacts/room-lights/browser/`, `artifacts/foliage-volume/browser/` and `artifacts/release-review/`. No new FPS benchmark was recorded; the historical measurements retain their original revision and hardware limits.

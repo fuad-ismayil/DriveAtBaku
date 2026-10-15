@@ -83,6 +83,8 @@ The raw surviving visual assets have 1,539,819 triangles; the repaired road
 surfaces bring the playable scene to 1,541,440. Existing spatial render culling,
 batching, lighting, weather and vehicle tuning are retained.
 
+These source-scene counts describe this cleanup stage. The later [Government House](GOVERNMENT_HOUSE.md) details and [room-light surfaces](ROOM_LIGHTS.md) are added after collision extraction; their visible geometry is additional to these figures. [Tree shading](FOLIAGE_LIGHTING.md) adds crown coordinates without changing the source triangles or trunk colliders.
+
 ## Verification
 
 `npm run verify-city-map` checks every surviving authored mesh, unchanged minimap

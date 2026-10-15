@@ -28,12 +28,14 @@ import { createSurfaceDetail } from './surfaceDetail.js';
 import { createLocalReflections } from './localReflections.js';
 import { createGraphicsDiagnostics } from './graphicsDiagnostics.js';
 import { createWeather } from './weather.js';
-import { applyFoliageLighting } from './foliageLighting.js';
+import { applyFoliageLighting, prepareFoliageGeometry } from './foliageLighting.js';
 import { createTireEffects } from './tireEffects.js';
 import { loadingScreen } from './loadingScreen.js';
 import { fetchAssetBytes } from './assetTransfer.js';
 import { createCityMapPlugin } from './cityMap.js';
 import { buildCityCollisions } from './cityCollisions.js';
+import { createGovernmentHouse } from './governmentHouse.js';
+import { createRoomLights } from './roomLights.js';
 import './style.css';
 
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
@@ -159,7 +161,8 @@ const carCache = new Map();
 const shadowCandidates = [];
 const barrierCollision = new BarrierCollision();
 let cityCollisions;
-const nightMaterials = [];
+let governmentHouse;
+let roomLights;
 let selectingVehicle = false;
 const cameraLook = new THREE.Vector3();
 const followCameraPosition = new THREE.Vector3(), followCameraLook = new THREE.Vector3();
@@ -396,7 +399,8 @@ function setNightMode(enabled, save = true) {
     toggle.setAttribute('aria-pressed', String(nightMode));
   }
   ui['route-time'].textContent = `6.003 KM · ${nightMode ? 'NIGHT' : 'DAY'} · ${weather.preset.label.toUpperCase()}`;
-  for (const material of nightMaterials) material.emissiveIntensity = nightMode ? 0.42 : 0;
+  governmentHouse?.setNight(nightMode);
+  roomLights?.setNight(nightMode);
   if (save) try { localStorage.setItem('baku-night-mode', String(nightMode)); } catch { /* storage is optional */ }
 }
 
@@ -469,6 +473,7 @@ async function tuneMap(root) {
   root.traverse(o => { if (o.isMesh) meshes.push(o); });
   let yieldedAt = performance.now();
   for (const o of meshes) {
+    prepareFoliageGeometry(o);
     o.receiveShadow = true;
     o.castShadow = false;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
@@ -481,12 +486,6 @@ async function tuneMap(root) {
       weather.apply(m);
       applyFoliageLighting(m);
       if (/window|glass/i.test(m.name)) { m.roughness = 0.22; m.metalness = 0.24; m.envMapIntensity = 0.62; }
-      if (/window|building.*lights/i.test(m.name) && m.emissive && !m.transparent && !nightMaterials.includes(m)) {
-        m.emissive.set(0xffd7a3);
-        m.emissiveMap = m.map;
-        m.emissiveIntensity = nightMode ? 0.42 : 0;
-        nightMaterials.push(m);
-      }
       for (const tex of [m.map, m.normalMap, m.roughnessMap]) if (tex) tex.anisotropy = Math.min(16, renderer.capabilities.getMaxAnisotropy());
     }
     if (!Array.isArray(o.material)) backfaceMaterials.set(o.material, (backfaceMaterials.get(o.material) ?? true) && canCullBackfaces(o));
@@ -568,7 +567,13 @@ async function boot() {
     cityCollisions = await buildCityCollisions([map.scene,buildings.scene],collisionMeshes,barrierCollision,
       {repairSources:map.userData.roadRepairSources,yieldFrame:nextPaint});
     groundSampler = cityCollisions.sampler;
+    governmentHouse = createGovernmentHouse(buildings.scene);
+    await nextPaint();
+    roomLights = await createRoomLights([['baku',map.scene],['buildings',buildings.scene]]);
     await tuneMap(map.scene); await tuneMap(buildings.scene);
+    await tuneMap(roomLights.group);
+    governmentHouse.setNight(nightMode);
+    roomLights.setNight(nightMode);
     freezeStaticWorld(collision.scene);
     loadingScreen.stage('Preparing your car…', '04 / 05 · YOUR CAR', 'Downloading your first ride.', true);
     const carAsset = await loadGLB('/assets/vehicles/ferrari-458.glb');
@@ -1233,6 +1238,8 @@ function frame() {
     updateVehicleIndicators(car, indicatorState.mode, indicatorState.serverAt, multiplayerSession.client.getServerTime());
   } else updateVehicleIndicators(car, indicatorState.mode, indicatorState.startedAt, performance.now());
   sky.position.copy(camera.position); sky.material.uniforms.time.value += dt;
+  governmentHouse?.update(dt);
+  roomLights?.update(dt);
   weather.update(dt, camera, mode !== 'garage' && mode !== 'loading');
   engineAudio.update(handling, activeVehicle, mode === 'drive', dt);
   tireEffects.update(dt, handling, activeVehicle, weather.preset, mode === 'drive', mode !== 'garage' && mode !== 'loading');

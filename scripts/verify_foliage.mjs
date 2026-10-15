@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { applyFoliageLighting } from '../src/foliageLighting.js';
+import { applyFoliageLighting, prepareFoliageGeometry } from '../src/foliageLighting.js';
 import { createWeather } from '../src/weather.js';
-import { useStaticBatchMatrices } from '../src/worldOptimization.js';
+import { partitionMesh, useStaticBatchMatrices, WorldOptimization } from '../src/worldOptimization.js';
 import { readMapGeometry } from './lib/readMapGeometry.mjs';
 
 // Reproduce the real asset's failure: the two triangles of the first leaf card
@@ -25,6 +25,41 @@ for (const direction of [-1, 1]) {
     'canopy correction gives the same light response on either winding');
 }
 
+// The city-wide mesh must keep a separate crown coordinate system for each
+// connected card, including cards whose second triangle is not adjacent.
+const originalPosition = positions.array.slice(), originalIndex = geometry.index.array.slice();
+const originalUV = geometry.attributes.uv.array.slice(), originalNormals = normals.array.slice();
+assert.equal(prepareFoliageGeometry(tree), true);
+assert.equal(prepareFoliageGeometry(tree), false, 'shared geometry is prepared once');
+const volume = geometry.getAttribute('foliageVolume');
+assert.equal(volume.count, positions.count);
+assert.ok(volume.array.every(Number.isFinite), 'all crown coordinates are finite');
+assert.deepEqual(positions.array, originalPosition); assert.deepEqual(geometry.index.array, originalIndex);
+assert.deepEqual(geometry.attributes.uv.array, originalUV); assert.deepEqual(normals.array, originalNormals);
+for (const ids of [[0, 1, 2, 3], [8, 9, 10, 15]]) {
+  const centre = ids.reduce((sum, id) => sum.add(new THREE.Vector3(volume.getX(id), volume.getY(id), volume.getZ(id))), new THREE.Vector3()).multiplyScalar(.25);
+  assert.ok(Math.hypot(centre.x, centre.z) < .00002, 'each card has its own horizontal centre');
+  for (const id of ids) {
+    assert.ok(Math.abs(Math.hypot(volume.getX(id), volume.getZ(id)) - 1) < .0001);
+    assert.ok(volume.getW(id) < .0001 || volume.getW(id) > .9999, 'height is relative to this tree, not the full map');
+  }
+}
+for (const cellSize of [96, 256]) {
+  const chunks = partitionMesh(tree, cellSize);
+  assert.ok(chunks.length > 1);
+  for (const chunk of chunks) {
+    const data = chunk.geometry.getAttribute('foliageVolume');
+    assert.equal(data.count, chunk.geometry.attributes.position.count, 'partitioning retains crown coordinates');
+    assert.ok(data.array.every(Number.isFinite));
+  }
+  const world = new WorldOptimization(new THREE.PerspectiveCamera());
+  const batch = world.addBatchedMesh(chunks);
+  assert.ok(batch.geometry.getAttribute('foliageVolume'), 'multi-draw retains crown coordinates');
+  world.releaseBatchedSources(chunks);
+  assert.ok(batch.geometry.getAttribute('foliageVolume').array.every(Number.isFinite), 'batch owns its data after source release');
+  batch.dispose();
+}
+
 const sky = new THREE.Mesh(new THREE.SphereGeometry(1), new THREE.ShaderMaterial({ uniforms: { cloudCover: { value: 0 } } }));
 const weather = createWeather(new THREE.Scene(), sky);
 for (const name of ['TREEC-material', 'BAK_FEATURE_P_HEDGES_A_01-material']) {
@@ -44,6 +79,13 @@ for (const name of ['TREEC-material', 'BAK_FEATURE_P_HEDGES_A_01-material']) {
   assert.ok(shader.fragmentShader.indexOf('roughnessFactor = max(roughnessFactor, .72)')
     > shader.fragmentShader.indexOf('roughnessFactor=mix(roughnessFactor,.96,settledSnow)'), 'leaf roughness floor runs after wetness and snow');
   assert.equal(shader.fragmentShader.includes('normal *= faceDirection;'), name === 'TREEC-material', 'only authored canopy normals bypass face flipping');
+  assert.equal(shader.vertexShader.includes('attribute vec4 foliageVolume;'), name === 'TREEC-material', 'only tree cards reconstruct a crown');
+  if (name === 'TREEC-material') {
+    assert.ok(shader.fragmentShader.indexOf('normal = normalize(mix(normal, foliageNormal, foliageCrown))')
+      < shader.fragmentShader.indexOf('float weatherTop='), 'weather uses the rounded crown for snow and wetness');
+    assert.ok(shader.fragmentShader.indexOf('reflectedLight.indirectDiffuse *= mix(1.0, foliageSkyVisibility, foliageCrown)')
+      > shader.fragmentShader.indexOf('#include <lights_fragment_end>'), 'interior occlusion affects accumulated sky fill');
+  }
   assert.equal(material.map, texture); assert.deepEqual(material.color.toArray(), color, 'no blanket albedo darkening');
   assert.equal(material.side, THREE.DoubleSide); assert.equal(material.alphaTest, .38);
   assert.equal(material.alphaToCoverage, true);
@@ -61,6 +103,7 @@ for (const name of ['BAK_TREE_BASE_A-material', 'BAK_TREE_BASE_B-material', 'BAK
   assert.equal(applyFoliageLighting(material), false, `${name} is untouched`);
   assert.equal(material.onBeforeCompile, hook); assert.equal(material.customProgramCacheKey(), key);
   assert.equal(material.roughness, .22); assert.equal(material.metalness, .8);
+  assert.equal(prepareFoliageGeometry(new THREE.Mesh(new THREE.BoxGeometry(), material)), false);
 }
 weather.dispose();
-console.log('Foliage checks passed: real asset winding, consistent canopy normals, restrained highlights, weather/batch composition, original colors and unrelated materials.');
+console.log('Foliage checks passed: real asset winding, per-card crown coordinates, both partition sizes and batching, rounded lighting/weather composition, original geometry/colors/cutouts and unrelated materials.');

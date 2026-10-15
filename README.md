@@ -14,6 +14,7 @@ A fan-made browser driving game set on Baku's streets. Explore the city in four 
 - Ferrari 458 Italia, Elantra/Avante, Mercedes-AMG and Toyota Prado; saved vehicle selection, individual paint colors and configurable Azerbaijani license plates.
 - Fixed-step vehicle dynamics, suspension, automatic/manual transmission, ABS, traction and stability aids, world collisions and follow/hood cameras.
 - Day/night lighting, headlights, engine and tire audio, skid marks, and a heading-up minimap with a full-map view.
+- Independent nighttime room lights, [Government House](docs/GOVERNMENT_HOUSE.md) stone and window detail with a wind-driven Azerbaijani flag, and [rounded tree shading](docs/FOLIAGE_LIGHTING.md).
 - Sunny, overcast, wet-road, rain and snow modes, adjustable precipitation and vehicle surface water. Weather affects appearance; it does not change driving grip.
 - Performance, Balanced and Cinematic graphics presets, independent render/props distances, ambient occlusion and rendering-resolution controls. Balanced/Cinematic use HDR, SMAA and supported scene MSAA, cached shadows and local car reflections.
 - Multiplayer with interpolated remote vehicles, player names and replicated vehicle appearance/effects. Remote cars are visual ghosts and do not collide with one another; a separate relay is required.
@@ -38,7 +39,7 @@ npm run build
 npm run preview
 ```
 
-The production site is `dist/`. Netlify and Vercel configuration files already specify the build command and output directory. Keep `public/generated/asset-manifest.json`, its compressed asset parts, collision data and route data together. Static hosting serves the game; it does not run the multiplayer relay.
+The production site is `dist/`. Netlify and Vercel configuration files already specify the build command and output directory. Keep `public/generated/asset-manifest.json`, its compressed asset parts, collision data and route data together. The build also includes the generated room-window mask under `public/assets/environment/`; its source metadata is `src/windowLightingAtlas.json`. Static hosting serves the game; it does not run the multiplayer relay.
 
 See [map conversion](docs/MAP_CONVERSION.md) for optional asset regeneration and [verification](docs/VERIFICATION.md) for the checks to run before a release.
 
@@ -71,7 +72,8 @@ The client uses JavaScript modules, Three.js r180, `three-mesh-bvh`, WebGL and W
 | `src/main.js`, `src/startup.js` | Game loop, UI integration and startup |
 | `src/` | Vehicle dynamics, graphics, weather, cameras, audio, maps and collision modules |
 | `src/net/` | Multiplayer transport, state replication and remote vehicles |
-| `public/assets/`, `public/draco/` | Vehicle, audio, font, loading and decoder assets |
+| `src/governmentHouse.js`, `src/flagCloth.js`, `src/roomLights.js`, `src/roomLightActivity.js`, `src/foliageLighting.js` | Landmark detail, flag simulation, independent rooms and canopy shading |
+| `public/assets/`, `public/draco/` | Vehicle, environment, audio, font, loading and decoder assets |
 | `public/generated/` | Packed map geometry, collision geometry, route and transfer manifest |
 | `scripts/` | Asset tools, regression checks, profilers and plate-fit inspector |
 | `server/` | Standalone WebSocket relay and load test |

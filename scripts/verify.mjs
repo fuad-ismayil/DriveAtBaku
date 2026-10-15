@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 
 // Browser suites need a running server and a hardware-accelerated Chrome session.
 const browserSuites = new Set([
+  'verify-foliage-browser',
   'verify-city-map-browser', 'verify-city-cleanup-browser',
+  'verify-government-house-browser',
+  'verify-room-lights-browser',
   'verify-graphics-settings-browser', 'verify-resolution-browser',
   'verify-weather', 'verify-vehicle-water', 'verify-vehicle-water-distance',
   'verify-indicators-browser',

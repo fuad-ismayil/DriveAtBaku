@@ -11,6 +11,8 @@ npm run build
 
 Run the relevant [browser checks](docs/VERIFICATION.md) for rendering, weather, UI or multiplayer changes. A production build and Node checks cannot prove visual quality or GPU performance. Include the actual browser, adapter, drawing-buffer size, preset, weather, viewpoint and measurement method when making a performance claim.
 
+Environment changes have dedicated [foliage](docs/FOLIAGE_LIGHTING.md), [Government House and flag](docs/GOVERNMENT_HOUSE.md), and [room-light](docs/ROOM_LIGHTS.md) checks. Changes to room-window profiles or source atlases require regenerating and committing both the mask image and its metadata with `npm run build-window-lighting`, followed by the room-light checks. Keep historical benchmark reports identified as historical when adding current geometry or shading work.
+
 Keep pull requests focused. Preserve vehicle tuning, collision coverage, asset fidelity and graphics settings unless those are the intended subject of the change. Use the existing JavaScript modules and verification tools before adding dependencies or abstractions. Match nearby formatting; avoid repository-wide formatting changes in a functional patch.
 
 Do not commit `artifacts/`, build output, dependencies, saved benchmark baselines, credentials or original local level exports. Packed map parts, the asset manifest, runtime audit JSON and bundled asset notices belong in Git. Update the documentation when commands or behavior change, and keep historical measurements clearly identified as such.

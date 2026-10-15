@@ -37,6 +37,20 @@ without modifying it; the showroom source is not included in the repository.
 4. Extracts the original spawn and ordered checkpoints into `route.json`, and derives the starting heading from the first two checkpoints.
 5. Writes measured output statistics to the local, ignored `artifacts/map-conversion/conversion-report.json`.
 
+## Runtime environment preparation
+
+Landmark details, independent room lights and tree shading are applied after the city audit and collision extraction. They do not rewrite the packed GLBs. [Government House](GOVERNMENT_HOUSE.md) derives its limestone/glass masks at startup and generates window surrounds and a simulated flag in code. [Foliage](FOLIAGE_LIGHTING.md) adds per-card crown coordinates before render partitioning, preserving the source vertices, indices and UVs.
+
+The room-light atlas is a separate generated dependency. A normal clone includes both its image and metadata. After changing the packed facade textures or `scripts/windowAtlasProfiles.json`, regenerate them together:
+
+```sh
+npm run build-window-lighting
+npm run verify-room-lights
+npm run verify-room-lights-browser
+```
+
+The generator reads the packed assets directly; the original local level export is unnecessary. It writes `public/assets/environment/room-windows.png` and `src/windowLightingAtlas.json`. Review the glass masks and exclusions before accepting regenerated files. See [room lighting](ROOM_LIGHTS.md) for the audited regular-window placement and excluded glass walls.
+
 ## Preserved and pending
 
 The conversion preserves circuit geometry, buildings, UV layout, most diffuse textures, source scale and orientation, collision geometry, spawn, and checkpoint order. The playable city loader then excludes the independently audited Formula 1 primitives without editing these original converted assets. See [the city map audit](CITY_MAP.md) for the removals, neutral curb finish and verification.

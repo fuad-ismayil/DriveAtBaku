@@ -288,6 +288,10 @@ export class WorldOptimization {
 
   addMesh(mesh, installCallbacks = true) {
     mesh.geometry.computeBoundingBox(); mesh.geometry.computeBoundingSphere();
+    if (mesh.userData.deformationBounds) {
+      mesh.geometry.boundingBox.union(mesh.userData.deformationBounds);
+      mesh.geometry.boundingBox.getBoundingSphere(mesh.geometry.boundingSphere);
+    }
     const bounds = mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);
     const triangles = (mesh.geometry.index?.count ?? mesh.geometry.getAttribute('position').count) / 3;
     const props = isDistanceProp(mesh);

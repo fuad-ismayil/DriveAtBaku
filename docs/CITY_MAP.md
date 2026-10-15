@@ -8,6 +8,8 @@ enclosure. Use that report for current collision counts and verification.
 The game now loads the supplied map as city streets without the Formula 1 event.
 The original source level and packed GLBs remain unchanged and recoverable.
 
+Later [Government House details](GOVERNMENT_HOUSE.md), [independent room lights](ROOM_LIGHTS.md) and [tree shading](FOLIAGE_LIGHTING.md) run after the source audit. Their added rendering work is outside the historical geometry and performance comparisons below.
+
 ## Asset and rendering audit
 
 The engine is Three.js r180 with WebGL2 and three-mesh-bvh. The loader downloads

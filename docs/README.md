@@ -13,7 +13,9 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 | [City collisions](CITY_CLEANUP.md) | Event-enclosure removal, visible facades and tree trunks |
 | [Ground surfaces](GROUND_SURFACES.md) | Asphalt, street markings, curb seams and terrain contact |
 | [Graphics settings](GRAPHICS_SETTINGS_UPDATE.md) | Independent distance controls, UI and browser checks |
-| [Foliage lighting](FOLIAGE_LIGHTING.md) | Authored canopy normals and leaf material treatment |
+| [Foliage lighting](FOLIAGE_LIGHTING.md) | Rounded canopy shading, grazing-card coverage, leaf highlights and weather integration |
+| [Government House](GOVERNMENT_HOUSE.md) | Landmark limestone, window relief, flag and night-only architectural lighting |
+| [Room lights](ROOM_LIGHTS.md) | Independent room activity, window masks and nighttime city lighting |
 | [License plates](AZERBAIJANI_LICENSE_PLATES.md) | Plate geometry, per-car mounting and garage controls |
 | [Loading](LOADING_EXPERIENCE.md) | Streaming progress, preparation, errors and retry |
 | [Asset credits](ASSET_CREDITS.md) | Provenance, individual licenses and unresolved asset terms |

@@ -30,6 +30,7 @@ Use `ws://localhost:8787` for a local HTTP development page and `wss://` for HTT
 - Remote cars are visual ghosts (`REMOTE_CARS_COLLIDE = false`). World collisions run locally for each driver.
 - Driving state is client-authoritative. The relay sanitizes messages but is not a competitive anti-cheat or authoritative physics server.
 - Weather and time-of-day settings are local preferences.
+- Independent room-light activity and flag-cloth motion are local visual effects; the relay does not synchronize their timers or simulation state. Landmark lighting follows each client's day/night preference.
 - AI traffic, shared dynamic props, vehicle damage and competitive race rules are not synchronized features.
 - The relay caps simultaneous players at 32. Internet play depends on the separately operated server and network latency.
 
