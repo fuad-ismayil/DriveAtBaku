@@ -1,0 +1,54 @@
+/* Colorless liquid glass. The scene supplies the color; the rim supplies the lens. */
+:root {
+  color-scheme: dark;
+  --ui-font: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --ink: #fafafa;
+  --muted: #e4e4e4;
+  --accent: #f0f0f0;
+  --warm: #f0f0f0;
+  --edge: rgb(255 255 255 / .14);
+  --glass-base: rgb(0 0 0 / .18);
+  --glass-panel-base: rgb(0 0 0 / .26);
+  --glass-dialog-base: rgb(0 0 0 / .44);
+  --glass-readable-base: rgb(0 0 0 / .48);
+  --glass-light: radial-gradient(ellipse at 3% 0%, rgb(255 255 255 / .15), transparent 56%), radial-gradient(ellipse at 100% 100%, rgb(255 255 255 / .08), transparent 48%), linear-gradient(160deg, rgb(255 255 255 / .035), transparent 55%);
+  --glass-control-light: linear-gradient(165deg, rgb(255 255 255 / .13), rgb(255 255 255 / .025) 48%, rgb(255 255 255 / .07));
+  --glass-rim: conic-gradient(from 135deg, #ffffffd9 0deg, #ffffff18 55deg, #00000038 90deg, #ffffff12 145deg, #ffffffeb 180deg, #ffffff18 225deg, #00000030 270deg, #ffffff12 315deg, #ffffffd9 360deg);
+  --glass-shadow: inset 2px 3px 8px -5px #ffffffa6, inset -2px -3px 8px -5px #ffffff80, 0 10px 30px rgb(0 0 0 / .12);
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+}
+.glass-surface {
+  position: relative;
+  isolation: isolate;
+  background: var(--glass-light), var(--glass-base);
+  border: 1px solid var(--edge);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(5px) saturate(1.06);
+  backdrop-filter: blur(5px) saturate(1.06);
+  text-shadow: 0 1px 3px rgb(0 0 0 / .42);
+}
+.glass-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 1px;
+  border-radius: inherit;
+  background: var(--glass-rim);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.ui-symbols { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.ui-icon { display: block; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; overflow: visible; }
+.button-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 20px; width: 20px; height: 20px; line-height: 0; }
+.button-icon .ui-icon { width: 20px; height: 20px; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --glass-base: rgb(24 24 24 / .92); --glass-panel-base: var(--glass-base); --glass-dialog-base: var(--glass-base); --glass-readable-base: var(--glass-base); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root { --glass-base: rgb(24 24 24 / .97); --glass-panel-base: var(--glass-base); --glass-dialog-base: var(--glass-base); --glass-readable-base: var(--glass-base); }
+  .glass-surface { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

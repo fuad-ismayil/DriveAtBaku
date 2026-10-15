@@ -42,7 +42,7 @@ THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 
-const ui = Object.fromEntries(['loading','menu','garage','controls','pause','hud','progress-bar','loading-copy','drive-button','garage-button','time-toggle','pause-time-toggle','pause-mute','route-time','garage-ferrari','garage-elantra','elantra-availability','garage-status','garage-back','paint-name','custom-paint','pause-garage','pause-controls','engine-volume','controls-button','close-controls','resume','restart','exit','speed','gear','rpm','transmission','headlight-mode','aid-abs','aid-tcs','aid-esc','susp-0','susp-1','susp-2','susp-3','minimap','full-map','full-map-canvas','full-map-close','toast'].map(id => [id, document.getElementById(id)]));
+const ui = Object.fromEntries(['loading','menu','garage','controls','pause','hud','progress-bar','loading-copy','drive-button','garage-button','time-toggle','pause-time-toggle','pause-mute','route-time','garage-ferrari','garage-elantra','elantra-availability','garage-status','garage-back','paint-name','custom-paint','pause-garage','pause-controls','engine-volume','controls-button','close-controls','resume','restart','exit','speed','gear','rpm','transmission','headlight-mode','aid-abs','aid-tcs','aid-esc','minimap','full-map','full-map-canvas','full-map-close','toast'].map(id => [id, document.getElementById(id)]));
 const garageChoices = new Map([...document.querySelectorAll('[data-vehicle]')].map(button => [button.dataset.vehicle, button]));
 const canvas = document.getElementById('game');
 loadingScreen.stage('Preparing your graphics…', 'STARTING UP', 'Setting the scene for your drive.');
@@ -395,7 +395,8 @@ function setNightMode(enabled, save = true) {
   graphics.setNight(nightMode);
   localReflections.invalidate();
   for (const toggle of [ui['time-toggle'], ui['pause-time-toggle']]) {
-    toggle.textContent = nightMode ? '☾ NIGHT MODE' : '☀ DAY MODE';
+    toggle.querySelector('.button-label').textContent = nightMode ? 'Night mode' : 'Day mode';
+    toggle.querySelector('use').setAttribute('href', nightMode ? '#icon-moon' : '#icon-sun');
     toggle.setAttribute('aria-pressed', String(nightMode));
   }
   ui['route-time'].textContent = `6.003 KM · ${nightMode ? 'NIGHT' : 'DAY'} · ${weather.preset.label.toUpperCase()}`;
@@ -669,7 +670,8 @@ function resume(){if(mode!=='pause')return;mode='drive';ui.pause.classList.add('
 function setAudioMuted(muted) {
   audioMuted = Boolean(muted);
   engineAudio.setEnabled(!audioMuted && !document.hidden);
-  ui['pause-mute'].textContent = audioMuted ? 'SOUND OFF' : 'SOUND ON';
+  ui['pause-mute'].querySelector('.button-label').textContent = audioMuted ? 'Sound off' : 'Sound on';
+  ui['pause-mute'].querySelector('use').setAttribute('href', audioMuted ? '#icon-volume-off' : '#icon-volume');
   ui['pause-mute'].setAttribute('aria-pressed', String(audioMuted));
 }
 function fullMapLocalPlayer() {
@@ -830,8 +832,8 @@ function updateCar(dt) {
   for (const aid of ['abs', 'tcs', 'esc']) {
     ui[`aid-${aid}`].classList.toggle('active', handling.aids[aid]);
     ui[`aid-${aid}`].classList.toggle('working', handling[`${aid}Active`]);
+    ui[`aid-${aid}`].setAttribute('aria-pressed', String(handling.aids[aid]));
   }
-  for (let i = 0; i < 4; i++) ui[`susp-${i}`].style.height = `${Math.round(100 * THREE.MathUtils.clamp(handling.wheels[i].compression / activeVehicle.suspTravel, 0, 1))}%`;
   minimapForward.set(0, 1, 0).applyQuaternion(car.quaternion);
   drawMinimap(ui.minimap, minimap, car.position, Math.atan2(-minimapForward.x, minimapForward.y), Math.hypot(handling.velocity.x, handling.velocity.y), multiplayerSession?.getMapPlayers());
 }
@@ -1014,6 +1016,7 @@ function toggleAid(aid) {
   if (!handling) return;
   handling.aids[aid] = !handling.aids[aid];
   ui[`aid-${aid}`].classList.toggle('active', handling.aids[aid]);
+  ui[`aid-${aid}`].setAttribute('aria-pressed', String(handling.aids[aid]));
   toast(`${aid.toUpperCase()} ${handling.aids[aid] ? 'ON' : 'OFF'}`);
 }
 function cycleCamera() {
@@ -1106,6 +1109,7 @@ for (const [id, button] of garageChoices) button.onclick = () => selectVehicle(i
 for (const swatch of document.querySelectorAll('.paint-swatch')) swatch.onclick=()=>choosePaint(swatch.dataset.paint);
 ui['custom-paint'].oninput=e=>choosePaint(e.target.value);
 for (const aid of ['abs','tcs','esc']) ui[`aid-${aid}`].onclick=()=>toggleAid(aid);
+document.getElementById('hud-pause').onclick = () => { if (mode === 'drive') pause(); };
 
 const mpUi = {
   btn: document.getElementById('multiplayer-button'),

@@ -42,6 +42,8 @@
     "verify-indicator-network": "node scripts/verify_indicator_network.mjs",
     "verify-indicators-browser": "node scripts/verify_indicators_browser.mjs",
     "verify-loading": "node scripts/verify_loading.mjs",
+    "capture-loading-art": "node scripts/capture_loading_art.mjs",
+    "verify-interface-browser": "node scripts/verify_interface_browser.mjs",
     "verify-license-plates": "node scripts/verify_license_plates.mjs",
     "verify-performance": "node scripts/verify_performance.mjs",
     "verify-render-distance": "node scripts/verify_render_distance.mjs",

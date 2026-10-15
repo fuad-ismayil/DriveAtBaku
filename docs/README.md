@@ -17,11 +17,11 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 | [Government House](GOVERNMENT_HOUSE.md) | Landmark limestone, window relief, flag and night-only architectural lighting |
 | [Room lights](ROOM_LIGHTS.md) | Independent room activity, window masks and nighttime city lighting |
 | [License plates](AZERBAIJANI_LICENSE_PLATES.md) | Plate geometry, per-car mounting and garage controls |
-| [Loading](LOADING_EXPERIENCE.md) | Streaming progress, preparation, errors and retry |
+| [Interface and loading](LOADING_EXPERIENCE.md) | Liquid Glass styling, vector icons, driving HUD, 4K artwork, slideshow controls, streaming progress and capture workflow |
 | [Asset credits](ASSET_CREDITS.md) | Provenance, individual licenses and unresolved asset terms |
 
 ## Historical reports
 
 [history/](history/README.md) preserves earlier rendering research, model-fitting decisions and measured investigations. These reports describe particular development stages and hardware, rather than the current defaults or universal performance guarantees. Screenshots, raw measurements and comparison baselines referenced there are local files under ignored `artifacts/`; they are not published evidence in this repository.
 
-The gameplay preview in `images/` is the selected public screenshot. Runtime collision audits in `src/` are executable data used to validate the supplied map, rather than temporary reports.
+The selected gameplay and menu previews in `images/` show the current interface. Runtime collision audits in `src/` are executable data used to validate the supplied map, rather than temporary reports.

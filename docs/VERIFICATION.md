@@ -23,6 +23,7 @@ In another terminal, set the common game URL. In PowerShell:
 
 ```powershell
 $env:GAME_URL = 'http://127.0.0.1:5186'
+npm run verify-interface-browser
 npm run verify-resolution-browser
 npm run verify-graphics-settings-browser
 npm run verify-city-map-browser
@@ -42,6 +43,7 @@ In POSIX shells, use `export GAME_URL=http://127.0.0.1:5186` before the same com
 | --- | --- |
 | `verify-resolution-browser` | Presets, Native/fixed sizes, DPR/aspect ratios, AO switching, persistence and resource cycling |
 | `verify-graphics-settings-browser` | Menu layout/navigation, independent distances, persistence and rendering |
+| `verify-interface-browser` | Liquid Glass layouts at five viewport sizes, 4K scenes, slideshow controls, reduced motion, progress/retry, icon rendering/centering, time/audio icon state, garage, controls, HUD aid states and pause navigation |
 | `verify-city-map-browser` | City visibility, occlusion, weather and driver fallback |
 | `verify-city-cleanup-browser` | Audited areas, moving-camera replay and optional two-client replication |
 | `verify-foliage-browser` | Rounded crown lighting, edge-on cards, winding continuity, no emission, three presets, weather/day/night and both batching paths |
@@ -97,3 +99,17 @@ The complete environment changes since `e843971` were reviewed on Windows with N
 | Source and documentation checks | All 16 changed JavaScript modules/scripts passed syntax checks; current local documentation links resolved and `git diff --check` passed |
 
 Reports and screenshots remain in ignored `artifacts/government-house/browser/`, `artifacts/room-lights/browser/`, `artifacts/foliage-volume/browser/` and `artifacts/release-review/`. No new FPS benchmark was recorded; the historical measurements retain their original revision and hardware limits.
+
+## Interface update verification — 15 October 2026
+
+The interface and loading changes since `6c2ddfb` were reviewed on Windows with Node.js 24.13.1. Chrome browser verification used device pixel ratio 1. The committed previews in `docs/images/` show the final neutral glass material; raw screenshots and the browser report remain under ignored `artifacts/liquid-glass/`.
+
+| Check | Result |
+| --- | --- |
+| `npm run verify` | All 26 non-browser suites passed, including loading streams, manifest sizes, native 4K image dimensions and artwork budgets |
+| `npm run build` | Passed; the existing large JavaScript chunk warning remains |
+| `npm run verify-interface-browser` | Passed with no page errors: responsive loading/menu/pause layouts, non-overlapping HUD instruments, chapter selection, slideshow pause/resume, reduced motion, failure/retry, SVG rendering/centering, time/audio icon state, garage selection and menu/driving navigation |
+| Loading art | All four images and recorded drawing buffers are 3840 × 2160; each encoded image is below 2,200,000 bytes |
+| Source and documentation | Changed JavaScript modules/scripts passed syntax checks, current local documentation links resolved, and `git diff --check` passed |
+
+Loading layouts cover 1440 × 900, 1920 × 1080, 390 × 844, 844 × 390 and 320 × 568; menu/pause/HUD checks substitute 1280 × 720 for the 1920 × 1080 case. The multiplayer check exercises the form, not a live relay session. This update records interface behavior and image quality checks, with no new frame-rate claim or full-route/long-session certification.

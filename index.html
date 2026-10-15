@@ -3,14 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#111516" />
+    <meta name="theme-color" content="#10151c" />
     <meta name="description" content="DriveAtBaku — a fan-made driving experience through the streets of Baku." />
     <title>DriveAtBaku — Drive the city</title>
     <style>html,body{margin:0;background:#111516}#loading{position:fixed;inset:0;z-index:100;background:#111516;color:#f3f1e9}.hidden{display:none!important}</style>
     <link rel="preload" href="/assets/loading/city.webp" as="image" fetchpriority="high" />
+    <link rel="stylesheet" href="/src/glass.css" />
     <link rel="stylesheet" href="/src/loading.css" />
   </head>
   <body>
+    <svg class="ui-symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <symbol id="icon-arrow-up-right" viewBox="0 0 24 24"><path d="M7 17 17 7M7.5 7H17v9.5"/></symbol>
+      <symbol id="icon-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+      <symbol id="icon-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5m6-6-6 6 6 6"/></symbol>
+      <symbol id="icon-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+      <symbol id="icon-road" viewBox="0 0 24 24"><path d="m8 4-4 16M16 4l4 16M12 4v3m0 4v2m0 4v3"/></symbol>
+      <symbol id="icon-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5Z"/></symbol>
+      <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></symbol>
+      <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20 14.3A8.5 8.5 0 0 1 9.7 4a8.5 8.5 0 1 0 10.3 10.3Z"/></symbol>
+      <symbol id="icon-keyboard" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="3"/><path d="M7 9h.01M10.3 9h.01M13.7 9h.01M17 9h.01M7 12h.01M10.3 12h.01M13.7 12h.01M17 12h.01M8 15h8"/></symbol>
+      <symbol id="icon-garage" viewBox="0 0 24 24"><path d="M3.5 20V8L12 3l8.5 5v12M7 20V10h10v10M7 13h10M7 16h10M7 19h10"/></symbol>
+      <symbol id="icon-recover" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1.7 7M4 4v6h6"/></symbol>
+      <symbol id="icon-coffee" viewBox="0 0 24 24"><path d="M5 8h12v6a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5ZM17 9h1.5a2.5 2.5 0 0 1 0 5H17M4 22h14M8 2v2m4-2v2"/></symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></symbol>
+      <symbol id="icon-volume" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4ZM17 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+      <symbol id="icon-volume-off" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4Zm13 0 5 6m0-6-5 6"/></symbol>
+    </svg>
     <div id="app">
       <canvas id="game" aria-label="DriveAtBaku game view"></canvas>
       <section id="loading" aria-label="Welcome to DriveAtBaku" aria-busy="true">
@@ -20,30 +38,30 @@
         </div>
         <div class="loading-shade" aria-hidden="true"></div>
         <header class="loading-header">
-          <span class="loading-wordmark">DriveAt<span>Baku</span><i aria-hidden="true">↗</i></span>
-          <span class="loading-place">AZERBAIJAN <i></i> CASPIAN COAST</span>
+          <span class="loading-wordmark"><i aria-hidden="true"><svg class="ui-icon"><use href="#icon-road"/></svg></i> DriveAt<span>Baku</span></span>
+          <span class="loading-place glass-surface"><i></i> Baku, Azerbaijan <span>40.4093° N · 49.8671° E</span></span>
         </header>
         <div class="loading-editorial">
-          <p class="loading-kicker"><span class="loading-rule" aria-hidden="true"></span> POSTCARDS FROM BAKU <span id="loading-chapter">/ 01</span></p>
+          <p class="loading-kicker"><span class="loading-rule" aria-hidden="true"></span> A CITY WORTH GETTING LOST IN <span id="loading-chapter">/ 01</span></p>
           <div class="loading-story" id="loading-story">
-            <h1 id="loading-title">One city.<br /><span>Endless drives.</span></h1>
-            <p id="loading-description">From the old city's tight corners to the open boulevard.<br class="loading-desktop-break" /> Find your own rhythm on the streets of Baku.</p>
+            <h1 id="loading-title">Every turn.<br /><span>A new story.</span></h1>
+            <p id="loading-description">The city opens up. The road is yours.<br /> Settle in for a drive along the Caspian coast.</p>
           </div>
-          <div class="loading-facts"><span id="loading-fact">6.003 KM OF CITY STREETS</span><i></i><span id="loading-mood">YOUR ROUTE. YOUR PACE.</span></div>
+          <div class="loading-facts"><span id="loading-fact">BAKU CITY STREETS</span><i></i><span id="loading-mood">EXPLORE AT YOUR OWN PACE</span></div>
         </div>
-        <aside class="loading-scene-note" aria-label="Featured scene">
-          <span class="loading-scene-mark" aria-hidden="true">↗</span>
-          <div><span id="loading-scene-label">THE CITY COLLECTION</span><strong id="loading-scene-name">Baku, behind the wheel.</strong><small>CAPTURED IN GAME</small></div>
+        <aside class="loading-scene-note glass-surface" aria-label="Featured scene">
+          <span class="loading-scene-mark" aria-hidden="true"><svg class="ui-icon"><use href="#icon-compass"/></svg></span>
+          <div><span id="loading-scene-label">01 / THE CITY</span><strong id="loading-scene-name">Your next favourite road.</strong><small>CAPTURED IN GAME · 4K</small></div>
         </aside>
-        <footer class="loading-footer">
+        <footer class="loading-footer glass-surface">
           <div class="loading-discover">
             <ol class="loading-chapters" aria-label="Slideshow chapters">
-              <li class="loading-chapter is-current" data-chapter="0" aria-current="true"><span>01</span> THE CITY</li>
-              <li class="loading-chapter" data-chapter="1"><span>02</span> AFTER HOURS</li>
-              <li class="loading-chapter" data-chapter="2"><span>03</span> THE ELEMENTS</li>
-              <li class="loading-chapter" data-chapter="3"><span>04</span> YOUR DRIVE</li>
+              <li><button class="loading-chapter is-current" data-chapter="0" aria-current="true" type="button"><span>01</span> The city</button></li>
+              <li><button class="loading-chapter" data-chapter="1" type="button"><span>02</span> After hours</button></li>
+              <li><button class="loading-chapter" data-chapter="2" type="button"><span>03</span> The elements</button></li>
+              <li><button class="loading-chapter" data-chapter="3" type="button"><span>04</span> Your drive</button></li>
             </ol>
-            <button type="button" id="loading-motion" class="loading-motion" aria-label="Pause slideshow" aria-pressed="false"><span aria-hidden="true">Ⅱ</span></button>
+            <button type="button" id="loading-motion" class="loading-motion" aria-label="Pause slideshow" aria-pressed="false"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path id="loading-motion-symbol" d="M9 7v10M15 7v10" /></svg></button>
           </div>
           <div class="loading-progress-head">
             <div class="loading-status"><span class="loading-status-dot" aria-hidden="true"></span><p id="loading-copy" role="status" aria-live="polite">Connecting to the city…</p></div>
@@ -52,20 +70,21 @@
           <div id="loading-progress" class="loading-progress" role="progressbar" aria-label="Game asset download" aria-valuemin="0" aria-valuemax="100" aria-valuetext="Connecting to the city"><i id="progress-bar"></i></div>
           <div class="loading-progress-meta"><span id="loading-detail">A little anticipation. A whole city ahead.</span><span id="loading-phase">PREPARING YOUR DRIVE</span></div>
           <div class="loading-bottomline"><p id="loading-tip"><span>DRIVER'S NOTE</span> Smooth steering. Clean exits. Let the city come to you.</p><span class="loading-signature">THE CITY IS YOURS.</span></div>
-          <button id="loading-retry" class="loading-retry" type="button" hidden>TRY AGAIN <span aria-hidden="true">↗</span></button>
+          <button id="loading-retry" class="loading-retry" type="button" hidden>TRY AGAIN <span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-recover"/></svg></span></button>
           <noscript><p class="loading-noscript">Enable JavaScript to load the game.</p></noscript>
         </footer>
       </section>
       <main id="menu" class="screen hidden">
-        <div class="menu-topline"><span class="brand-icon" aria-hidden="true">D<span>·</span>B</span><span>DriveAtBaku <small>FREE ROAM / AZERBAIJAN</small></span></div>
-        <section class="hero-copy">
-          <p class="eyebrow">THE CITY IS YOURS</p>
-          <h1>DriveAt<span>Baku</span></h1>
-          <p class="lede">Your car. Your route. Baku after every turn.</p>
+        <div class="menu-topline"><span class="brand-icon glass-surface" aria-hidden="true"><svg class="ui-icon"><use href="#icon-road"/></svg></span><span>DriveAtBaku <small>AN OPEN ROAD EXPERIENCE</small></span></div>
+        <span class="menu-place glass-surface"><i aria-hidden="true"></i> Baku, Azerbaijan</span>
+        <section class="hero-copy glass-surface">
+          <p class="eyebrow"><i aria-hidden="true"></i> THE CITY IS YOURS</p>
+          <h1>DriveAt<span>Baku.</span></h1>
+          <p class="lede">Nowhere to be. Everything to discover.</p>
           <div class="menu-actions" id="menu-main-actions">
-            <button id="drive-button" class="primary">SINGLE PLAYER <b aria-hidden="true">↗</b></button>
-            <button id="multiplayer-button" class="primary mp-btn">MULTIPLAYER <b aria-hidden="true">↗</b></button>
-            <button id="garage-button" class="secondary">YOUR GARAGE <b aria-hidden="true">→</b></button>
+            <button id="drive-button" class="primary"><span>Start driving <small>Single player · Free roam</small></span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-arrow-right"/></svg></span></button>
+            <button id="multiplayer-button" class="secondary mp-btn"><span>Drive together <small>Multiplayer</small></span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-arrow-right"/></svg></span></button>
+            <button id="garage-button" class="secondary"><span>Your garage <small>Four ways to make it yours</small></span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-garage"/></svg></span></button>
           </div>
           <div id="mp-menu-panel" class="mp-menu-panel hidden">
             <p class="mp-panel-title">MULTIPLAYER DRIVE</p>
@@ -74,7 +93,7 @@
               <input id="mp-nick-input" type="text" maxlength="16" placeholder="Your nickname" autocomplete="off" spellcheck="false" />
             </div>
             <div class="mp-advanced-group">
-              <button type="button" id="mp-advanced-toggle" class="mp-text-toggle">ADVANCED SETTINGS ▾</button>
+              <button type="button" id="mp-advanced-toggle" class="mp-text-toggle"><span>ADVANCED SETTINGS</span><svg class="ui-icon" aria-hidden="true"><use href="#icon-chevron-down"/></svg></button>
               <div id="mp-server-field" class="mp-field hidden">
                 <label for="mp-server-input">SERVER URL <small>(wss://...)</small></label>
                 <input id="mp-server-input" type="text" placeholder="wss://xxxx.trycloudflare.com" autocomplete="off" spellcheck="false" />
@@ -83,31 +102,30 @@
             </div>
             <p id="mp-connect-status" class="mp-status-msg"></p>
             <div class="mp-actions">
-              <button id="mp-join-button" class="primary" disabled>JOIN DRIVE <b aria-hidden="true">↗</b></button>
+              <button id="mp-join-button" class="primary" disabled>JOIN DRIVE <span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-arrow-right"/></svg></span></button>
               <button id="mp-back-button" class="secondary">BACK</button>
             </div>
           </div>
           <div class="menu-settings">
-            <button id="time-toggle" class="setting-button" type="button" aria-pressed="false">☀ DAY MODE</button>
-            <button id="controls-button" class="setting-button" type="button">⌨ CONTROLS</button>
+            <button id="time-toggle" class="setting-button" type="button" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="#icon-sun"/></svg><span class="button-label">Day mode</span></button>
+            <button id="controls-button" class="setting-button" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-keyboard"/></svg><span>Controls</span></button>
           </div>
-          <label class="weather-control" for="menu-weather">WEATHER
+          <label class="weather-control" for="menu-weather">Atmosphere
             <select id="menu-weather">
               <option value="sunny">Sunny</option><option value="overcast">Overcast</option>
               <option value="wet">Wet roads · no rain</option><option value="rain">Rain</option><option value="snow">Snow</option>
             </select>
           </label>
-          <a class="support-button" href="https://kofe.al/@fuadismayil" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee — support the developer (opens in a new tab)"><span class="support-icon" aria-hidden="true">☕</span> BUY ME A COFFEE <span class="support-arrow" aria-hidden="true">↗</span></a>
+          <a class="support-button" href="https://kofe.al/@fuadismayil" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee — support the developer (opens in a new tab)"><svg class="ui-icon support-icon" aria-hidden="true"><use href="#icon-coffee"/></svg><span>BUY ME A COFFEE</span><svg class="ui-icon support-arrow" aria-hidden="true"><use href="#icon-arrow-up-right"/></svg></a>
         </section>
-        <aside class="location-card">
-          <span class="location-index">01 <i></i> 01</span>
-          <div><small>FEATURED DRIVE</small><strong>BAKU CITY CIRCUIT</strong><em id="route-time">6.003 KM · DAY</em></div>
-          <span class="location-arrow" aria-hidden="true">↗</span>
+        <aside class="location-card glass-surface">
+          <span class="location-index" aria-hidden="true"><svg class="ui-icon"><use href="#icon-compass"/></svg></span>
+          <div><small>YOUR NEXT CHAPTER</small><strong>Along the Caspian</strong><em id="route-time">6.003 KM · DAY</em></div>
         </aside>
         <p class="menu-footer">AN OPEN ROAD DRIVING EXPERIENCE <span>© DriveAtBaku</span></p>
       </main>
       <section id="garage" class="screen hidden" aria-label="Garage">
-        <div class="garage-panel">
+        <div class="garage-panel glass-surface">
           <p class="eyebrow">DriveAtBaku / GARAGE</p>
           <h2>YOUR GARAGE</h2>
           <p class="garage-intro">Choose your ride, pick a finish, and own the city.</p>
@@ -157,29 +175,29 @@
         </div>
       </section>
       <section id="controls" class="modal hidden" aria-modal="true" role="dialog">
-        <div class="modal-card">
+        <div class="modal-card glass-surface">
           <p class="eyebrow">DRIVER BRIEFING / 01</p><h2>CONTROLS</h2>
           <div class="key-grid"><kbd>W / S</kbd><span>Throttle / brake and reverse</span><kbd>A / D</kbd><span>Steer</span><kbd>SPACE</kbd><span>Handbrake</span><kbd>T</kbd><span>Automatic / manual gearbox</span><kbd>Q / E</kbd><span>Shift down / up</span><kbd>1 / 2 / 3</kbd><span>ABS / traction / stability aids</span><kbd>H</kbd><span>Horn</span><kbd>M</kbd><span>Full player map</span><kbd>L</kbd><span>Low beams / high beams / off</span><kbd>, / .</kbd><span>Left / right turn signal</span><kbd>/</kbd><span>Hazard lights</span><kbd>C</kbd><span>Follow / hood camera</span><kbd>MOUSE</kbd><span>Look around; cursor captured while driving</span><kbd>MIDDLE MOUSE</kbd><span>Hold to look back</span><kbd>R</kbd><span>Recover here</span><kbd>SHIFT + R</kbd><span>Return to start</span><kbd>ESC</kbd><span>Pause</span></div>
-          <button id="close-controls" class="primary">BACK <b aria-hidden="true">↗</b></button>
+          <button id="close-controls" class="primary">BACK <span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-arrow-left"/></svg></span></button>
         </div>
       </section>
       <section id="pause" class="modal hidden" aria-modal="true" role="dialog" aria-labelledby="pause-title" tabindex="-1">
-        <div class="modal-card pause-card">
+        <div class="modal-card pause-card glass-surface">
           <header class="pause-header">
             <div><p class="eyebrow">DriveAtBaku / PAUSED</p><h2 id="pause-title">TAKE A BREATH.</h2><p class="pause-copy">Your city. Your pace. Your settings.</p></div>
             <span class="pause-save-status"><i aria-hidden="true"></i> PREFERENCES SAVED</span>
           </header>
           <div class="pause-layout">
             <nav class="pause-session" aria-label="Pause actions">
-              <h3 class="pause-section-title"><span>↗</span> YOUR DRIVE</h3>
-              <button id="resume" class="primary">BACK TO THE ROAD <b aria-hidden="true">↗</b></button>
+              <h3 class="pause-section-title"><svg class="ui-icon" aria-hidden="true"><use href="#icon-road"/></svg> YOUR DRIVE</h3>
+              <button id="resume" class="primary"><span>BACK TO THE ROAD</span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-arrow-right"/></svg></span></button>
               <p class="pause-shortcut"><kbd>ESC</kbd> to resume your drive</p>
               <div class="pause-actions">
-                <button id="pause-garage" class="secondary">GARAGE <span aria-hidden="true">↗</span></button>
-                <button id="restart" class="secondary">RECOVER CAR <span aria-hidden="true">↺</span></button>
-                <button id="pause-controls" class="secondary">CONTROLS <span aria-hidden="true">⌘</span></button>
+                <button id="pause-garage" class="secondary"><span>GARAGE</span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-garage"/></svg></span></button>
+                <button id="restart" class="secondary"><span>RECOVER CAR</span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-recover"/></svg></span></button>
+                <button id="pause-controls" class="secondary"><span>CONTROLS</span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-keyboard"/></svg></span></button>
               </div>
-              <a class="support-button" href="https://kofe.al/@fuadismayil" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee — support the developer (opens in a new tab)"><span class="support-icon" aria-hidden="true">☕</span> BUY ME A COFFEE <span class="support-arrow" aria-hidden="true">↗</span></a>
+              <a class="support-button" href="https://kofe.al/@fuadismayil" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee — support the developer (opens in a new tab)"><svg class="ui-icon support-icon" aria-hidden="true"><use href="#icon-coffee"/></svg><span>BUY ME A COFFEE</span><svg class="ui-icon support-arrow" aria-hidden="true"><use href="#icon-arrow-up-right"/></svg></a>
               <p class="pause-session-note">Make yourself comfortable.<br />Changes apply as you adjust.</p>
             </nav>
             <section class="pause-settings" aria-labelledby="graphics-heading">
@@ -217,7 +235,7 @@
               <h3 id="atmosphere-heading" class="pause-section-title"><span>02</span> ATMOSPHERE &amp; AUDIO</h3>
               <div class="setting-row">
                 <div class="setting-copy">Time of day<small>Set the mood for your drive</small></div>
-                <button id="pause-time-toggle" class="secondary setting-chip" type="button" aria-pressed="false">☀ DAY MODE</button>
+                <button id="pause-time-toggle" class="secondary setting-chip" type="button" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="#icon-sun"/></svg><span class="button-label">Day mode</span></button>
               </div>
               <div class="setting-row">
                 <label for="pause-weather" class="setting-copy">Weather<small>Road appearance &amp; atmosphere</small></label>
@@ -237,11 +255,11 @@
               </div>
               <div class="setting-row">
                 <div class="setting-copy">Game audio<small>Mute all sounds</small></div>
-                <button id="pause-mute" class="secondary setting-chip" type="button" aria-pressed="false">SOUND ON</button>
+                <button id="pause-mute" class="secondary setting-chip" type="button" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="#icon-volume"/></svg><span class="button-label">Sound on</span></button>
               </div>
             </section>
           </div>
-          <footer class="pause-footer"><span><i aria-hidden="true">✓</i> Graphics preferences save automatically</span><button id="exit" class="text-button">EXIT TO MAIN MENU <span aria-hidden="true">→</span></button></footer>
+          <footer class="pause-footer"><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-check"/></svg>Graphics preferences save automatically</span><button id="exit" class="text-button"><span>EXIT TO MAIN MENU</span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-arrow-right"/></svg></span></button></footer>
         </div>
       </section>
       <section id="full-map" class="full-map hidden" aria-modal="true" role="dialog" aria-label="Full player map">
@@ -249,9 +267,16 @@
         <canvas id="full-map-canvas" aria-label="Full city map with all players"></canvas>
       </section>
       <div id="hud" class="hidden">
-        <div class="map-panel"><div class="map-heading"><span>CITY MAP</span><span>HEADING UP ↗</span></div><canvas id="minimap" width="256" height="256" aria-label="Heading-up city map showing streets and your car, with a 100 metre scale"></canvas><div class="map-footer"><span>BAKU / AZE</span><span>FREE ROAM</span></div></div>
-        <div class="telemetry-panel"><div class="speed"><strong id="speed">0</strong><span>KM/H</span><em id="gear">N</em></div><div class="engine-readout"><small>ENGINE</small><strong><span id="rpm">900</span> <em>RPM</em></strong><span id="transmission">AUTO</span><span id="headlight-mode">LIGHTS OFF</span></div></div>
-        <div class="dynamics-panel"><small>CHASSIS / ASSISTS</small><div class="suspension-bars"><i id="susp-0"></i><i id="susp-1"></i><i id="susp-2"></i><i id="susp-3"></i></div><div class="aid-buttons"><button id="aid-abs" type="button">ABS</button><button id="aid-tcs" type="button">TCS</button><button id="aid-esc" type="button">ESC</button></div></div>
+        <button id="hud-pause" class="hud-pause glass-surface" type="button" aria-label="Pause driving (Escape)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7v10M15 7v10" /></svg><span>DriveAtBaku</span><kbd>esc</kbd></button>
+        <div class="map-panel glass-surface"><div class="map-heading"><span>BAKU</span><span>HEADING UP</span></div><canvas id="minimap" width="256" height="256" aria-label="Heading-up city map showing streets and your car, with a 100 metre scale"></canvas><div class="map-footer"><span>FREE ROAM</span><span>AZERBAIJAN</span></div></div>
+        <div class="telemetry-panel glass-surface"><div class="speed"><strong id="speed">0</strong><span>km/h</span><em id="gear" aria-label="Current gear">N</em></div><div class="engine-readout"><small>ENGINE</small><strong><span id="rpm">900</span> <em>rpm</em></strong><span id="transmission">AUTO</span><span id="headlight-mode">LIGHTS OFF</span></div></div>
+        <div class="dynamics-panel" role="group" aria-label="Driving aids">
+          <div class="aid-buttons">
+            <button id="aid-abs" class="glass-surface" type="button" aria-label="Anti-lock brakes (1)" aria-pressed="true" title="ABS · Anti-lock brakes · 1"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M4.5 5.5a10 10 0 0 0 0 13M19.5 5.5a10 10 0 0 1 0 13M9.5 14.5l2.5-5 2.5 5M10.5 12.5h3"/></svg><span>ABS</span></button>
+            <button id="aid-tcs" class="glass-surface" type="button" aria-label="Traction control (2)" aria-pressed="true" title="TCS · Traction control · 2"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 13V5.5a2.5 2.5 0 0 1 5 0V13a2.5 2.5 0 0 1-5 0ZM7 7h4M7 10h4M16 7c4 2-2 3 2 5s-2 3 1 5M6 19c3-2 4 2 7 0"/></svg><span>TCS</span></button>
+            <button id="aid-esc" class="glass-surface" type="button" aria-label="Stability control (3)" aria-pressed="true" title="ESC · Stability control · 3"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 10 1.5-5h9l1.5 5M5 14V10h14v4M5 14h14M7 14v2M17 14v2M8 11.5h.01M16 11.5h.01M6 19c2-2 3 2 5 0s3 2 5 0"/></svg><span>ESC</span></button>
+          </div>
+        </div>
       </div>
       <div id="toast" aria-live="polite"></div>
     </div>

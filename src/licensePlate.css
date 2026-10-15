@@ -1,0 +1,55 @@
+@font-face { font-family: 'AZ DIN'; src: url('/assets/fonts/AlteDIN1451-Regular.ttf') format('truetype'); font-weight:400; font-display: swap; }
+@font-face { font-family: 'AZ DIN'; src: url('/assets/fonts/AlteDIN1451-Pressed.ttf') format('truetype'); font-weight:700; font-display: swap; }
+.plate-picker { margin:1rem 0; padding:1.1rem; background:linear-gradient(135deg,#222a34ed,#10151ced); border:1px solid var(--edge); border-radius:10px; }
+.plate-picker h3 { display:flex; justify-content:space-between; gap:1rem; margin:0 0 1rem; font-size:.64rem; letter-spacing:.16em; }
+.plate-picker h3 span { color:var(--accent); }
+.plate-setting { display:flex; align-items:center; justify-content:space-between; gap:1rem; min-height:48px; color:#e1edf2; font-size:.8rem; }
+.plate-setting-copy { display:grid; gap:.3rem; }
+.plate-setting-copy > span { font-weight:600; }
+.plate-setting-copy small { color:var(--muted); font-size:.65rem; line-height:1.4; }
+.plate-toggle { display:flex; align-items:center; gap:.6rem; min-height:44px; padding:.35rem 0 .35rem .5rem; background:none; color:#a4b9c5; font-size:.6rem; font-weight:700; letter-spacing:.08em; }
+.plate-toggle i { position:relative; width:42px; height:24px; border:1px solid #809eab70; border-radius:20px; background:#243b47; transition:background .18s,border-color .18s; }
+.plate-toggle i::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#a4b9c5; transition:transform .18s,background .18s; }
+.plate-toggle[aria-checked="true"] { color:var(--accent); }
+.plate-toggle[aria-checked="true"] i { background:#e6f0f426; border-color:var(--accent); }
+.plate-toggle[aria-checked="true"] i::after { transform:translateX(18px); background:var(--accent); }
+.plate-options[hidden],.plate-hint[hidden] { display:none; }
+.plate-editor { container-type:inline-size; margin:1rem 0; padding:1rem .75rem .85rem; border:1px solid #bce7ed16; border-radius:8px; background:#020f1859; text-align:center; }
+.plate-editor-heading { display:flex; justify-content:space-between; gap:.5rem; color:#a4b9c5; font-size:.53rem; font-weight:700; letter-spacing:.12em; }
+.plate-editor-heading span:last-child { color:var(--accent); }
+.plate-select { display:grid; gap:.5rem; color:#bbd0d9; font-size:.56rem; font-weight:700; letter-spacing:.12em; }
+.plate-select select { width:100%; min-height:44px; padding:.65rem .75rem; color:#e8f7fa; background:#232a34; border:1px solid #ffffff30; border-radius:6px; font:600 .78rem var(--ui-font); }
+.plate-select select:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+.plate-customization { display:grid; gap:.85rem; }
+.plate-customization .plate-setting { padding-top:.75rem; border-top:1px solid #bce7ed16; }
+.plate-hint { margin:.75rem 0; color:#9ab5c1; font-size:.64rem; line-height:1.6; }
+.plate-editor .plate-hint { margin:.9rem 0 .2rem; }
+.plate-save-note { color:#9ab5c1; font-size:.59rem; line-height:1.5; }
+.plate-views { display:flex; gap:.4rem; padding-top:.85rem; border-top:1px solid #bce7ed16; }
+.plate-views button { flex:1; min-width:0; min-height:40px; padding:.55rem .25rem; border:1px solid var(--edge); border-radius:5px; background:#232a34; color:#d4e7ed; font-size:.56rem; font-weight:600; letter-spacing:.05em; }
+.plate-views button:hover { border-color:var(--accent); background:#343e4a; }
+.plate-views button[aria-pressed="true"] { border-color:var(--accent); color:var(--accent); background:#e6f0f412; }
+.plate-preview { display:flex; align-items:center; justify-content:center; width:min(100%,376px); aspect-ratio:520/110; margin:1.2rem auto; padding:5px 8px; border:3px solid #111; border-radius:8px; background:#eeefe8; color:#080a0c; box-shadow:0 0 0 2px #c7c9c8,0 5px 14px #0006; font:700 clamp(1.5rem,12cqw,3rem) 'AZ DIN',sans-serif; }
+.plate-identity { flex-shrink:0; display:grid; gap:3px; width:.85em; margin-right:.2em; text-align:center; }
+.plate-flag { width:100%; }
+.plate-identity b { font:700 .24em 'AZ DIN',sans-serif; padding:1px; }
+.plate-preview[data-identity="older"] .plate-identity b { border:1px solid #9b9e9d; border-radius:4px; box-shadow:0 0 0 2px #d9dcd9; }
+.plate-preview-region-group,.plate-preview-series { display:flex; align-items:center; justify-content:center; white-space:nowrap; }
+.plate-preview input { display:block; min-width:0; height:1.18em; padding:0; border:0; border-bottom:1px dashed #080a0c38; border-radius:3px; outline-offset:1px; background:transparent; color:inherit; caret-color:#314d62; font:inherit; letter-spacing:.015em; line-height:1.1; text-align:center; cursor:text; transition:background .15s,box-shadow .15s; }
+.plate-preview input:hover { background:#e6f0f428; border-bottom-color:#314d62; }
+.plate-preview input:focus { outline:2px solid #314d62; background:#e6f0f430; border-bottom-color:transparent; box-shadow:0 0 0 3px #e6f0f430; }
+.plate-preview input::selection { background:#e6f0f485; color:#080a0c; }
+.plate-preview-region { width:1.22em; }
+.plate-preview-letters { width:1.65em; }
+.plate-preview-serial { width:1.8em; }
+#plate-region,#plate-serial { font-weight:400; }
+.plate-preview-separator { flex:none; width:.3em; text-align:center; font-weight:400; }
+.plate-preview-separator:empty { width:.16em; }
+.plate-preview-chip { display:none; }
+.plate-preview[data-format="compact"] { display:grid; grid-template-columns:1fr 2fr 1fr; grid-template-rows:1fr 1fr; width:min(100%,240px); aspect-ratio:2/1; padding:7px 10px; font-size:clamp(1.5rem,11cqw,2.4rem); }
+.plate-preview[data-format="compact"] .plate-identity { grid-column:1; grid-row:1; width:.85em; margin:auto; gap:1px; }
+.plate-preview[data-format="compact"] .plate-preview-region-group { grid-column:2; grid-row:1; }
+.plate-preview[data-format="compact"] .plate-preview-series { grid-column:1/4; grid-row:2; }
+.plate-preview[data-format="compact"] .plate-identity b { border:0; box-shadow:none; }
+.plate-preview[data-format="compact"][data-identity="older"] .plate-preview-chip { display:block; grid-column:3; grid-row:1; width:.85em; height:.65em; margin:auto; border:1px solid #a9aca9; border-radius:5px; box-shadow:inset 0 0 0 3px #dadcd9; }
+@media (prefers-reduced-motion:reduce) { .plate-toggle i,.plate-toggle i::after,.plate-preview input { transition:none; } }

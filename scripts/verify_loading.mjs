@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { readFileSync, statSync } from 'node:fs';
+import sharp from 'sharp';
 import { fetchAssetBytes } from '../src/assetTransfer.js';
 
 const payload = Buffer.alloc(8192, 37);
@@ -51,5 +52,10 @@ for (const asset of Object.values(manifest.assets)) {
   const size = asset.parts.reduce((sum, file) => sum + statSync(new URL(`public/generated/${file}`, root)).size, 0);
   assert.equal(size, asset.compressedBytes, 'map progress matches packed files on disk');
 }
-for (const scene of ['city', 'night', 'weather', 'garage']) assert.ok(statSync(new URL(`public/assets/loading/${scene}.webp`, root)).size < 350000, 'scene artwork remains lightweight');
-console.log('Loading verification passed: streamed progress, unknown sizes, cancellation, HTTP errors, manifest sizes, and artwork budget.');
+for (const scene of ['city', 'night', 'weather', 'garage']) {
+  const file = new URL(`public/assets/loading/${scene}.webp`, root);
+  const metadata = await sharp(readFileSync(file)).metadata();
+  assert.deepEqual([metadata.width, metadata.height], [3840, 2160], 'loading scenes retain native 4K detail');
+  assert.ok(statSync(file).size < 2200000, 'high-quality 4K WebP scene stays within its transfer budget');
+}
+console.log('Loading verification passed: streamed progress, unknown sizes, cancellation, HTTP errors, manifest sizes, native 4K artwork and transfer budget.');

@@ -1,13 +1,103 @@
-# Postcards from Baku
+# Interface and loading
 
-The welcome screen is present in `index.html` and styled by `src/loading.css` before the game module loads. The small `startup.js` entry starts the introduction, then imports the game. No extra WebGL scene or remote image service is needed to show the introduction.
+The loading screen, main menu, garage, controls, pause settings and driving HUD share a Liquid Glass design. Transparent capsules and rounded panels show the scene behind them, with neutral shading, soft reflections and a fine illuminated rim. The background supplies the color; the shared glass material does not impose a warm or brown tint.
 
-Four lightweight WebP scenes captured from this project's renderer feature the Ferrari in the city and at night, the AMG in rain, and the Prado. The slideshow starts automatically and loops through the same scenes and their accompanying text every seven seconds with a slow photographic drift. Chapter labels indicate the current slide without requiring clicks. Players can pause or resume the slideshow. Driver notes change independently every ten seconds during longer waits. Reduced motion keeps the automatic slideshow but disables drift and transition animation; hidden tabs pause scene changes and driver notes.
+![Main menu with clear glass panels and capsule controls over the Baku game world](images/baku-menu.webp)
 
-`assetTransfer.js` reads fetch streams incrementally, including each packed map part. `loadingScreen.js` aggregates received bytes against the map's compressed sizes and the startup file sizes recorded in `public/generated/asset-manifest.json`. The planned downloads include the route, street and building packs, road collision model, Ferrari, and saved garage car when applicable. The percentage describes **asset downloads**; decompression, texture preparation, road contact, and shader compilation report their actual stages separately. Unknown totals display received bytes without inventing a percentage. `pack-assets` refreshes the file sizes when repacking assets.
+*Current interface, captured from the development build in Chrome.*
 
-The game skips rendering the unfinished city. Map preparation yields between work batches so the introduction can repaint. After shaders compile, the menu is rendered behind the introduction for two frames, then revealed with a 1.1-second dissolve. Keyboard focus stays out of the underlying menu during this transition. Timers, startup error listeners, and image references are released afterward. Download, graphics, and startup failures leave a readable explanation and a retry button.
+## Shared material and icons
 
-Map preparation also builds the Government House details, settles its flag cloth, places independent room-light surfaces and prepares tree crown coordinates before shader warmup. The room-window mask is loaded from `/assets/environment/room-windows.png` during this stage; its small transfer is separate from the packed-map manifest's planned download totals. The city is revealed only after these dependencies are ready.
+The material uses light 5 px backdrop diffusion, opposing rim highlights and soft inner light. Buttons use translucent fills and a masked edge. The main menu adds a local neutral shadow behind its copy; text-dense dialogs and instruments use a stronger backing for readability. Pause uses a separate 2 px background blur so it does not stack two heavy blur layers.
 
-Run `npm run verify-loading` for streamed progress, missing totals, cancellation, HTTP failures, manifest accuracy, and artwork size checks. Browser verification should also cover a throttled production load, automatic slideshow looping, pause/resume, phone and short landscape layouts, reduced motion, interrupted assets, and successful retry. The loading art uses existing game assets; the credits in `ASSET_CREDITS.md` continue to apply.
+| File | Responsibility |
+| --- | --- |
+| `index.html` | Interface markup, initial loading screen and shared inline SVG symbols |
+| `src/glass.css` | Neutral material tokens, lens rim, icon sizing and transparency fallbacks |
+| `src/style.css` | Responsive menus, garage, controls, settings, multiplayer and driving instruments |
+| `src/licensePlate.css` | Plate editor layout and locally bundled plate fonts; imported by `style.css` |
+| `src/loading.css` | Loading layout, scene drift, crossfades and progress animation |
+| `src/loadingScreen.js` | Scene selection, slideshow controls, progress reporting and failure handling |
+| `src/startup.js` | Starts the lightweight loading experience before importing the game |
+
+`glass.css` and `loading.css` load directly from the document before the game bundle. General interface text uses local system fonts; the plate editor retains its bundled DIN fonts. No additional WebGL scene, remote image service or UI font download is required to show the loading screen.
+
+SVG icons share rounded strokes and explicit flex/grid slots so their placement does not depend on font baselines. Navigation uses straight arrows, the brand uses a road mark, and external links use a diagonal arrow. Day/night and audio toggles update the icon reference and text label independently.
+
+Phone layouts keep panels inside the viewport and allow long settings/garage panels to scroll. Short landscape menus place the introduction and actions beside one another. Small driving layouts retain the speed, gear, minimap and assist indicators while hiding the secondary engine readout.
+
+Keyboard focus remains visible. Reduced motion disables drift, sweeps, entry animations and animated transitions. Reduced transparency and browsers without backdrop blur receive a stronger neutral backing. These settings preserve labels and controls.
+
+## Driving HUD
+
+The HUD combines the minimap, speed/gear instrument, engine readout and a pause control. The assist area contains only ABS, TCS and ESC icon buttons; the chassis heading and suspension graphs have been removed. Vehicle physics and suspension behavior are unchanged.
+
+- **Enabled:** a small mint status dot.
+- **Disabled:** a slash across the icon and an updated accessible pressed state.
+- **Intervening:** a restrained amber highlight.
+
+The controls retain the **1 / 2 / 3** keyboard shortcuts and descriptive accessible labels. **Escape** or the HUD pause button opens the settings menu.
+
+## Loading artwork and slideshow
+
+The four loading scenes were captured on **15 October 2026** from the current game renderer at native **3840 × 2160**, with the Cinematic preset and current city, landmark, foliage and room-light detail.
+
+| Scene | Vehicle and conditions |
+| --- | --- |
+| `city.webp` | Ferrari by day along the Caspian boulevard |
+| `night.webp` | Ferrari after dark, with illuminated city windows and Government House |
+| `weather.webp` | Mercedes-AMG on wet streets |
+| `garage.webp` | Toyota Prado in the city |
+
+The images are composed with the car to the right of the loading story. High-quality WebP encoding preserves native detail without upscaling or artificial sharpening. Each image has a **2,200,000-byte** transfer budget. Only the first image is preloaded; later images decode before a 1.7-second crossfade. A missing later image leaves the current scene visible.
+
+The slideshow advances every seven seconds with a restrained photographic drift. Chapter capsules support click and keyboard selection, and a dedicated button pauses/resumes automatic changes and motion. Driver notes rotate independently every ten seconds. Hidden tabs stop scheduling chapter and note changes. Reduced motion keeps scene selection available and removes animated transitions.
+
+The [capture metadata](../public/assets/loading/captures.json) records the capture time, camera/target coordinates, vehicle, conditions and actual drawing-buffer dimensions. The game captures retain the underlying asset terms described in [asset credits](ASSET_CREDITS.md).
+
+## Startup, progress and errors
+
+`assetTransfer.js` reads fetch streams incrementally, including packed map parts. `loadingScreen.js` aggregates received bytes against compressed map sizes and startup file sizes recorded in `public/generated/asset-manifest.json`. Planned downloads include the route, street/building packs, road collision model, Ferrari and saved garage vehicle when applicable.
+
+The percentage describes **asset downloads**. Decompression, texture preparation, road contact and shader compilation report their actual stages separately. Unknown totals display received bytes without inventing a percentage. Loading artwork and the room-window mask are separate from these planned download totals. `pack-assets` refreshes the manifest sizes when repacking game assets.
+
+The game skips rendering the unfinished city. Map preparation yields between batches so the loading screen can repaint. Government House detail, its settled flag cloth, independent room lights, the room-window mask and tree crown coordinates are prepared before shader warmup. After compilation, the main menu renders behind the loading screen for two frames, then appears through a 1.1-second dissolve. Focus stays out of the underlying menu during that transition.
+
+Timers, startup error listeners and image references are released afterward. Download, graphics and startup failures leave a readable explanation and retry button; chapter controls are disabled on failure. Retry reloads the page to start again.
+
+## Regenerating the artwork
+
+Install the project dependencies and Google Chrome as described in [verification](VERIFICATION.md). Use a development server: capture instrumentation targets `src/main.js` and does not apply to a production preview.
+
+Start a server in one terminal:
+
+```sh
+npm run dev -- --port 5186 --strictPort
+```
+
+In another terminal, using PowerShell:
+
+```powershell
+$env:GAME_URL = 'http://127.0.0.1:5186'
+npm run capture-loading-art -- --preview
+npm run capture-loading-art
+npm run verify-loading
+```
+
+In POSIX shells, use `export GAME_URL=http://127.0.0.1:5186` before the same commands. Both capture and interface-browser scripts otherwise default to `http://127.0.0.1:5188`; set `GAME_URL` to the server actually running.
+
+Preview mode writes 1920 × 1080 PNG compositions and metadata to ignored `artifacts/liquid-glass/scenes/`. Full capture overwrites the four runtime WebP files and `public/assets/loading/captures.json`. The capture script instruments the current game in its own Chrome session, disables hot reload during capture, settles each view and encodes at WebP quality 96. It adds no production debug hooks. Review the images and run the artwork checks before committing regenerated files.
+
+## Verification
+
+```powershell
+$env:GAME_URL = 'http://127.0.0.1:5186'
+npm run verify-loading
+npm run verify-interface-browser
+```
+
+`verify-loading` covers streamed progress, unknown totals, cancellation, HTTP failures, manifest accuracy, native 4K dimensions and image budgets. It runs within the standard non-browser verification suite.
+
+`verify-interface-browser` checks loading layouts at 1440 × 900, 1920 × 1080, 390 × 844, 844 × 390 and 320 × 568. Main menu, pause and HUD checks use the same sizes with 1280 × 720 in place of 1920 × 1080. It exercises chapter selection, pause/resume, reduced motion, error/retry, SVG rendering and vertical centering, time/audio icon changes, the multiplayer form, garage selection, controls, aid keyboard states and return to the menu. Screenshots and `verification.json` remain under ignored `artifacts/liquid-glass/`.
+
+The loader's progress/error scenarios are isolated from heavy map downloads, followed by a real game startup for menu and driving checks. The multiplayer check covers its form, not joining a relay. Browser checks do not establish universal contrast, sustained frame rate or full-route visual fidelity; also review a throttled production load before release.

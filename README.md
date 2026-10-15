@@ -4,9 +4,9 @@ A fan-made browser driving game set on Baku's streets. Explore the city in four 
 
 **[Play DriveAtBaku](https://www.driveatbaku.games/)** · [Vercel mirror](https://driveatbaku.vercel.app/) · [Documentation](docs/README.md)
 
-![Ferrari 458 driving through Baku with the minimap and driving HUD visible](docs/images/baku-gameplay.webp)
+![Mercedes-AMG on Baku's boulevard with the Liquid Glass driving HUD and assist indicators visible](docs/images/baku-gameplay.webp)
 
-*Gameplay captured from the production build in Chrome.*
+*Current driving HUD, captured from the development build in Chrome.*
 
 ## Features
 
@@ -14,6 +14,8 @@ A fan-made browser driving game set on Baku's streets. Explore the city in four 
 - Ferrari 458 Italia, Elantra/Avante, Mercedes-AMG and Toyota Prado; saved vehicle selection, individual paint colors and configurable Azerbaijani license plates.
 - Fixed-step vehicle dynamics, suspension, automatic/manual transmission, ABS, traction and stability aids, world collisions and follow/hood cameras.
 - Day/night lighting, headlights, engine and tire audio, skid marks, and a heading-up minimap with a full-map view.
+- A cohesive [Liquid Glass interface](docs/LOADING_EXPERIENCE.md) across loading, menus, garage and driving: clear neutral surfaces, capsule controls, consistent vector icons, readable backing and reduced-motion support. The assist display keeps only ABS, TCS and ESC indicators.
+- Four native 4K loading scenes captured from the current game, with animated crossfades, selectable chapters, pause/resume, real download progress and retry handling.
 - Independent nighttime room lights, [Government House](docs/GOVERNMENT_HOUSE.md) stone and window detail with a wind-driven Azerbaijani flag, and [rounded tree shading](docs/FOLIAGE_LIGHTING.md).
 - Sunny, overcast, wet-road, rain and snow modes, adjustable precipitation and vehicle surface water. Weather affects appearance; it does not change driving grip.
 - Performance, Balanced and Cinematic graphics presets, independent render/props distances, ambient occlusion and rendering-resolution controls. Balanced/Cinematic use HDR, SMAA and supported scene MSAA, cached shadows and local car reflections.
@@ -61,6 +63,8 @@ See [map conversion](docs/MAP_CONVERSION.md) for optional asset regeneration and
 
 Gamepad input supports steering, throttle, brake, handbrake, clutch and horn through the browser Gamepad API. The in-game **Controls** panel lists keyboard and mouse inputs. Graphics, atmosphere and audio settings are available in the pause menu and saved locally.
 
+The driving HUD also has a pause button. ABS, TCS and ESC icons retain their keyboard shortcuts and indicate enabled, disabled and active intervention states. Suspension graphs are no longer displayed; vehicle suspension behavior is unchanged.
+
 Turn signals toggle off when pressed again. Selecting the other side or hazards replaces the current mode. All lamps on a car blink together (400 ms on / 400 ms off). Signals continue through pause, garage visits and recovery; changing cars clears them. Typing and held-key repeats do not toggle signals. Multiplayer needs the updated relay as well as the client; it shares the mode and blink reference with joining and existing players.
 
 ## Technology and structure
@@ -70,6 +74,8 @@ The client uses JavaScript modules, Three.js r180, `three-mesh-bvh`, WebGL and W
 | Path | Purpose |
 | --- | --- |
 | `src/main.js`, `src/startup.js` | Game loop, UI integration and startup |
+| `src/glass.css`, `src/style.css`, `src/licensePlate.css` | Shared glass material, responsive interface and garage plate editor styling |
+| `src/loadingScreen.js`, `src/loading.css` | Loading scenes, slideshow controls, progress and failure states |
 | `src/` | Vehicle dynamics, graphics, weather, cameras, audio, maps and collision modules |
 | `src/net/` | Multiplayer transport, state replication and remote vehicles |
 | `src/governmentHouse.js`, `src/flagCloth.js`, `src/roomLights.js`, `src/roomLightActivity.js`, `src/foliageLighting.js` | Landmark detail, flag simulation, independent rooms and canopy shading |
@@ -78,6 +84,8 @@ The client uses JavaScript modules, Three.js r180, `three-mesh-bvh`, WebGL and W
 | `scripts/` | Asset tools, regression checks, profilers and plate-fit inspector |
 | `server/` | Standalone WebSocket relay and load test |
 | `docs/` | Maintained technical guides, asset credits and historical engineering reports |
+
+`npm run capture-loading-art` regenerates the four loading images from a running development server. `npm run verify-interface-browser` checks the loading experience, responsive menus, icon alignment and driving UI in Chrome. See the [interface guide](docs/LOADING_EXPERIENCE.md) for server setup, preview captures and output locations.
 
 ## Contributing
 

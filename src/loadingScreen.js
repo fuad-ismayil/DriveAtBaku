@@ -1,8 +1,8 @@
 const POSTCARDS = [
-  { image: 'city', title: ['One city.', 'Endless drives.'], description: "From the old city's tight corners to the open boulevard. Find your own rhythm on the streets of Baku.", fact: '6.003 KM OF CITY STREETS', mood: 'YOUR ROUTE. YOUR PACE.', label: 'THE CITY COLLECTION', name: 'Baku, behind the wheel.' },
-  { image: 'night', title: ['After dark.', 'A new perspective.'], description: 'The city changes when the sun goes down. Switch on your headlights and see familiar streets in a different light.', fact: 'DAY & NIGHT DRIVING', mood: 'FOLLOW THE LIGHT.', label: 'THE NIGHT COLLECTION', name: 'The boulevard after hours.' },
-  { image: 'weather', title: ['Feel the road.', 'Read the weather.'], description: 'Clear skies, wet asphalt, falling rain or snow. Change the atmosphere and find a new way to experience the city.', fact: 'FIVE WEATHER SETTINGS', mood: 'EVERY DRIVE FEELS DIFFERENT.', label: 'THE ATMOSPHERE COLLECTION', name: 'A change in the air.' },
-  { image: 'garage', title: ['Your car.', 'Your character.'], description: 'A high-revving supercar, a city sedan, an AMG or a Prado. Choose your ride, pick your paint, and make the drive your own.', fact: 'FOUR DISTINCT RIDES', mood: 'MAKE IT YOURS.', label: 'THE GARAGE COLLECTION', name: 'A different kind of presence.' },
+  { image: 'city', title: ['Every turn.', 'A new story.'], description: 'The city opens up. The road is yours. Settle in for a drive along the Caspian coast.', fact: 'BAKU CITY STREETS', mood: 'EXPLORE AT YOUR OWN PACE', label: '01 / THE CITY', name: 'Your next favourite road.' },
+  { image: 'night', title: ['Lights on.', 'World off.'], description: 'A quieter city. A different kind of drive. Follow the boulevard into the blue hour.', fact: 'DAY & NIGHT', mood: 'TAKE THE LONG WAY HOME', label: '02 / AFTER HOURS', name: 'The city, in another light.' },
+  { image: 'weather', title: ['A little rain.', 'A lot of atmosphere.'], description: 'Reflections on the asphalt. A change in the air. Discover Baku under a different sky.', fact: 'FIVE ATMOSPHERES', mood: 'A FRESH PERSPECTIVE', label: '03 / THE ELEMENTS', name: 'Between the sky and the street.' },
+  { image: 'garage', title: ['Find your car.', 'Make your escape.'], description: 'Four distinct rides. Your choice of finish. A whole city waiting beyond the garage.', fact: 'FOUR DISTINCT RIDES', mood: 'MAKE THE DRIVE YOURS', label: '04 / YOUR DRIVE', name: 'A little more presence.' },
 ];
 const TIPS = [
   'Smooth steering. Clean exits. Let the city come to you.',
@@ -50,6 +50,10 @@ class LoadingScreen {
       this.schedule();
     });
     this.el.retry.addEventListener('click', () => location.reload());
+    this.chapters.forEach((chapter, index) => chapter.addEventListener('click', async () => {
+      await this.showPostcard(index);
+      this.schedule();
+    }));
     this.onVisibility = () => this.schedule();
     this.onConnection = () => this.render();
     this.onStartupError = event => { if (event.error) this.fail(event.error); };
@@ -67,7 +71,7 @@ class LoadingScreen {
     this.root.classList.toggle('is-paused', this.paused);
     this.el.motion.setAttribute('aria-pressed', String(this.paused));
     this.el.motion.setAttribute('aria-label', this.paused ? 'Resume slideshow' : 'Pause slideshow');
-    this.el.motion.firstElementChild.textContent = this.paused ? '▷' : 'Ⅱ';
+    document.getElementById('loading-motion-symbol').setAttribute('d', this.paused ? 'M9 6l9 6-9 6Z' : 'M9 7v10M15 7v10');
   }
 
   schedule() {
@@ -94,6 +98,7 @@ class LoadingScreen {
     try { await image.decode(); } catch { this.settlePostcard(); return; } // Keep the current scene if artwork is unavailable.
     if (!this.active || this.failed || sequence !== this.sequence) return;
     this.postcard = index;
+    this.root.style.setProperty('--scene-position', ['65% 50%', '62% 50%', '65% 50%', '65% 50%'][index]);
     this.scenes[this.sceneSlot].classList.remove('is-active');
     image.classList.add('is-active', 'is-moving');
     this.sceneSlot = slot;
@@ -213,6 +218,7 @@ class LoadingScreen {
     this.stop();
     this.failed = true;
     this.root.classList.add('has-error', 'is-paused');
+    this.chapters.forEach(chapter => { chapter.disabled = true; });
     this.root.setAttribute('aria-busy', 'false');
     this.el.copy.textContent = /webgl|graphics context/i.test(error?.message ?? '') ? 'Your browser couldn’t start the graphics.' : 'The city couldn’t finish loading.';
     this.el.detail.textContent = navigator.onLine ? 'Check your connection or refresh your browser, then try again.' : 'Reconnect to the internet, then try again.';

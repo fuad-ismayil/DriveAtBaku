@@ -1,10 +1,13 @@
 # Graphics distances and pause menu
 
-The pause menu now groups drive actions, graphics, and atmosphere/audio into
-three columns. It keeps the game's dark teal, cyan and orange visual language,
-with native keyboard controls, descriptive labels, live slider values, visible
-focus, a focus loop, and a single-column layout on narrow screens. Small screens
-retain vertical scrolling so no controls are inaccessible.
+The pause menu groups drive actions, graphics, and atmosphere/audio into three
+columns. Its current [Liquid Glass interface](LOADING_EXPERIENCE.md) uses neutral
+translucent panels, capsule controls and consistently centered SVG icons, with
+native keyboard controls, descriptive labels, live slider values, visible focus,
+a focus loop, and a single-column layout on narrow screens. Small screens retain
+vertical scrolling so no controls are inaccessible. Time/audio toggles update
+their icon and label together; the settings, persistence and distance behavior
+below are unchanged by the visual redesign.
 
 ## Distance controls
 
@@ -87,7 +90,10 @@ comparison but does not establish FPS everywhere around the circuit.
 The existing performance, world graphics, realism, handling, drive camera,
 barrier, foliage and minimap checks were also run.
 
-## Local measurements
+## Original distance-control measurements
+
+These measurements predate the Liquid Glass interface and are retained as a
+distance-setting comparison. They are not a benchmark of the current UI.
 
 Chrome, Intel Iris Xe / ANGLE D3D11, 1280 × 720, device pixel ratio 1, native
 resolution, sunny day, fixed checkpoint-2 camera. Each case warms for 60 frames

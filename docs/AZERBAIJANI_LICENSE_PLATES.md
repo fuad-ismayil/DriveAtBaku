@@ -2,6 +2,11 @@
 
 Implemented and verified locally on October 2, 2026.
 
+The garage now uses the shared [Liquid Glass interface](LOADING_EXPERIENCE.md).
+Plate editor styling lives in `src/licensePlate.css`, imported by the main
+interface stylesheet. The visual refresh preserves the registration controls,
+per-car storage, physical plate geometry and inspection camera behavior below.
+
 ## Player controls
 
 The garage's License Plate section begins with Show license plate ON/OFF. OFF hides both complete plate assemblies, including their removable frames, brackets, screws and rear registration lights, hides the remaining controls, and returns inspection to Whole Car. The model's natural bumper and recess geometry stays intact. ON restores the fitted assemblies and saved registration.
