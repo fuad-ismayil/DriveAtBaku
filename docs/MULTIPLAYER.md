@@ -17,7 +17,7 @@ remote has a private mixer, followed by distance attenuation and stereo pan.
 Wheel `n` optionally carries the contact normal for trails on slopes. Older
 clients fall back to throttle/flat ground. Updated clients and relay are needed
 for full audio fidelity; a relay that drops `au` cannot reproduce shift/load
-state accurately. The Android status line reports that limitation.
+state accurately. The Android multiplayer screen reports that limitation.
 
 Remote braking/tire sound consumes grounded wheel contact (`w[].c`) and actual
 slide speed (`w[].sl`), using the local tire sample and thresholds. Braking
@@ -71,3 +71,20 @@ between 120 and 150 metres and is hidden beyond that distance.
 - The relay caps simultaneous players at 32. Internet play depends on the separately operated server and network latency.
 
 The browser cleanup suite can exercise two local clients with `CITY_MULTIPLAYER_TEST=1`; see [verification](VERIFICATION.md). The relay load test measures synthetic traffic and does not replace an actual two-player driving check.
+
+## Native minimap and expanded map
+
+The 0.7.1 native client shows the local car in white and nearby remote drivers
+in gold on its circular minimap. The expanded city map uses the same cached
+atlas. Both views read interpolated native remote roots and headings every
+100ms; no additional protocol fields or map-specific packets are required.
+Leaving/disconnection clears markers, and a marker expires after three seconds
+without a fresh snapshot. That display expiry is separate from the earlier
+1.5-second stale-audio mute threshold.
+
+Opening the map releases local controls and pauses local driving simulation;
+remote interpolation and map markers continue. Closing it or Android Back
+restores driving. The full-game UI flow uses two periodic snapshot fixtures
+to check marker pose, motion, leave and stale expiry. Those fixtures establish
+native presentation behavior, not new evidence of public-relay interoperability.
+See the [UI/map report](android/UI_POLISH_AND_SWITCHING.md) for controls and results.

@@ -20,32 +20,56 @@ var detail_bias = 0.55
 var plate_builder: Node
 var headlight_energy_scale = 1.0
 var water = preload("res://scripts/vehicle_water.gd").new()
+var load_timings: Dictionary = {}
+var cache_limit = 0 # Local player keeps one previous car; peers retain no idle models.
+var model_cache: Dictionary = {}
+static var metadata: Dictionary = {}
+static var vehicle_definitions: Dictionary = {}
 
 func load_vehicle(id: String) -> bool:
+	var started = Time.get_ticks_usec()
+	load_timings = {}
 	if id not in IDS: return false
-	if vehicle_id == id and is_instance_valid(model): return true
+	if vehicle_id == id and is_instance_valid(model):
+		load_timings.cache_hit = true
+		return true
+	if model_cache.has(id):
+		var cached: Dictionary = model_cache[id]
+		model_cache.erase(id)
+		_retire_model()
+		for key in cached: set(key, cached[key])
+		vehicle_id = id
+		add_child(model)
+		load_timings.cache_hit = true
+		load_timings.assembly_ms = (Time.get_ticks_usec() - started) / 1000.0
+		return true
 	var path = "res://assets/vehicles/%s.glb" % id
 	if ResourceLoader.load_threaded_request(path) != OK: return false
 	while ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 		var progress: Array = []
 		ResourceLoader.load_threaded_get_status(path, progress)
-		loading_progress.emit(float(progress[0]) if not progress.is_empty() else 0.0)
+		loading_progress.emit(float(progress[0]) * 0.7 if not progress.is_empty() else 0.0)
 		await get_tree().process_frame
 	if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_LOADED: return false
-	loading_progress.emit(1.0)
+	loading_progress.emit(0.72)
 	var packed = ResourceLoader.load_threaded_get(path)
 	if packed == null: return false
-	if is_instance_valid(model): model.queue_free()
+	load_timings.resource_ms = (Time.get_ticks_usec() - started) / 1000.0
+	var assembled = Time.get_ticks_usec()
+	_retire_model()
 	model = packed.instantiate()
+	model.hide()
 	add_child(model)
+	load_timings.instantiate_ms = (Time.get_ticks_usec() - assembled) / 1000.0
 	vehicle_id = id
 	wheels.clear()
 	materials.clear()
 	painted_color = ""
-	var metadata = JSON.parse_string(FileAccess.get_file_as_string("res://assets/vehicles/metadata.json"))
+	if metadata.is_empty(): metadata = JSON.parse_string(FileAccess.get_file_as_string("res://assets/vehicles/metadata.json"))
+	if vehicle_definitions.is_empty(): vehicle_definitions = JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/vehicles.json"))
 	var definitions = {}
 	var water_definitions = {}
-	water.materials.clear()
+	water = preload("res://scripts/vehicle_water.gd").new()
 	for definition in metadata[id].get("water", []): water_definitions[definition.name] = definition
 	signal_materials.clear()
 	plate_nodes.clear()
@@ -69,13 +93,13 @@ func load_vehicle(id: String) -> bool:
 			if original == null: continue
 			var key = original.resource_name
 			if not materials.has(key):
-				materials[key] = original.duplicate()
 				if definitions.has(key) and original is StandardMaterial3D:
 					var signal_material = preload("res://scripts/signal_material.gd").create(original, definitions[key])
 					materials[key] = signal_material
 					signal_materials.append({"material": signal_material, "definition": definitions[key]})
 				elif water_definitions.has(key) and original is StandardMaterial3D:
 					materials[key] = water.create(original, water_definitions[key].glass)
+				else: materials[key] = original.duplicate()
 			mesh.set_surface_override_material(surface, materials[key])
 	if not is_instance_valid(plate_builder):
 		plate_builder = preload("res://scripts/license_plate.gd").new()
@@ -103,20 +127,46 @@ func load_vehicle(id: String) -> bool:
 		light.shadow_enabled = false
 		mount.add_child(light)
 		plate_lamps.append({"node": light, "energy": definition.energy})
-	for lamp in lamps:
-		lamp.queue_free()
 	lamps.clear()
 	for side in [-1, 1]:
 		var light = SpotLight3D.new()
-		var settings = JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/vehicles.json"))[id]
+		var settings = vehicle_definitions[id]
 		light.position = Vector3(side * 0.55, settings.get("headlightHeight", 0.77 if id == "elantra" else 0.6), -settings.dims.length * 0.43)
 		light.spot_attenuation = 2.0
 		light.light_color = Color("fff1d6")
 		light.light_energy = 0
 		light.shadow_enabled = false
-		add_child(light)
+		model.add_child(light)
 		lamps.append(light)
+	load_timings.assembly_ms = (Time.get_ticks_usec() - assembled) / 1000.0
+	model.show()
+	loading_progress.emit(1.0)
 	return true
+
+func _retire_model():
+	if not is_instance_valid(model): return
+	remove_child(model)
+	if cache_limit > 0:
+		var cached = {}
+		for key in ["model", "wheels", "materials", "painted_color", "lamps", "signal_materials", "plate_nodes", "plate_lamps", "plate_text", "water"]:
+			var value = get(key)
+			cached[key] = value.duplicate() if value is Array or value is Dictionary else value
+		model_cache[vehicle_id] = cached
+		while model_cache.size() > cache_limit:
+			var oldest = model_cache.keys()[0]
+			model_cache[oldest].model.free()
+			model_cache.erase(oldest)
+	else: model.free()
+
+func clear_model_cache():
+	for cached in model_cache.values(): cached.model.free()
+	model_cache.clear()
+
+func _notification(what):
+	if what == NOTIFICATION_OS_MEMORY_WARNING: clear_model_cache()
+
+func _exit_tree():
+	clear_model_cache()
 
 func registration(settings: Dictionary):
 	settings = preload("res://scripts/license_plate_settings.gd").normalize(settings)

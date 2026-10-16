@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "build-branding": "node scripts/build_branding.mjs",
+    "verify-branding": "node scripts/verify_branding.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "convert-map": "python scripts/convert_map.py",
     "pack-assets": "node scripts/pack_assets.mjs --clean",

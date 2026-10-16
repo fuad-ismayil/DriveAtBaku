@@ -48,12 +48,14 @@ var city_effects = preload("res://scripts/city_effects.gd").new()
 var surface_materials: Dictionary = {}
 var local_probe = ReflectionProbe.new()
 var reflection_elapsed = 0.0
+var switch_timings: Dictionary = {}
 
 func _ready():
 	add_child(interface)
 	add_child(session)
 	add_child(sound)
 	add_child(tire_effects)
+	player.cache_limit = 1
 	add_child(player)
 	add_child(camera)
 	camera.current = true
@@ -70,7 +72,9 @@ func _ready():
 	session.status_changed.connect(func(message):
 		interface.update_network(message)
 		if message == "OFFLINE" or message == "RECONNECTING" or message in ["SERVER FULL", "PROTOCOL MISMATCH", "CONNECTION REJECTED"]: _clear_remotes())
-	player.loading_progress.connect(func(progress): interface.show_loading("Preparing your vehicle…", lerpf(0.70, 0.85, progress) if not ready_to_drive else progress))
+	player.loading_progress.connect(func(progress):
+		if ready_to_drive: interface.set_vehicle_busy(interface.busy_vehicle, progress)
+		else: interface.show_loading("Preparing your vehicle…", lerpf(0.70, 0.85, progress)))
 	interface.show_loading("Preparing your drive…", 0.02)
 	await get_tree().process_frame
 	if not ClassDB.class_exists("NativeDriving"):
@@ -153,29 +157,49 @@ func _reset_at(position: Vector3, heading: float):
 	_present(1)
 
 func _select_vehicle(id: String):
-	if switching: return false
+	if switching or id not in IDS: return false
+	if ready_to_drive and id == player.vehicle_id:
+		switch_timings = {"vehicle": id, "no_op": true, "total_ms": 0.0}
+		return true
+	var started = Time.get_ticks_usec()
+	interface._remember_scroll(false)
 	switching = true
 	var was_driving = is_driving
 	var was_paused = interface.paused
 	is_driving = false
-	interface.show_loading("Preparing %s…" % Interface.VEHICLES.get(id, id), 0.0 if ready_to_drive else 0.70)
-	await get_tree().process_frame
+	interface.controls.clear()
+	if ready_to_drive: interface.set_vehicle_busy(id, 0)
+	else: interface.show_loading("Preparing %s…" % Interface.VEHICLES.get(id, id), 0.70)
+	# A prepared car needs no loading frame or screen transition.
+	if not ready_to_drive or not player.model_cache.has(id): await get_tree().process_frame
+	var feedback_ready = Time.get_ticks_usec()
 	var success = await player.load_vehicle(id)
+	var loaded = Time.get_ticks_usec()
 	if success:
 		Preferences.update("vehicle", id)
+		var saved_at = Time.get_ticks_usec()
 		player.paint(Preferences.values.paint)
+		var painted_at = Time.get_ticks_usec()
 		player.registration(Preferences.plate_settings())
+		var plated = Time.get_ticks_usec()
 		sound.setup(id, vehicles[id])
+		switch_timings = {"vehicle": id, "model": player.load_timings.duplicate(), "feedback_wait_ms": (feedback_ready - started) / 1000.0, "view_ms": (loaded - feedback_ready) / 1000.0, "preferences_ms": (saved_at - loaded) / 1000.0, "paint_ms": (painted_at - saved_at) / 1000.0, "plate_ms": (plated - painted_at) / 1000.0, "audio_ms": (Time.get_ticks_usec() - plated) / 1000.0, "total_ms": (Time.get_ticks_usec() - started) / 1000.0}
 		indicator = {"mode": "off", "revision": 0, "epoch": session.server_time()}
 		if ready_to_drive:
 			_reset_at(player.position, state.get("heading", route.heading))
 	else:
 		push_error("Could not load native vehicle %s" % id)
 	switching = false
+	interface.set_vehicle_busy("")
 	if ready_to_drive:
 		if was_driving: _action("drive")
 		else: interface.show_menu(was_paused, true)
-	if not success: interface.show_loading("Your vehicle could not finish loading.", -1, true)
+	if success:
+		switch_timings.total_ms = (Time.get_ticks_usec() - started) / 1000.0
+		if OS.has_feature("debug"): print("NATIVE_SWITCH ", JSON.stringify(switch_timings))
+	if not success:
+		if ready_to_drive and is_instance_valid(interface.vehicle_feedback): interface.vehicle_feedback.text = "Could not prepare this car. Select it again to retry."
+		elif not ready_to_drive: interface.show_loading("Your vehicle could not finish loading.", -1, true)
 	return success
 
 func _physics_process(dt):
@@ -223,6 +247,13 @@ func _process(dt):
 	if hud_elapsed > 0.1:
 		hud_elapsed = 0
 		interface.update_state(state, session.status, remotes.size() + 1)
+		var map_drivers: Array = []
+		for remote in remotes.values():
+			if remote.buffer.is_empty() or not is_instance_valid(remote.root): continue
+			if session.server_time() - remote.buffer[-1].time > 3000: continue
+			var forward = -remote.root.basis.z
+			map_drivers.append({"position": Vector2(remote.root.position.x, -remote.root.position.z), "heading": atan2(-forward.x, -forward.z)})
+		interface.update_map(state, map_drivers)
 
 func _present(alpha: float):
 	if state.is_empty(): return
@@ -236,6 +267,18 @@ func _spring(current: Vector3, velocity: Vector3, target: Vector3, frequency: fl
 	return [target + difference * ((1 + frequency * dt) * decay) + velocity * (dt * decay), velocity * ((1 - frequency * dt) * decay) + difference * (-frequency * frequency * dt * decay)]
 
 func _update_camera(dt: float):
+	if interface.plate_view != "car" and not is_driving:
+		var index = 0 if interface.plate_view == "front" else 1
+		var mounts = player.plate_nodes.filter(func(plate): return plate.node.visible)
+		if mounts.size() > index:
+			var mount: Node3D = mounts[index].node
+			var center = mount.global_position
+			var distance = 0.95 if Preferences.values.plate_format == "long" else 0.7
+			camera.position = center + mount.global_basis.z.normalized() * distance + Vector3.UP * 0.08
+			camera.look_at(center, Vector3.UP)
+			camera.fov = 48
+			camera_ready = false
+			return
 	var drag: Vector2 = interface.controls.camera_delta
 	interface.controls.camera_delta = Vector2.ZERO
 	camera_yaw -= drag.x * 0.004
@@ -299,6 +342,14 @@ func _action(action: String):
 		return
 	if not ready_to_drive: return
 	match action:
+		"map":
+			if not is_driving: return
+			is_driving = false
+			interface.show_map()
+		"map_close":
+			if not interface.map_overlay.visible: return
+			interface.close_map()
+			is_driving = true
 		"drive":
 			is_driving = true
 			interface.show_driving()
@@ -315,6 +366,7 @@ func _action(action: String):
 			Preferences.update("automatic", not Preferences.values.automatic)
 			simulation.set_automatic(Preferences.values.automatic)
 			state = simulation.snapshot()
+			interface.update_state(state, session.status, remotes.size() + 1)
 		"lights": player.headlight_mode = (player.headlight_mode + 1) % 3
 		"signal_left", "signal_right", "signal_hazard":
 			var mode = action.trim_prefix("signal_")
@@ -340,9 +392,12 @@ func _action(action: String):
 
 func _setting_changed(key: String):
 	interface.controls.clear()
-	interface.controls._layout()
+	interface._safe_layout()
 	if not ready_to_drive: return
-	if key == "automatic": simulation.set_automatic(Preferences.values.automatic)
+	if key == "automatic":
+		simulation.set_automatic(Preferences.values.automatic)
+		state = simulation.snapshot()
+		interface.update_state(state, session.status, remotes.size() + 1)
 	if key in ["abs", "tcs", "esc"]: simulation.set_aids(Preferences.values.abs, Preferences.values.tcs, Preferences.values.esc)
 	if key in ["quality", "resolution", "render_distance"]: _apply_graphics()
 	if key in ["night", "weather"]: _apply_weather()
@@ -658,7 +713,8 @@ func _notification(what):
 		for remote in remotes.values():
 			if is_instance_valid(remote.audio): remote.audio.set_suspended(false)
 	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		if is_driving: _action("pause")
+		if interface.map_overlay.visible: _action("map_close")
+		elif is_driving: _action("pause")
 		else: interface.back()
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_action("quit")

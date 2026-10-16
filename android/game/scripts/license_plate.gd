@@ -2,6 +2,7 @@ extends Node
 
 var library: Node3D
 var glyph_libraries: Dictionary = {}
+var templates: Dictionary = {}
 
 func _ready():
 	library = load("res://assets/vehicles/plate_library.glb").instantiate()
@@ -17,6 +18,8 @@ func _ready():
 				mesh.set_surface_override_material(surface, reflective)
 
 func create(settings: Dictionary) -> Node3D:
+	var key = JSON.stringify(preload("res://scripts/license_plate_settings.gd").normalize(settings))
+	if templates.has(key): return templates[key].duplicate()
 	var format = "compact" if settings.get("format") == "compact" else "long"
 	var older = settings.get("identity", "older") not in ["new", "classic"] and settings.get("hyphens", true)
 	var plate = library.find_child("plate_%s_%s" % [format, "older" if older else "new"], true, false).duplicate()
@@ -51,7 +54,17 @@ func create(settings: Dictionary) -> Node3D:
 		instance.mesh = tool.commit()
 		plate.add_child(instance)
 	for mesh in plate.find_children("*", "MeshInstance3D", true, false): mesh.layers = 2
-	return plate
+	# Front/rear plates and recent edits share immutable geometry, including LODs.
+	templates[key] = plate
+	while templates.size() > 8:
+		var oldest = templates.keys()[0]
+		templates[oldest].free()
+		templates.erase(oldest)
+	return plate.duplicate()
+
+func _exit_tree():
+	for template in templates.values(): template.free()
+	templates.clear()
 
 func _line(stamps: Array, text: String, positions: Array, y: float, size: int):
 	for i in mini(text.length(), positions.size()):

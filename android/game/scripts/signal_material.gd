@@ -1,10 +1,11 @@
 extends RefCounted
 
+static var shaders: Dictionary = {}
+
 static func create(source: StandardMaterial3D, definition: Dictionary) -> ShaderMaterial:
-	var shader = Shader.new()
 	var transparent = source.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED
 	var mode = "blend_mix,depth_prepass_alpha,cull_disabled" if transparent else "cull_disabled"
-	shader.code = """shader_type spatial;
+	var code = """shader_type spatial;
 render_mode %s;
 uniform vec4 tint : source_color = vec4(1.0);
 uniform sampler2D color_texture : source_color,filter_linear_mipmap_anisotropic;
@@ -34,7 +35,11 @@ void fragment(){
 }
 """ % [mode, definition.get("mask", "0.0"), definition.get("emission_mask", "1.0"), definition.get("reverse_mask", "1.0"), definition.get("rest_mask", "0.0"), "ALPHA = max(color.a, level * 0.98);" if transparent else ""]
 	var material = ShaderMaterial.new()
-	material.shader = shader
+	if not shaders.has(code):
+		var shader = Shader.new()
+		shader.code = code
+		shaders[code] = shader
+	material.shader = shaders[code]
 	material.resource_name = source.resource_name
 	material.set_shader_parameter("tint", source.albedo_color)
 	material.set_shader_parameter("has_texture", source.albedo_texture != null)

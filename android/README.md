@@ -14,6 +14,38 @@ default, following substantially better driving performance reported on that
 device. The Android manifest minimum is API 24; other devices and Android
 versions have not been validated.
 
+The current primary export is **0.7.2-native-preview** (code 11). The
+[UI and switching report](../docs/android/UI_POLISH_AND_SWITCHING.md) describes
+the refined settings, web-style registration editor, bounded vehicle cache and
+measured loading/switching behavior.
+
+0.7.2 adds the approved A1 Old City Drive branding to the project, boot, menu,
+Android legacy/adaptive/themed icons and Windows executable. The current build
+passes desktop verification, packaged-icon checks and the 67-check S9 Vulkan
+flow using the new isolated QA APK, with primary preferences unchanged. See
+[branding verification](../docs/branding/VERIFICATION.md).
+
+0.7.1 introduced the current emphasis on gameplay visibility: a background-free, 62-unit-tall readout
+sits at the bottom edge, the small circular minimap has no text footer, and
+compact top-left buttons sit closely together. Normal gameplay omits repeated
+vehicle/connection labels; enabled driving aids are subtle and brighten when
+active. The HUD is checked against the projected body bounds of all four cars.
+
+The north-up minimap includes live multiplayer markers. Tap it for the
+expanded map, then drag/pinch or use zoom, Your car and Fit city. Android Back
+closes the map. Driving input is released while it is open; peer positions
+continue updating. Speed, RPM, transmission, gear and driving aids share the
+compact bottom readout. Manual clutch and shift controls sit beside
+the pedals, with visibility synchronized to the simulation's actual mode.
+
+0.6.2 makes the registration preview directly editable, with all three inputs
+inside the plate and AZ contained by its identity frame. Both long and compact
+formats retain large touch areas, paste support and the appropriate keyboards.
+
+0.6.1 restores the Prado's front Toyota badge by preserving the source
+material's two-sided faces in the native wet-surface shader. The emblem mesh
+was present; forced back-face culling had hidden its inner ovals.
+
 Open the landscape app, choose a vehicle in Your garage and press Start driving. Single-player uses
 packaged assets and requires no connection. Multiplayer connects only when
 Join is selected. The default endpoint is the existing public relay; a local
@@ -207,8 +239,9 @@ the public relay already preserves the required state as of the 0.4 probe.
 
 ## 0.5 mobile Liquid Glass interface
 
-Primary Vulkan uses `0.5.0-native-preview`; OpenGL uses
-`0.5.0-native-preview-opengl` (both code 5).
+The 0.5 rollout used `0.5.0-native-preview` for Vulkan and
+`0.5.0-native-preview-opengl` for OpenGL (both code 5). Current 0.7.2 exports are
+described above.
 The main menu, pause menu, garage, settings and multiplayer screens share
 neutral transparent glass, refractive rims, consistent vector icons and
 88-unit primary menu touch targets. The city stays visible behind the menus. Main menu and

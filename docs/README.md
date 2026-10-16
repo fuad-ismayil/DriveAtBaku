@@ -4,6 +4,8 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 
 | Guide | Contents |
 | --- | --- |
+| [Unreleased change review](UNRELEASED_CHANGES.md) | Analysis of all source/docs changes since 03bb820, current verification, remaining limits and approved A1 branding |
+| [Brand identity](branding/README.md) | Approved A1 meaning, masters, platform icons, regeneration and proposal history |
 | [Rendering](RENDERING.md) | Current presets, resolution, post-processing, visibility, shadows and reflections |
 | [Verification](VERIFICATION.md) | Repeatable automated checks, browser prerequisites and profiling |
 | [Multiplayer](MULTIPLAYER.md) | State replication, interpolation and known limits |
@@ -13,6 +15,7 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 | [Android device verification](android/DEVICE_RESULTS.md) | S9 results, exact physics fixtures, audio/lighting checks and measurement limits |
 | [Android audio and plate fixes](android/AUDIO_AND_PLATE_FIXES.md) | Real plate lamps, PCM boundary correction, remote braking audio and bidirectional tests |
 | [Android mobile interface](android/MOBILE_INTERFACE.md) | 0.5 Liquid Glass menus/loading, touch controls, accessibility, device screenshots and QA |
+| [Android UI polish and switching](android/UI_POLISH_AND_SWITCHING.md) | Current visibility-first HUD, multiplayer maps, inline registration, badge correction and bounded switching caches |
 | [Multiplayer horns](android/HORN_MULTIPLAYER.md) | Android/web horn audio, stale-peer protection, reproduction commands and measured two-way results |
 | [Android UI roadmap](android/UI_ROADMAP.md) | Completed mobile redesign and remaining device, layout and performance work |
 | [Map conversion](MAP_CONVERSION.md) | Optional source conversion, packing and collision pipeline |

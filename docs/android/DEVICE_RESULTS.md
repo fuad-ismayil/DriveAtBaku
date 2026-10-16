@@ -3,7 +3,28 @@
 Device: Samsung SM-G960F / Galaxy S9, Android 10 (API 29), ARM64, Mali-G72.
 The device successfully ran both OpenGL ES 3.2 and Vulkan 1.1.108 exports.
 
-Latest maintenance results: [0.4 plate lamps and audio](AUDIO_AND_PLATE_FIXES.md).
+Earlier maintenance results: [0.4 plate lamps and audio](AUDIO_AND_PLATE_FIXES.md).
+
+Latest physical UI run: **0.7.2**, version code **11**, using the isolated
+interface-QA APK. It passed **67 checks** on S9 Vulkan with primary-game
+preferences unchanged. Packaged icon checks, desktop verification and the full
+new device report are in [branding validation](../branding/VERIFICATION.md).
+
+Earlier **0.7.1**, version code **10**, S9 Vulkan flow passed
+**67 checks** on relaunch, preserved the installed primary game's preference
+hash, and verified HUD clearance against the projected bounds of all four cars
+in the default follow view. Day/night captures and exact measurements are in
+the [UI and switching report](UI_POLISH_AND_SWITCHING.md) and its
+[versioned JSON](ui-polish-verification.json). One earlier attempt exited during
+city preparation without a script/shader diagnostic; its cause is unconfirmed.
+
+The latest OpenGL interface checks are desktop checks, not a new S9 OpenGL
+certification. The map flow uses two periodic multiplayer snapshot fixtures,
+not the live public relay. Earlier real Android/browser checks below retain
+their original scope. The branded 0.7.2/code 11 exports were subsequently rebuilt, checked on
+desktop and by inspecting packaged resources, then the QA flow was rerun on
+the reconnected S9. The main/OpenGL APK signatures verify; the latest physical
+branding flow uses Vulkan.
 
 | Check | Result | Evidence under `artifacts/android/` |
 | --- | --- | --- |

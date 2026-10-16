@@ -6,13 +6,20 @@ var rain = 0.0
 var time = 0.0
 var travel = Vector3.ZERO
 const TO_WEB = Transform3D(Basis(Vector3(1, 0, 0), Vector3(0, 0, 1), Vector3(0, -1, 0)), Vector3.ZERO)
+static var shaders: Dictionary = {}
 
 func create(source: StandardMaterial3D, glass: bool) -> ShaderMaterial:
-	var shader = Shader.new()
 	var transparent = source.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED
-	shader.code = FileAccess.get_file_as_string("res://shaders/vehicle_water.shader.txt").replace("/*MODE*/", "blend_mix,depth_prepass_alpha,cull_disabled" if transparent else "cull_back").replace("/*ALPHA*/", "ALPHA=color.a;" if transparent else "")
+	# Preserve authored face visibility. The Prado's front Toyota emblem has
+	# reversed faces in a two-sided chrome mesh; cull_back erased its inner ovals.
+	var culling = {BaseMaterial3D.CULL_BACK: "cull_back", BaseMaterial3D.CULL_FRONT: "cull_front", BaseMaterial3D.CULL_DISABLED: "cull_disabled"}[source.cull_mode]
+	var key = "%s/%s" % [transparent, culling]
+	if not shaders.has(key):
+		var shader = Shader.new()
+		shader.code = FileAccess.get_file_as_string("res://shaders/vehicle_water.shader.txt").replace("/*MODE*/", ("blend_mix,depth_prepass_alpha," if transparent else "") + culling).replace("/*ALPHA*/", "ALPHA=color.a;" if transparent else "")
+		shaders[key] = shader
 	var material = ShaderMaterial.new()
-	material.shader = shader
+	material.shader = shaders[key]
 	material.resource_name = source.resource_name
 	material.set_shader_parameter("tint", source.albedo_color)
 	material.set_shader_parameter("has_texture", source.albedo_texture != null)

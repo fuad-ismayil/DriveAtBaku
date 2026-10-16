@@ -1,6 +1,10 @@
 extends Node
 
 const Mix = preload("res://scripts/engine_mix.gd")
+# Streams are immutable after their PCM boundary guard is installed. Players,
+# playback offsets, gain, pitch, filters and buses remain independent.
+static var loop_cache: Dictionary = {}
+static var bank_definitions: Dictionary = {}
 var bank: Dictionary = {}
 var profile: Dictionary = {}
 var layers: Array = []
@@ -61,8 +65,8 @@ func setup(id: String, settings: Dictionary):
 	tire_tone.cutoff_hz = 4200
 	tire_tone.resonance = 0.5
 	AudioServer.add_bus_effect(tire_index, tire_tone)
-	var banks = JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/engine_banks.json"))
-	bank = banks[id]
+	if bank_definitions.is_empty(): bank_definitions = JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/engine_banks.json"))
+	bank = bank_definitions[id]
 	profile = settings
 	audio_rpm = float(settings.idleRpm)
 	mix_load = 0.08
@@ -106,6 +110,7 @@ func setup(id: String, settings: Dictionary):
 	set_suspended(suspended)
 
 func _loop(file: String) -> AudioStream:
+	if loop_cache.has(file): return loop_cache[file]
 	var stream = load("res://assets/audio/%s" % file).duplicate()
 	if stream is AudioStreamWAV:
 		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -118,7 +123,12 @@ func _loop(file: String) -> AudioStream:
 		stream.loop_end = pcm.size() / frame_bytes
 		pcm.append_array(pcm.slice(0, frame_bytes))
 		stream.data = pcm
+	loop_cache[file] = stream
+	while loop_cache.size() > 12: loop_cache.erase(loop_cache.keys()[0])
 	return stream
+
+func _notification(what):
+	if what == NOTIFICATION_OS_MEMORY_WARNING: loop_cache.clear()
 
 func update(state: Dictionary, enabled: bool, dt: float):
 	if not running or bank.is_empty() or state.is_empty(): return

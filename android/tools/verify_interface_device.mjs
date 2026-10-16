@@ -18,7 +18,7 @@ function preferenceHash() {
   return result.status === 0 ? createHash('sha256').update(result.stdout).digest('hex') : null;
 }
 const before = preferenceHash();
-adb(['install', '-r', 'android/build/DriveAtBaku-interface-qa.apk']);
+if (!process.argv.includes('--reuse-install')) adb(['install', '-r', 'android/build/DriveAtBaku-interface-qa.apk']);
 adb(['shell', 'am', 'start', '-W', '-n', `${pkg}/com.godot.game.GodotAppLauncher`]);
 const pid = adb(['shell', 'pidof', pkg]).stdout.toString().trim();
 console.log(`Native UI verification running on Android (PID ${pid}).`);
@@ -26,6 +26,7 @@ let log = '';
 for (let attempt = 0; attempt < 120; attempt++) {
   log = adb(['logcat', '-d', `--pid=${pid}`, '-s', 'godot']).stdout.toString();
   if (/NATIVE_INTERFACE_FLOW|SCRIPT ERROR|Shader compilation failed/.test(log)) break;
+  if (adb(['shell', 'pidof', pkg], true).status !== 0) break;
   await new Promise(resolve => setTimeout(resolve, 2000));
 }
 writeFileSync(`${output}/device.log`, log);

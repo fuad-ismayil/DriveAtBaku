@@ -43,10 +43,7 @@ h2 { font-size: clamp(32px, 3.8vw, 54px); }
 /* The scene remains visible through thin glass; text sits over a soft local tint. */
 #menu { display: flex; align-items: center; padding: 100px clamp(24px, 5vw, 96px) 76px; background: linear-gradient(90deg, #090f1730, transparent 65%), linear-gradient(0deg, #090f1759, transparent 25%); }
 .menu-topline { position: absolute; top: 30px; left: clamp(24px, 5vw, 96px); display: flex; align-items: center; gap: 12px; text-shadow: 0 2px 10px #000b; }
-.brand-icon { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; text-shadow: none; }
-.brand-icon > .ui-icon { width: 22px; height: 22px; }
-.menu-topline > span:last-child { display: grid; gap: 4px; font-size: 15px; font-weight: 600; letter-spacing: -.025em; }
-.menu-topline small { color: #e1e7ed; font-size: 8px; font-weight: 500; letter-spacing: .15em; }
+.brand-wordmark { display: block; width: 220px; height: auto; filter: drop-shadow(0 1px 5px #0006); }
 .menu-place { position: absolute; right: clamp(24px, 4vw, 76px); top: 32px; display: flex; align-items: center; gap: 9px; padding: 12px 18px; border-radius: 999px; font-size: 11px; }
 .menu-place i, .hero-copy .eyebrow i { width: 5px; height: 5px; border-radius: 50%; background: #bde4dc; box-shadow: 0 0 10px #bde4dc40; }
 .hero-copy { --glass-base: var(--glass-panel-base); width: min(440px, 100%); max-height: 100%; overflow-y: auto; padding: clamp(26px, 2.7vw, 44px); border-radius: 34px; scrollbar-width: thin; scrollbar-color: #ffffff50 transparent; animation: glass-enter .9s var(--ease-out) both; background: linear-gradient(100deg, #00000040, transparent 90%), var(--glass-light), var(--glass-base); }
@@ -311,7 +308,7 @@ h2 { font-size: clamp(32px, 3.8vw, 54px); }
 @media (max-height: 550px) {
   #menu { padding: 70px 20px 35px; }
   .menu-topline { top: 13px; left: 24px; }
-  .menu-topline .brand-icon { width: 34px; height: 34px; }
+  .menu-topline .brand-wordmark { width: 180px; }
   .menu-place { top: 15px; }
   .hero-copy { width: 410px; padding: 22px; }
   .hero-copy h1 { font-size: 42px; }

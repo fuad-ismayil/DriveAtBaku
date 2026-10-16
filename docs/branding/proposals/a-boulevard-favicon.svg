@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" role="img" aria-label="DriveAtBaku · Boulevard D draft"><title>DriveAtBaku · Boulevard D · unapproved proposal</title><rect width="100" height="100" rx="19" fill="#0d171b"/><g transform="translate(50 50) scale(1.24) translate(-50 -50)"><defs><mask id="road-cut"><rect width="100" height="100" fill="#fff"/><path fill="#000" d="M43 84 50 53H59L55 84Z"/></mask></defs>
+    <path fill="#edf5f2" mask="url(#road-cut)" fill-rule="evenodd" d="M24 20H47C69 20 82 32 82 50S69 80 47 80H24ZM36 32V68H46C61 68 70 62 70 50S61 32 46 32Z"/>
+    <path stroke="#9fe4d4" stroke-width="3" stroke-linecap="round" d="M49 75 53 58"/></g></svg>

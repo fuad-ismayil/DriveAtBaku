@@ -2,6 +2,8 @@ extends RefCounted
 
 # Vector paths use the same fine, rounded 24-unit grid as the web interface.
 const PATHS = {
+	"plus": "M5 12H19M12 5V19",
+	"minus": "M5 12H19",
 	"road": "M5 21L9 3M19 21L15 3M12 4V8M12 11V14M12 17V21",
 	"arrow": "M5 12H19M13 6L19 12L13 18",
 	"back": "M19 12H5M11 6L5 12L11 18",

@@ -1,6 +1,6 @@
 # Verification
 
-Install the locked client dependencies with `npm ci` and relay dependencies with `npm ci --prefix server`. `npm run verify` runs all 26 non-browser suites sequentially and stops on the first failure. These cover vehicle handling and idle drivetrain, both cameras, engine audio, minimap, models/plates/loading, ground and world collision, rendering invariants, foliage, independent room lighting, Government House window geometry and materials, flag cloth physics, tire effects, culling/distance, GPU-timer/resolution logic, indicator state/lens fitment and an isolated three-client indicator relay test.
+Install the locked client dependencies with `npm ci` and relay dependencies with `npm ci --prefix server`. `npm run verify` runs all 27 non-browser suites sequentially and stops on the first failure. These cover vehicle handling and idle drivetrain, both cameras, engine audio, minimap, models/plates/loading, ground and world collision, rendering invariants, foliage, independent room lighting, Government House window geometry and materials, flag cloth physics, tire effects, culling/distance, GPU-timer/resolution logic, indicator state/lens fitment and an isolated three-client indicator relay test.
 
 ```sh
 npm run verify
@@ -9,7 +9,25 @@ npm run build
 
 The GitHub **Verify** workflow runs these checks, the production build and a local relay traffic test on Node.js 24/Linux. It does not make GPU-performance or visual-quality claims. Vite currently reports a large JavaScript chunk; the warning is retained and the build succeeds.
 
+## Branding checks
+
+`npm run verify-branding` checks browser declarations, all 11 Android presets,
+adaptive safe bounds, themed-icon alpha and complete Windows ICO sizes.
+`python android/tools/verify_branding_exports.py` inspects three actual APKs and
+the exported Windows executable (requires Pillow). See the
+[0.7.2 branding validation](branding/VERIFICATION.md) for precise coverage,
+hashes and the distinction between current desktop and earlier phone evidence.
+
 ## Native Android and cross-platform checks
+
+The 0.7.1 interface work adds a **67-check** S9 Vulkan UI flow,
+projected car-body/HUD clearance, inline plate-input checks, map gestures and
+periodic peer-marker fixtures. The separate vehicle-cache regression recorded
+64 checks; a dedicated badge scene checks authored culling. See the
+[unreleased review](UNRELEASED_CHANGES.md) and
+[UI/switching guide](android/UI_POLISH_AND_SWITCHING.md) for exact versions,
+commands, measurements and limitations. The new map fixtures do not replace
+the earlier real browser/native relay tests described below.
 
 The [Android build guide](../android/README.md) covers Windows prerequisites,
 preparation and `android/build.ps1 -Target Verify`. Native verification checks

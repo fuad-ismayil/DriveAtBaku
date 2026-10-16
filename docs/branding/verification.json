@@ -1,0 +1,415 @@
+{
+  "identity": "A1 \u2014 Old City Drive",
+  "apks": [
+    {
+      "file": "DriveAtBaku-native-debug.apk",
+      "sha256": "ee6a7924b1f4014aab36fc39ca1201784116bd51e601acdf9228f849a620382c",
+      "icon_resources_checked": 24,
+      "largest_matches_sources": true
+    },
+    {
+      "file": "DriveAtBaku-native-opengl.apk",
+      "sha256": "49c8b0b00d3389b9a4b19994f17032f2473ce5331cf6a1c22fdfc7b739435094",
+      "icon_resources_checked": 24,
+      "largest_matches_sources": true
+    },
+    {
+      "file": "DriveAtBaku-interface-qa.apk",
+      "sha256": "729822175e8440b8979ae2c0f314032a29b861de8e0c9aabcb455ed78a1e232b",
+      "icon_resources_checked": 24,
+      "largest_matches_sources": true
+    }
+  ],
+  "windows": [
+    {
+      "file": "DriveAtBaku-native.exe",
+      "sha256": "eb66e1ba35187e974144ae3ffe68a48c437cb745e09988e75adf921fb002feea",
+      "sizes": [
+        16,
+        32,
+        48,
+        64,
+        128,
+        256
+      ],
+      "all_match_sources": true
+    }
+  ],
+  "passed": true,
+  "version": "0.7.2",
+  "version_code": 11,
+  "desktop_flow": {
+    "checks": 67,
+    "failures": [],
+    "passed": true,
+    "renderer": "mobile",
+    "switch_samples": [
+      {
+        "audio_ms": 0.258,
+        "buffer_bytes": 172944524,
+        "feedback_wait_ms": 0.975,
+        "model": {
+          "assembly_ms": 122.873,
+          "instantiate_ms": 2.804,
+          "resource_ms": 32.921
+        },
+        "paint_ms": 0.025,
+        "plate_ms": 1.315,
+        "preferences_ms": 0.671,
+        "presented_ms": 175.119,
+        "texture_bytes": 224605696,
+        "total_ms": 159.447,
+        "vehicle": "amg",
+        "view_ms": 155.871
+      },
+      {
+        "audio_ms": 0.291,
+        "buffer_bytes": 178791736,
+        "feedback_wait_ms": 12.537,
+        "model": {
+          "assembly_ms": 118.831,
+          "instantiate_ms": 4.845,
+          "resource_ms": 133.397
+        },
+        "paint_ms": 0.057,
+        "plate_ms": 1.876,
+        "preferences_ms": 1.155,
+        "presented_ms": 286.508,
+        "texture_bytes": 224605696,
+        "total_ms": 268.677,
+        "vehicle": "prado",
+        "view_ms": 252.358
+      },
+      {
+        "audio_ms": 0.237,
+        "buffer_bytes": 154712492,
+        "feedback_wait_ms": 0.049,
+        "model": {
+          "assembly_ms": 0.334,
+          "cache_hit": true
+        },
+        "paint_ms": 0.014,
+        "plate_ms": 0.037,
+        "preferences_ms": 0.648,
+        "presented_ms": 4.847,
+        "texture_bytes": 220382720,
+        "total_ms": 1.608,
+        "vehicle": "amg",
+        "view_ms": 0.339
+      },
+      {
+        "audio_ms": 0.388,
+        "buffer_bytes": 154712492,
+        "feedback_wait_ms": 0.054,
+        "model": {
+          "assembly_ms": 0.472,
+          "cache_hit": true
+        },
+        "paint_ms": 0.009,
+        "plate_ms": 0.055,
+        "preferences_ms": 0.743,
+        "presented_ms": 5.869,
+        "texture_bytes": 220382720,
+        "total_ms": 2.245,
+        "vehicle": "prado",
+        "view_ms": 0.48
+      },
+      {
+        "buffer_bytes": 154734344,
+        "no_op": true,
+        "presented_ms": 2.102,
+        "texture_bytes": 220382720,
+        "total_ms": 0.0,
+        "vehicle": "prado"
+      }
+    ],
+    "vehicle_visibility": [
+      {
+        "car_rect": "[P: (550.7985, 337.2968), S: (377.1613, 274.4048)]",
+        "clear": true,
+        "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+        "vehicle": "ferrari"
+      },
+      {
+        "car_rect": "[P: (600.4355, 325.1229), S: (279.1478, 263.3823)]",
+        "clear": true,
+        "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+        "vehicle": "elantra"
+      },
+      {
+        "car_rect": "[P: (573.2, 331.9056), S: (333.6063, 258.1611)]",
+        "clear": true,
+        "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+        "vehicle": "amg"
+      },
+      {
+        "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+        "clear": true,
+        "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+        "vehicle": "prado"
+      },
+      {
+        "car_rect": "[P: (573.2, 331.9056), S: (333.6063, 258.1612)]",
+        "clear": true,
+        "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+        "vehicle": "amg"
+      },
+      {
+        "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+        "clear": true,
+        "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+        "vehicle": "prado"
+      },
+      {
+        "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+        "clear": true,
+        "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+        "vehicle": "prado"
+      },
+      {
+        "car_rect": "[P: (602.2044, 310.1032), S: (275.5894, 260.8096)]",
+        "clear": true,
+        "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+        "vehicle": "prado"
+      }
+    ],
+    "viewport": "(1480.0, 720.0)"
+  },
+  "web_logo_layouts": {
+    "passed": true,
+    "checks": [
+      {
+        "surface": "loading",
+        "width": 1440,
+        "height": 900,
+        "logo": {
+          "x": 57.59375,
+          "y": 36,
+          "width": 220,
+          "height": 53.28125
+        }
+      },
+      {
+        "surface": "menu",
+        "width": 1440,
+        "height": 900,
+        "logo": {
+          "x": 72,
+          "y": 30,
+          "width": 220,
+          "height": 53.28125
+        }
+      },
+      {
+        "surface": "loading",
+        "width": 390,
+        "height": 844,
+        "logo": {
+          "x": 18,
+          "y": 22,
+          "width": 180,
+          "height": 43.59375
+        }
+      },
+      {
+        "surface": "menu",
+        "width": 390,
+        "height": 844,
+        "logo": {
+          "x": 22,
+          "y": 20,
+          "width": 220,
+          "height": 53.28125
+        }
+      },
+      {
+        "surface": "loading",
+        "width": 844,
+        "height": 390,
+        "logo": {
+          "x": 33.75,
+          "y": 15,
+          "width": 220,
+          "height": 53.28125
+        }
+      },
+      {
+        "surface": "menu",
+        "width": 844,
+        "height": 390,
+        "logo": {
+          "x": 24,
+          "y": 13,
+          "width": 180,
+          "height": 43.59375
+        }
+      },
+      {
+        "surface": "loading",
+        "width": 320,
+        "height": 568,
+        "logo": {
+          "x": 18,
+          "y": 22,
+          "width": 180,
+          "height": 43.59375
+        }
+      },
+      {
+        "surface": "menu",
+        "width": 320,
+        "height": 568,
+        "logo": {
+          "x": 22,
+          "y": 20,
+          "width": 220,
+          "height": 53.28125
+        }
+      }
+    ]
+  },
+  "android_device_connected": true,
+  "android_device": {
+    "model": "SM-G960F",
+    "android": "10",
+    "density": "Physical density: 480\r\nOverride density: 640",
+    "primaryPreferencesUnchanged": true,
+    "report": {
+      "checks": 67,
+      "failures": [],
+      "passed": true,
+      "renderer": "mobile",
+      "switch_samples": [
+        {
+          "audio_ms": 1.263,
+          "buffer_bytes": 173238268,
+          "feedback_wait_ms": 2.443,
+          "model": {
+            "assembly_ms": 39.902,
+            "instantiate_ms": 15.303,
+            "resource_ms": 149.832
+          },
+          "paint_ms": 0.052,
+          "plate_ms": 892.191,
+          "preferences_ms": 0.667,
+          "presented_ms": 8080.378,
+          "texture_bytes": 289372992,
+          "total_ms": 1087.817,
+          "vehicle": "amg",
+          "view_ms": 190.036
+        },
+        {
+          "audio_ms": 1.113,
+          "buffer_bytes": 178813588,
+          "feedback_wait_ms": 50.761,
+          "model": {
+            "assembly_ms": 42.247,
+            "instantiate_ms": 23.243,
+            "resource_ms": 3777.742
+          },
+          "paint_ms": 0.064,
+          "plate_ms": 853.363,
+          "preferences_ms": 0.818,
+          "presented_ms": 12037.834,
+          "texture_bytes": 289372992,
+          "total_ms": 4727.53,
+          "vehicle": "prado",
+          "view_ms": 3820.291
+        },
+        {
+          "audio_ms": 1.109,
+          "buffer_bytes": 154734344,
+          "feedback_wait_ms": 0.175,
+          "model": {
+            "assembly_ms": 1.578,
+            "cache_hit": true
+          },
+          "paint_ms": 0.012,
+          "plate_ms": 0.12,
+          "preferences_ms": 0.955,
+          "presented_ms": 42.031,
+          "texture_bytes": 285141824,
+          "total_ms": 5.113,
+          "vehicle": "amg",
+          "view_ms": 1.6
+        },
+        {
+          "audio_ms": 1.359,
+          "buffer_bytes": 154734344,
+          "feedback_wait_ms": 0.165,
+          "model": {
+            "assembly_ms": 1.17,
+            "cache_hit": true
+          },
+          "paint_ms": 0.009,
+          "plate_ms": 0.115,
+          "preferences_ms": 0.742,
+          "presented_ms": 31.376,
+          "texture_bytes": 285141824,
+          "total_ms": 4.933,
+          "vehicle": "prado",
+          "view_ms": 1.189
+        },
+        {
+          "buffer_bytes": 154734344,
+          "no_op": true,
+          "presented_ms": 35.117,
+          "texture_bytes": 285141824,
+          "total_ms": 0,
+          "vehicle": "prado"
+        }
+      ],
+      "vehicle_visibility": [
+        {
+          "car_rect": "[P: (551.016, 337.3747), S: (376.7455, 274.2204)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "ferrari"
+        },
+        {
+          "car_rect": "[P: (600.4355, 325.1228), S: (279.1478, 263.3823)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "elantra"
+        },
+        {
+          "car_rect": "[P: (573.2, 331.9056), S: (333.6063, 258.1611)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "amg"
+        },
+        {
+          "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "prado"
+        },
+        {
+          "car_rect": "[P: (573.2, 331.9056), S: (333.6063, 258.1612)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "amg"
+        },
+        {
+          "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "prado"
+        },
+        {
+          "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "prado"
+        },
+        {
+          "car_rect": "[P: (602.2045, 310.1032), S: (275.5893, 260.8095)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "prado"
+        }
+      ],
+      "viewport": "(1480.0, 720.0)"
+    }
+  }
+}

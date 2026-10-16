@@ -11,10 +11,8 @@
 .loading-scene.is-moving { animation: loading-drift 18s ease-out both; }
 .loading-shade { background: linear-gradient(90deg, #080f18b8, #080f1873 35%, #080f1805 75%), linear-gradient(0deg, #080f187a, transparent 65%), linear-gradient(180deg, #080f1866, transparent 23%); }
 .loading-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 0 var(--loading-inset); padding-top: clamp(24px, 4vh, 44px); }
-.loading-wordmark { display: flex; align-items: center; gap: 3px; color: #f7f9fc; font-size: 20px; font-weight: 600; letter-spacing: -.65px; text-shadow: 0 2px 12px #000b; white-space: nowrap; }
-.loading-wordmark > span { font-weight: 350; }
-.loading-wordmark > i { display: grid; place-items: center; width: 38px; height: 38px; margin-right: 10px; border: 1px solid #ffffff29; border-radius: 50%; background: #ffffff06; box-shadow: inset 0 .5px 0 #ffffff30; }
-.loading-wordmark > i > .ui-icon { width: 21px; height: 21px; }
+.loading-wordmark { display: flex; align-items: center; flex-shrink: 0; }
+.loading-wordmark .brand-wordmark { display: block; width: 220px; height: auto; filter: drop-shadow(0 1px 5px #0006); }
 .loading-place { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: 999px; color: #edf4f8; font-size: 10px; letter-spacing: .03em; }
 .loading-place i { width: 5px; height: 5px; border-radius: 50%; background: #c4e2df; box-shadow: 0 0 10px #c4e2df44; }
 .loading-place > span { margin-left: 14px; color: #c9d9e3; font-size: 9px; }
@@ -76,8 +74,7 @@
 @media (max-width: 620px) {
   #loading { --loading-inset: 18px; }
   .loading-header { padding-top: 22px; }
-  .loading-wordmark { font-size: 17px; }
-  .loading-wordmark > i { width: 32px; height: 32px; margin-right: 6px; font-size: 21px; }
+  .loading-wordmark .brand-wordmark { width: 180px; }
   .loading-place { padding: 10px 12px; font-size: 8px; gap: 7px; }
   .loading-shade { background: linear-gradient(0deg, #080f18c7, #080f1873 52%, #080f1810 90%), linear-gradient(90deg, #080f1866, transparent); }
   .loading-editorial { width: auto; margin-top: auto; margin-bottom: 0; padding: 32px 8px; }

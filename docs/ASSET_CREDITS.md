@@ -15,6 +15,18 @@
 - **Horn audio:** the web horn is synthesized from two filtered sawtooth voices. `android/tools/prepare_horn.mjs` bakes the same frequencies/filter settings into a local PCM loop; no external horn recording is added.
 - **Loading scenes:** `city.webp`, `night.webp`, `weather.webp` and `garage.webp` under `public/assets/loading/` were captured on 15 October 2026 from this game's current renderer at native 3840 × 2160, using the Cinematic preset. They show the Ferrari by day/night, the AMG on wet streets and the Prado. The [capture metadata](../public/assets/loading/captures.json) records camera positions, vehicles, conditions and drawing-buffer dimensions; [the interface guide](LOADING_EXPERIENCE.md) explains regeneration. Android preparation resizes city/night to 1920 pixels wide for its packaged loading slideshow. These are game captures, with no external photography or AI-generated replacement scenery; underlying model/map terms still apply.
 
+## Branding proposals awaiting approval
+
+The original code-authored **A1 — Old City Drive** identity was selected by the
+user. Its D/road/Maiden Tower-inspired mark, menu wordmark, favicon and app icon
+masters live under `public/branding/`; derived native assets live under
+`android/game/branding/` and `android/game/icon.png`. Rejected proposals under
+`docs/branding/proposals/` are retained only as review history. No third-party
+logo or stock artwork is incorporated. Wordmark lettering is outlined from the
+existing OFL Alte DIN 1451 font listed above. Review backgrounds reuse existing
+game captures. See the [branding documentation](branding/README.md) for meaning,
+regeneration and platform variants.
+
 ## Indicator fitment research
 
 The exported geometry takes precedence over generic vehicle names. Exact build years, destination markets and trim equipment cannot be authenticated from these assets: they contain no VIN or reliable variant metadata. The following identities are visual inferences, with catalog/source labels kept separate. Amber signals follow the fitted clear/amber regions, including mirror equipment actually present; US red rear-signal alternatives are not imposed on this Baku fitment.

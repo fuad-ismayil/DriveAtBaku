@@ -28,6 +28,8 @@ func run():
 	if OS.has_feature("android"): output = "user://ui"
 	Preferences.values.reduce_motion = true
 	Preferences.values.vehicle = "ferrari"
+	for field in ["enabled", "region", "letters", "serial", "hyphens", "format"]:
+		Preferences.values["plate_" + field] = Preferences.DEFAULTS["plate_" + field]
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(output))
 	var backdrop = TextureRect.new()
 	backdrop.texture = load("res://assets/ui/city.webp")
@@ -61,6 +63,43 @@ func run():
 		interface.category = title
 		interface.navigate("settings")
 		await capture(title.validate_filename())
+	interface.garage_category = "Registration"
+	interface.navigate("garage")
+	await capture("registration-long")
+	var editor = interface.plate_editor
+	check(is_instance_valid(editor), "Registration needs a dedicated editor")
+	check_inline_plate(editor, true)
+	editor.edits.region.grab_focus()
+	await capture("registration-inline-focus")
+	editor.edits.region.release_focus()
+	editor.edits.region.text = "5"
+	editor._edit("region", "5")
+	editor._commit()
+	check(Preferences.plate_settings().region == "05", "Partial region must pad on commit")
+	editor.edits.letters.text = "iqab"
+	editor._edit("letters", "iqab")
+	editor._commit()
+	check(Preferences.plate_settings().letters == "AB", "Letters must use the same alphabet as the web")
+	editor._edit("serial", "99-BC-808")
+	check(Preferences.plate_settings().region == "99" and Preferences.plate_settings().serial == "808", "Whole registration paste must populate all fields")
+	editor._edit("serial", "000")
+	editor._commit()
+	check(Preferences.plate_settings().serial == "808", "An invalid edit must preserve the saved registration")
+	interface._change("plate_format", "compact")
+	await capture("registration-compact")
+	check_inline_plate(editor, false)
+	interface.fields.plate_hyphens.button_pressed = false
+	check(Preferences.plate_settings().identity == "new", "RFID and separators must change together")
+	interface.fields.plate_enabled.button_pressed = false
+	check(not editor.options.visible and editor.disabled_note.visible, "Disabled plates must hide options and explain how to restore them")
+	interface.fields.plate_enabled.button_pressed = true
+	interface.inspect_plate("front")
+	check(interface.plate_view == "front" and not interface.menu.visible and not interface.controls.active, "Plate inspection must expose the car and keep input paused")
+	interface.back()
+	check(interface.plate_view == "car" and interface.menu.visible, "Back from inspection must restore registration")
+	interface.garage_category = "Driving aids"
+	interface.navigate("garage")
+	await capture("driving-aids")
 	interface.update_network("RECONNECTING")
 	interface.navigate("multiplayer")
 	check(interface.online_button.disabled and interface.network_label.text.contains("Retrying"), "Reconnect needs clear feedback and duplicate join prevention")
@@ -86,6 +125,12 @@ func run():
 	Preferences.values.control_scale = 1.0
 	interface.show_driving()
 	interface.controls._layout()
+	var mock = {"position": Vector3(681.197388, 1.6, -479.707794), "heading": -1.128934, "velocity": Vector3.ZERO, "gear": 2, "rpm": 900, "automatic": true, "abs_active": false, "tcs_active": false, "esc_active": false}
+	interface.update_state(mock, "OFFLINE", 1)
+	interface.update_map(mock, [])
+	check(not interface.instruments is Panel and interface.instruments.size.y <= 64, "Readouts must have no background and take minimal vertical space")
+	check(interface.minimap_button.size.x <= 156 and interface.minimap_button.size.y <= 156, "Minimap must remain a small corner element")
+	check(not interface.status.text.contains("OFFLINE") and not interface.status.text.contains("FERRARI"), "Driving HUD must avoid repeated menu information")
 	await capture("driving-buttons")
 	Preferences.values.control_mode = "sliders"
 	interface.controls._layout()
@@ -93,12 +138,51 @@ func run():
 	interface.controls.brake = 0.25
 	interface.controls.queue_redraw()
 	await capture("driving-sliders")
+	mock.automatic = false
+	interface.update_state(mock, "OFFLINE", 1)
+	await capture("driving-manual")
+	interface.show_map()
+	await capture("expanded-map")
+	interface.close_map()
 	for dimensions in [Vector2i(1280, 720), Vector2i(1600, 720), Vector2i(1024, 768)]:
 		get_window().size = dimensions
+		await settle()
+		interface.show_driving()
+		for mirrored in [false, true]:
+			Preferences.values.left_handed = mirrored
+			for factor in [0.75, 1.0, 1.35]:
+				Preferences.values.control_scale = factor
+				for mode in ["buttons", "sliders"]:
+					Preferences.values.control_mode = mode
+					interface._safe_layout()
+					var bounds = interface.instruments.get_global_rect()
+					check(absf(bounds.get_center().x - interface.root.size.x * 0.5) < 1, "Instruments must remain bottom centered")
+					check(bounds.position.y > interface.root.size.y * 0.88, "HUD must leave the car's lower silhouette clear")
+					for key in interface.controls.regions:
+						if key == "steering" and mode != "sliders": continue
+						if key in ["left", "right"] and mode == "sliders": continue
+						check(not bounds.intersects(interface.controls.regions[key]), "Instruments must clear all manual controls: %s %s %s" % [key, factor, dimensions])
+		interface.show_map()
+		await settle()
+		for button in interface.map_overlay.find_children("*", "Button", true, false):
+			check(button.size.y >= 88 and interface.root.get_global_rect().encloses(button.get_global_rect()), "Expanded map buttons must remain touchable and in bounds")
+		interface.close_map()
 		interface.show_menu()
 		await capture("menu-%dx%d" % [dimensions.x, dimensions.y])
 		check_home_bounds()
+		for destination in ["settings", "garage", "multiplayer", "credits"]:
+			interface.navigate(destination)
+			await settle()
+			check(interface.detail_scroll.get_global_rect().end.x <= interface.root.size.x, "Detail sheet must fit " + destination)
+			for control in interface.fields.values():
+				check(control.size.y >= 88, "Fields must retain an 88-unit touch area")
+				check(control.get_global_rect().end.x <= interface.root.size.x, "Fields must not overflow horizontally")
+		interface.garage_category = "Registration"
+		interface.navigate("garage")
+		await settle()
+		check_inline_plate(interface.plate_editor, false)
 	Preferences.values = saved
+	Preferences.save()
 	var report = {"failures": failures, "passed": failures.is_empty(), "coffee_url": interface.COFFEE_URL}
 	FileAccess.open(output.path_join("verification.json"), FileAccess.WRITE).store_string(JSON.stringify(report, "  "))
 	print("NATIVE_INTERFACE ", JSON.stringify(report))
@@ -114,3 +198,12 @@ func check_home_bounds():
 		var bounds = button.get_global_rect()
 		check(bounds.position.x >= 0 and bounds.position.y >= 0 and bounds.end.x <= viewport_size.x + 1 and bounds.end.y <= viewport_size.y + 1, "Home action outside viewport: %s %s / %s" % [button.name, bounds, viewport_size])
 		check(button.size.y >= 88, "Home touch target too small: " + button.name)
+
+func check_inline_plate(editor, has_identity_box: bool):
+	check(editor.find_children("*", "LineEdit", true, false).size() == 3, "Registration must have exactly three inline inputs and no extra fields")
+	for edit in editor.edits.values():
+		check(edit.get_parent() == editor.preview, "Registration inputs must be inside the plate preview")
+		check(editor.preview.plate_rect.encloses(edit.get_rect()), "Inline input must stay inside the white plate")
+		check(edit.size.x >= 88 and edit.size.y >= 88, "Inline plate input must retain an 88-unit touch target")
+	if has_identity_box:
+		check(editor.preview.chip_rect.encloses(editor.preview.az_text_rect), "AZ text must be inside its identity box")

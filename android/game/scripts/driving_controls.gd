@@ -18,8 +18,19 @@ var font = ThemeDB.fallback_font
 var last_pointer: Dictionary = {}
 var camera_drag = -1
 var camera_delta = Vector2.ZERO
+var safe_insets = Vector4.ZERO
+var blocked_regions: Array = []
+var automatic = true
+
+func set_automatic(value: bool):
+	if automatic == value: return
+	automatic = value
+	# Release held gear/clutch touches when the actual transmission mode changes.
+	clear()
+	queue_redraw()
 
 func _ready():
+	automatic = Preferences.values.automatic
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resized.connect(_layout)
@@ -30,28 +41,42 @@ func _layout():
 	var w = size.x
 	var h = size.y
 	var pedal_h = 205.0 * factor
-	var pedal_w = 90.0 * factor
-	var handbrake_side = 88.0 * factor
+	var pedal_w = maxf(88, 90.0 * factor)
+	var handbrake_side = maxf(88, 88.0 * factor)
 	var handbrake_center_y = minf(h * 0.5, h - pedal_h - 40 - 16 * factor - handbrake_side * 0.5)
-	var horn_side = 88.0 * factor
+	var horn_side = maxf(88, 88.0 * factor)
 	var horn_y = h - (240.0 if Preferences.values.control_mode == "sliders" else 140.0) * factor
+	var steering_width = maxf(350 * factor, 3 * 88 + 32)
+	var arrow_width = maxf(88, 118 * factor)
 	regions = {
-		"steering": Rect2(48, h - 136 * factor, 350 * factor, 92 * factor),
-		"left": Rect2(48, h - 150 * factor, 118 * factor, 108 * factor),
-		"right": Rect2(48 + 232 * factor, h - 150 * factor, 118 * factor, 108 * factor),
-		"horn": Rect2(48 + 131 * factor, horn_y, horn_side, horn_side),
+		"steering": Rect2(48, h - 136 * factor, steering_width, maxf(88, 92 * factor)),
+		"left": Rect2(48, h - 150 * factor, arrow_width, maxf(88, 108 * factor)),
+		"right": Rect2(48 + steering_width - arrow_width, h - 150 * factor, arrow_width, maxf(88, 108 * factor)),
+		"horn": Rect2(48 + (steering_width - horn_side) * 0.5, horn_y, horn_side, horn_side),
 		"throttle": Rect2(w - 142 * factor, h - pedal_h - 40, pedal_w, pedal_h),
 		"brake": Rect2(w - 260 * factor, h - pedal_h - 40, pedal_w, pedal_h),
-		"shift_down": Rect2(w - 370 * factor, h - 132 * factor, 80 * factor, 90 * factor),
-		"shift_up": Rect2(w - 370 * factor, h - 238 * factor, 80 * factor, 90 * factor),
+		"shift_down": Rect2(w - 370 * factor, h - 132 * factor, maxf(88, 80 * factor), maxf(88, 90 * factor)),
+		"shift_up": Rect2(w - 370 * factor, h - 132 * factor - maxf(104, 106 * factor), maxf(88, 80 * factor), maxf(88, 90 * factor)),
 		"handbrake": Rect2(w - 24 - handbrake_side, handbrake_center_y - handbrake_side * 0.5, handbrake_side, handbrake_side),
-		"clutch": Rect2(570 * factor, h - 112 * factor, 100 * factor, 70 * factor)
+		"clutch": Rect2(570 * factor, h - maxf(112 * factor, 112), maxf(88, 100 * factor), maxf(88, 70 * factor))
 	}
+	for key in ["shift_up", "shift_down"]:
+		regions[key].position.x = regions.brake.position.x - regions[key].size.x - 16 * factor
+	# Manual controls form one accessible column beside the pedals, leaving the
+	# bottom center free for instruments at every supported control scale.
+	regions.clutch = Rect2(regions.shift_up.position - Vector2(0, 104 * factor), Vector2(regions.shift_up.size.x, maxf(88, 88 * factor)))
+	# Keep a full thumb's clearance above the slider at the smallest size.
+	if Preferences.values.control_mode == "sliders": regions.horn.position.y = regions.steering.position.y - horn_side - 16 * factor
 	if Preferences.values.left_handed:
 		for key in regions:
 			var r: Rect2 = regions[key]
 			r.position.x = w - r.end.x
 			regions[key] = r
+	for key in regions:
+		var rect: Rect2 = regions[key]
+		rect.position.x += safe_insets.x if rect.get_center().x < w * 0.5 else -safe_insets.z
+		rect.position.y -= safe_insets.w
+		regions[key] = rect
 	queue_redraw()
 
 func clear():
@@ -81,6 +106,8 @@ func _input(event):
 			KEY_L: action_requested.emit("lights")
 	if event is InputEventScreenTouch:
 		if event.pressed and not event.canceled:
+			for blocked in blocked_regions:
+				if blocked.has_point(event.position): return
 			var control = _hit(event.position)
 			if control != "" and not fingers.values().has(control):
 				fingers[event.index] = control
@@ -112,7 +139,7 @@ func _hit(point: Vector2) -> String:
 	for key in regions:
 		if sliders and key in ["left", "right"]: continue
 		if not sliders and key == "steering": continue
-		if key in ["shift_up", "shift_down", "clutch"] and Preferences.values.automatic: continue
+		if key in ["shift_up", "shift_down", "clutch"] and automatic: continue
 		if regions[key].has_point(point): return key
 	return ""
 
@@ -175,7 +202,7 @@ func _draw():
 	for key in regions:
 		if sliders and key in ["left", "right"]: continue
 		if not sliders and key == "steering": continue
-		if key in ["shift_up", "shift_down", "clutch"] and Preferences.values.automatic: continue
+		if key in ["shift_up", "shift_down", "clutch"] and automatic: continue
 		var r: Rect2 = regions[key]
 		var style = StyleBoxFlat.new()
 		var pressed = fingers.values().has(key)

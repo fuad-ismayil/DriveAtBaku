@@ -51,3 +51,19 @@ Follow-up fit adjustments raise the Elantra rear long/compact profile centers by
 - Front/rear close-ups reserve the space beside the garage panel. At narrow widths the panel moves below the inspection area; both views were checked at 390 × 844 as well as the default desktop viewport. Returning to Whole Car clears the inspection projection.
 
 The development inspector is `/scripts/plate-fit.html`; it is separate from the player interface. Local captures are under ignored `artifacts/license-plates/`, including long/compact contact sheets, rear edge views, night illumination and disabled source-holder cleanup. Plate detail is real geometry; overall vehicle fidelity remains bounded by the supplied vehicle meshes and the game's renderer.
+
+## Native Android editor
+
+The native 0.7.1 garage follows the same registration grouping and long/compact
+formats. Exactly three native text inputs sit inside the plate preview, with
+the AZ label framed by its identity box. A whole registration can be pasted
+into any field; filtering, numeric padding, short-debounce updates and per-car
+persistence follow the shared format rules. Front/rear inspection frames the
+actual mounted plates and returns to the editor on Back.
+
+Native previews use the bundled regular/pressed DIN fonts, and recent front/
+rear geometry is shared through up to eight immutable templates per plate
+builder. The 0.7.1 full-game fixture checks inline bounds, saved/mounted edits,
+both formats and inspection. Native keyboard types are requested for digits
+and letters; broader physical IME/accessibility coverage remains pending.
+See the [native UI and switching report](android/UI_POLISH_AND_SWITCHING.md).

@@ -1,0 +1,1272 @@
+{
+  "date": "2026-10-16",
+  "version": "0.6.0-native-preview",
+  "apk_sha256": "d033254e214bc9e84d03f75f583a300ed3a9d4fb2ca9722fc9fac2772ab83ee6",
+  "device": {
+    "model": "SM-G960F",
+    "android": "10",
+    "density": "Physical density: 480\r\nOverride density: 640",
+    "primaryPreferencesUnchanged": true,
+    "report": {
+      "checks": 23,
+      "failures": [],
+      "passed": true,
+      "renderer": "mobile",
+      "switch_samples": [
+        {
+          "audio_ms": 1.266,
+          "buffer_bytes": 173237852,
+          "feedback_wait_ms": 2.328,
+          "model": {
+            "assembly_ms": 144.465,
+            "instantiate_ms": 12.863,
+            "resource_ms": 101.712
+          },
+          "paint_ms": 0.047,
+          "plate_ms": 5.342,
+          "preferences_ms": 0.603,
+          "presented_ms": 372.435,
+          "texture_bytes": 281042496,
+          "total_ms": 257.115,
+          "vehicle": "amg",
+          "view_ms": 246.421
+        },
+        {
+          "audio_ms": 0.827,
+          "buffer_bytes": 178812404,
+          "feedback_wait_ms": 136.674,
+          "model": {
+            "assembly_ms": 181.866,
+            "instantiate_ms": 21.396,
+            "resource_ms": 361.328
+          },
+          "paint_ms": 0.039,
+          "plate_ms": 4.036,
+          "preferences_ms": 0.57,
+          "presented_ms": 807.03,
+          "texture_bytes": 281042496,
+          "total_ms": 686.293,
+          "vehicle": "prado",
+          "view_ms": 543.409
+        },
+        {
+          "audio_ms": 1.167,
+          "buffer_bytes": 154733928,
+          "feedback_wait_ms": 0.164,
+          "model": {
+            "assembly_ms": 1.285,
+            "cache_hit": true
+          },
+          "paint_ms": 0.01,
+          "plate_ms": 0.116,
+          "preferences_ms": 0.752,
+          "presented_ms": 18.946,
+          "texture_bytes": 276811328,
+          "total_ms": 4.547,
+          "vehicle": "amg",
+          "view_ms": 1.308
+        },
+        {
+          "audio_ms": 1.234,
+          "buffer_bytes": 154733928,
+          "feedback_wait_ms": 0.2,
+          "model": {
+            "assembly_ms": 1.207,
+            "cache_hit": true
+          },
+          "paint_ms": 0.009,
+          "plate_ms": 0.123,
+          "preferences_ms": 0.865,
+          "presented_ms": 36.712,
+          "texture_bytes": 276811328,
+          "total_ms": 4.701,
+          "vehicle": "prado",
+          "view_ms": 1.223
+        },
+        {
+          "buffer_bytes": 154733928,
+          "no_op": true,
+          "presented_ms": 30.526,
+          "texture_bytes": 276811328,
+          "total_ms": 0,
+          "vehicle": "prado"
+        }
+      ],
+      "viewport": "(1480.0, 720.0)"
+    }
+  },
+  "desktop": {
+    "checks": 23,
+    "failures": [],
+    "passed": true,
+    "renderer": "mobile",
+    "switch_samples": [
+      {
+        "audio_ms": 0.236,
+        "buffer_bytes": 183028216,
+        "feedback_wait_ms": 1.198,
+        "model": {
+          "assembly_ms": 67.896,
+          "instantiate_ms": 2.541,
+          "resource_ms": 32.717
+        },
+        "paint_ms": 0.027,
+        "plate_ms": 1.11,
+        "preferences_ms": 0.589,
+        "presented_ms": 116.38,
+        "texture_bytes": 231158272,
+        "total_ms": 104.141,
+        "vehicle": "amg",
+        "view_ms": 100.684
+      },
+      {
+        "audio_ms": 0.197,
+        "buffer_bytes": 188626284,
+        "feedback_wait_ms": 12.954,
+        "model": {
+          "assembly_ms": 90.99,
+          "instantiate_ms": 3.999,
+          "resource_ms": 116.712
+        },
+        "paint_ms": 0.02,
+        "plate_ms": 1.33,
+        "preferences_ms": 0.576,
+        "presented_ms": 237.041,
+        "texture_bytes": 231158272,
+        "total_ms": 223.154,
+        "vehicle": "prado",
+        "view_ms": 207.788
+      },
+      {
+        "audio_ms": 0.228,
+        "buffer_bytes": 164525188,
+        "feedback_wait_ms": 0.101,
+        "model": {
+          "assembly_ms": 0.341,
+          "cache_hit": true
+        },
+        "paint_ms": 0.004,
+        "plate_ms": 0.029,
+        "preferences_ms": 0.663,
+        "presented_ms": 4.768,
+        "texture_bytes": 226935296,
+        "total_ms": 1.591,
+        "vehicle": "amg",
+        "view_ms": 0.344
+      },
+      {
+        "audio_ms": 0.211,
+        "buffer_bytes": 164525188,
+        "feedback_wait_ms": 0.047,
+        "model": {
+          "assembly_ms": 0.302,
+          "cache_hit": true
+        },
+        "paint_ms": 0.004,
+        "plate_ms": 0.033,
+        "preferences_ms": 0.699,
+        "presented_ms": 5.316,
+        "texture_bytes": 226935296,
+        "total_ms": 1.549,
+        "vehicle": "prado",
+        "view_ms": 0.306
+      },
+      {
+        "buffer_bytes": 164525188,
+        "no_op": true,
+        "presented_ms": 2.002,
+        "texture_bytes": 226935296,
+        "total_ms": 0,
+        "vehicle": "prado"
+      }
+    ],
+    "viewport": "(1480.0, 720.0)"
+  },
+  "benchmark": {
+    "checks": 64,
+    "failures": [],
+    "passed": true,
+    "renderer": "mobile",
+    "samples": [
+      {
+        "audio_ms": 6.563,
+        "model": {
+          "assembly_ms": 176.522,
+          "instantiate_ms": 1.005,
+          "resource_ms": 131.586
+        },
+        "plate_ms": 102.766,
+        "total_ms": 417.549,
+        "vehicle": "ferrari",
+        "view_ms": 308.22
+      },
+      {
+        "audio_ms": 1.487,
+        "model": {
+          "assembly_ms": 137.539,
+          "instantiate_ms": 1.061,
+          "resource_ms": 142.789
+        },
+        "plate_ms": 1.596,
+        "total_ms": 283.468,
+        "vehicle": "elantra",
+        "view_ms": 280.385
+      },
+      {
+        "audio_ms": 0.211,
+        "model": {
+          "assembly_ms": 72.363,
+          "instantiate_ms": 2.292,
+          "resource_ms": 39.213
+        },
+        "plate_ms": 0.969,
+        "total_ms": 112.8,
+        "vehicle": "amg",
+        "view_ms": 111.62
+      },
+      {
+        "audio_ms": 0.203,
+        "model": {
+          "assembly_ms": 89.702,
+          "instantiate_ms": 3.115,
+          "resource_ms": 105.666
+        },
+        "plate_ms": 1.08,
+        "total_ms": 196.717,
+        "vehicle": "prado",
+        "view_ms": 195.434
+      },
+      {
+        "audio_ms": 0.197,
+        "model": {
+          "assembly_ms": 0.265,
+          "cache_hit": true
+        },
+        "plate_ms": 0.068,
+        "total_ms": 0.538,
+        "vehicle": "amg",
+        "view_ms": 0.273
+      },
+      {
+        "audio_ms": 0.182,
+        "model": {
+          "assembly_ms": 0.244,
+          "cache_hit": true
+        },
+        "plate_ms": 0.059,
+        "total_ms": 0.49,
+        "vehicle": "prado",
+        "view_ms": 0.249
+      },
+      {
+        "audio_ms": 0.129,
+        "model": {
+          "cache_hit": true
+        },
+        "plate_ms": 0.049,
+        "total_ms": 0.184,
+        "vehicle": "prado",
+        "view_ms": 0.006
+      },
+      {
+        "audio_ms": 0.216,
+        "model": {
+          "assembly_ms": 3.653,
+          "instantiate_ms": 1.588,
+          "resource_ms": 63.12
+        },
+        "plate_ms": 0.99,
+        "total_ms": 68.026,
+        "vehicle": "ferrari",
+        "view_ms": 66.82
+      }
+    ]
+  },
+  "baseline": {
+    "renderer": "mobile",
+    "samples": [
+      {
+        "audio_ms": 7.14,
+        "model": {
+          "assembly_ms": 165.29,
+          "resource_ms": 122.659
+        },
+        "plate_ms": 62.612,
+        "total_ms": 357.722,
+        "vehicle": "ferrari",
+        "view_ms": 287.97
+      },
+      {
+        "audio_ms": 5.183,
+        "model": {
+          "assembly_ms": 1031.859,
+          "resource_ms": 111.346
+        },
+        "plate_ms": 51.981,
+        "total_ms": 1200.383,
+        "vehicle": "elantra",
+        "view_ms": 1143.219
+      },
+      {
+        "audio_ms": 7.17,
+        "model": {
+          "assembly_ms": 181.689,
+          "resource_ms": 39.56
+        },
+        "plate_ms": 178.656,
+        "total_ms": 407.09,
+        "vehicle": "amg",
+        "view_ms": 221.264
+      },
+      {
+        "audio_ms": 13.48,
+        "model": {
+          "assembly_ms": 362.367,
+          "resource_ms": 725.089
+        },
+        "plate_ms": 95.044,
+        "total_ms": 1195.996,
+        "vehicle": "prado",
+        "view_ms": 1087.472
+      },
+      {
+        "audio_ms": 7.001,
+        "model": {
+          "assembly_ms": 238.426,
+          "resource_ms": 35.546
+        },
+        "plate_ms": 77.807,
+        "total_ms": 358.799,
+        "vehicle": "amg",
+        "view_ms": 273.991
+      },
+      {
+        "audio_ms": 5.444,
+        "model": {
+          "assembly_ms": 337.865,
+          "resource_ms": 131.308
+        },
+        "plate_ms": 72.199,
+        "total_ms": 546.83,
+        "vehicle": "prado",
+        "view_ms": 469.187
+      },
+      {
+        "audio_ms": 5.466,
+        "model": {},
+        "plate_ms": 0.055,
+        "total_ms": 5.529,
+        "vehicle": "prado",
+        "view_ms": 0.008
+      }
+    ]
+  },
+  "limits": [
+    "Individual observations; OS and driver caches affect first-use results.",
+    "presented_ms ends at first frame_post_draw; it does not measure physical panel latency.",
+    "No sustained FPS, thermal, broad-device, TalkBack or keyboard compatibility claim.",
+    "Seven texture RIDs reported at full-game renderer shutdown, also present before this change."
+  ],
+  "patch_061": {
+    "version": "0.6.1-native-preview",
+    "apk_sha256": "dd04bf4b45e58a040156927b5e0f43c56d1e6a449c80995db1d58f9d4223e32f",
+    "fix": "Preserve authored material culling, restoring the two-sided Prado front Toyota emblem.",
+    "device": {
+      "model": "SM-G960F",
+      "android": "10",
+      "density": "Physical density: 480\r\nOverride density: 640",
+      "primaryPreferencesUnchanged": true,
+      "report": {
+        "checks": 24,
+        "failures": [],
+        "passed": true,
+        "renderer": "mobile",
+        "switch_samples": [
+          {
+            "audio_ms": 1.324,
+            "buffer_bytes": 173234684,
+            "feedback_wait_ms": 2.171,
+            "model": {
+              "assembly_ms": 123.297,
+              "instantiate_ms": 11.335,
+              "resource_ms": 103.838
+            },
+            "paint_ms": 0.033,
+            "plate_ms": 447.258,
+            "preferences_ms": 0.522,
+            "presented_ms": 1692.947,
+            "texture_bytes": 281742016,
+            "total_ms": 679.692,
+            "vehicle": "amg",
+            "view_ms": 227.303
+          },
+          {
+            "audio_ms": 0.769,
+            "buffer_bytes": 178811892,
+            "feedback_wait_ms": 75.138,
+            "model": {
+              "assembly_ms": 169.187,
+              "instantiate_ms": 23.377,
+              "resource_ms": 3343.706
+            },
+            "paint_ms": 0.04,
+            "plate_ms": 4.132,
+            "preferences_ms": 0.541,
+            "presented_ms": 3790.179,
+            "texture_bytes": 281742016,
+            "total_ms": 3594.498,
+            "vehicle": "prado",
+            "view_ms": 3513.114
+          },
+          {
+            "audio_ms": 1.263,
+            "buffer_bytes": 154733288,
+            "feedback_wait_ms": 0.173,
+            "model": {
+              "assembly_ms": 1.556,
+              "cache_hit": true
+            },
+            "paint_ms": 0.013,
+            "plate_ms": 0.143,
+            "preferences_ms": 0.835,
+            "presented_ms": 23.74,
+            "texture_bytes": 277510848,
+            "total_ms": 5.311,
+            "vehicle": "amg",
+            "view_ms": 1.574
+          },
+          {
+            "audio_ms": 0.942,
+            "buffer_bytes": 154733288,
+            "feedback_wait_ms": 0.141,
+            "model": {
+              "assembly_ms": 1.173,
+              "cache_hit": true
+            },
+            "paint_ms": 0.009,
+            "plate_ms": 0.115,
+            "preferences_ms": 0.72,
+            "presented_ms": 20.306,
+            "texture_bytes": 277510848,
+            "total_ms": 4.015,
+            "vehicle": "prado",
+            "view_ms": 1.188
+          },
+          {
+            "buffer_bytes": 154711436,
+            "no_op": true,
+            "presented_ms": 11.595,
+            "texture_bytes": 277510848,
+            "total_ms": 0,
+            "vehicle": "prado"
+          }
+        ],
+        "viewport": "(1480.0, 720.0)"
+      }
+    },
+    "badge_render_checks": [
+      "Vulkan desktop passed",
+      "OpenGL desktop passed",
+      "Galaxy S9 image visually reviewed"
+    ],
+    "feature_checks": 266,
+    "switch_checks": 64
+  },
+  "patch_062": {
+    "version": "0.6.2-native-preview",
+    "apk_sha256": "99eef9f91afd9167d86feb8ebafec1d8464c57862fd86e6cea8e61f049c8bfc6",
+    "change": "Move all registration inputs inside the plate preview and enclose AZ in its identity frame.",
+    "device": {
+      "model": "SM-G960F",
+      "android": "10",
+      "density": "Physical density: 480\r\nOverride density: 640",
+      "primaryPreferencesUnchanged": true,
+      "report": {
+        "checks": 32,
+        "failures": [],
+        "passed": true,
+        "renderer": "mobile",
+        "switch_samples": [
+          {
+            "audio_ms": 0.702,
+            "buffer_bytes": 173237212,
+            "feedback_wait_ms": 2.202,
+            "model": {
+              "assembly_ms": 141.023,
+              "instantiate_ms": 9.506,
+              "resource_ms": 93.53
+            },
+            "paint_ms": 0.033,
+            "plate_ms": 3.498,
+            "preferences_ms": 0.485,
+            "presented_ms": 376.152,
+            "texture_bytes": 281742016,
+            "total_ms": 242.382,
+            "vehicle": "amg",
+            "view_ms": 234.721
+          },
+          {
+            "audio_ms": 0.78,
+            "buffer_bytes": 178811564,
+            "feedback_wait_ms": 15.555,
+            "model": {
+              "assembly_ms": 215.071,
+              "instantiate_ms": 21.587,
+              "resource_ms": 323.741
+            },
+            "paint_ms": 0.041,
+            "plate_ms": 4.054,
+            "preferences_ms": 0.527,
+            "presented_ms": 720.855,
+            "texture_bytes": 281742016,
+            "total_ms": 560.764,
+            "vehicle": "prado",
+            "view_ms": 539.03
+          },
+          {
+            "audio_ms": 0.973,
+            "buffer_bytes": 154732320,
+            "feedback_wait_ms": 0.143,
+            "model": {
+              "assembly_ms": 1.286,
+              "cache_hit": true
+            },
+            "paint_ms": 0.009,
+            "plate_ms": 0.122,
+            "preferences_ms": 0.756,
+            "presented_ms": 29.325,
+            "texture_bytes": 277510848,
+            "total_ms": 4.322,
+            "vehicle": "amg",
+            "view_ms": 1.301
+          },
+          {
+            "audio_ms": 0.954,
+            "buffer_bytes": 154732320,
+            "feedback_wait_ms": 0.145,
+            "model": {
+              "assembly_ms": 1.182,
+              "cache_hit": true
+            },
+            "paint_ms": 0.009,
+            "plate_ms": 0.114,
+            "preferences_ms": 0.756,
+            "presented_ms": 28.822,
+            "texture_bytes": 277510848,
+            "total_ms": 4.146,
+            "vehicle": "prado",
+            "view_ms": 1.196
+          },
+          {
+            "buffer_bytes": 154732320,
+            "no_op": true,
+            "presented_ms": 37.737,
+            "texture_bytes": 277510848,
+            "total_ms": 0,
+            "vehicle": "prado"
+          }
+        ],
+        "viewport": "(1480.0, 720.0)"
+      }
+    },
+    "desktop_interface_checks": [
+      "Vulkan passed",
+      "OpenGL passed",
+      "Exactly three inputs inside preview; input bounds/touch sizes and AZ frame verified"
+    ],
+    "desktop_flow": {
+      "checks": 32,
+      "failures": [],
+      "passed": true,
+      "renderer": "mobile",
+      "switch_samples": [
+        {
+          "audio_ms": 0.205,
+          "buffer_bytes": 183029136,
+          "feedback_wait_ms": 1.097,
+          "model": {
+            "assembly_ms": 91.893,
+            "instantiate_ms": 2.247,
+            "resource_ms": 32.819
+          },
+          "paint_ms": 0.018,
+          "plate_ms": 1.373,
+          "preferences_ms": 0.612,
+          "presented_ms": 142.961,
+          "texture_bytes": 231158272,
+          "total_ms": 128.397,
+          "vehicle": "amg",
+          "view_ms": 124.78
+        },
+        {
+          "audio_ms": 0.21,
+          "buffer_bytes": 185910956,
+          "feedback_wait_ms": 12.139,
+          "model": {
+            "assembly_ms": 84.168,
+            "instantiate_ms": 4.124,
+            "resource_ms": 100.089
+          },
+          "paint_ms": 0.024,
+          "plate_ms": 1.468,
+          "preferences_ms": 0.684,
+          "presented_ms": 211.594,
+          "texture_bytes": 231158272,
+          "total_ms": 199.165,
+          "vehicle": "prado",
+          "view_ms": 184.347
+        },
+        {
+          "audio_ms": 0.222,
+          "buffer_bytes": 164525212,
+          "feedback_wait_ms": 0.045,
+          "model": {
+            "assembly_ms": 0.451,
+            "cache_hit": true
+          },
+          "paint_ms": 0.004,
+          "plate_ms": 0.047,
+          "preferences_ms": 0.671,
+          "presented_ms": 5.249,
+          "texture_bytes": 226935296,
+          "total_ms": 1.707,
+          "vehicle": "amg",
+          "view_ms": 0.457
+        },
+        {
+          "audio_ms": 0.218,
+          "buffer_bytes": 164525212,
+          "feedback_wait_ms": 0.045,
+          "model": {
+            "assembly_ms": 0.304,
+            "cache_hit": true
+          },
+          "paint_ms": 0.006,
+          "plate_ms": 0.035,
+          "preferences_ms": 0.755,
+          "presented_ms": 4.869,
+          "texture_bytes": 226935296,
+          "total_ms": 1.629,
+          "vehicle": "prado",
+          "view_ms": 0.308
+        },
+        {
+          "buffer_bytes": 164547064,
+          "no_op": true,
+          "presented_ms": 2.348,
+          "texture_bytes": 226935296,
+          "total_ms": 0,
+          "vehicle": "prado"
+        }
+      ],
+      "viewport": "(1480.0, 720.0)"
+    }
+  },
+  "release_070": {
+    "date": "2026-10-16",
+    "version": "0.7.0-native-preview",
+    "version_code": 9,
+    "apk": "android/build/DriveAtBaku-native-debug.apk",
+    "apk_bytes": 239105283,
+    "apk_sha256": "d4882065a898c29f371feb7971c35a6b9fc5ab15b0776f13b992baf552eaefce",
+    "apk_signature_verified": true,
+    "qa_apk_sha256": "87fc11e68f66b7f8e4f00f2649ddd461cc5fc5b508e183bd1009dd499165bcec",
+    "device": {
+      "model": "SM-G960F",
+      "android": "10",
+      "density": "Physical density: 480\r\nOverride density: 640",
+      "primaryPreferencesUnchanged": true,
+      "report": {
+        "checks": 55,
+        "failures": [],
+        "passed": true,
+        "renderer": "mobile",
+        "switch_samples": [
+          {
+            "audio_ms": 0.84,
+            "buffer_bytes": 173266636,
+            "feedback_wait_ms": 2.445,
+            "model": {
+              "assembly_ms": 197.458,
+              "instantiate_ms": 10.391,
+              "resource_ms": 132.552
+            },
+            "paint_ms": 0.034,
+            "plate_ms": 3.612,
+            "preferences_ms": 0.5,
+            "presented_ms": 453.785,
+            "texture_bytes": 292932416,
+            "total_ms": 338.386,
+            "vehicle": "amg",
+            "view_ms": 330.185
+          },
+          {
+            "audio_ms": 0.827,
+            "buffer_bytes": 178841444,
+            "feedback_wait_ms": 41.738,
+            "model": {
+              "assembly_ms": 183.666,
+              "instantiate_ms": 20.133,
+              "resource_ms": 308.626
+            },
+            "paint_ms": 0.043,
+            "plate_ms": 4.178,
+            "preferences_ms": 0.542,
+            "presented_ms": 687.188,
+            "texture_bytes": 292932416,
+            "total_ms": 540.647,
+            "vehicle": "prado",
+            "view_ms": 492.519
+          },
+          {
+            "audio_ms": 1.04,
+            "buffer_bytes": 154762712,
+            "feedback_wait_ms": 0.198,
+            "model": {
+              "assembly_ms": 1.397,
+              "cache_hit": true
+            },
+            "paint_ms": 0.009,
+            "plate_ms": 0.116,
+            "preferences_ms": 0.805,
+            "presented_ms": 35.856,
+            "texture_bytes": 288701248,
+            "total_ms": 4.74,
+            "vehicle": "amg",
+            "view_ms": 1.427
+          },
+          {
+            "audio_ms": 1.121,
+            "buffer_bytes": 154762712,
+            "feedback_wait_ms": 0.186,
+            "model": {
+              "assembly_ms": 1.274,
+              "cache_hit": true
+            },
+            "paint_ms": 0.013,
+            "plate_ms": 0.18,
+            "preferences_ms": 0.868,
+            "presented_ms": 39.368,
+            "texture_bytes": 288701248,
+            "total_ms": 4.893,
+            "vehicle": "prado",
+            "view_ms": 1.291
+          },
+          {
+            "buffer_bytes": 154762712,
+            "no_op": true,
+            "presented_ms": 18.264,
+            "texture_bytes": 288701248,
+            "total_ms": 0,
+            "vehicle": "prado"
+          }
+        ],
+        "viewport": "(1480.0, 720.0)"
+      }
+    },
+    "desktop_interface": {
+      "vulkan": true,
+      "opengl": true,
+      "window_sizes": [
+        [
+          1280,
+          720
+        ],
+        [
+          1600,
+          720
+        ],
+        [
+          1024,
+          768
+        ]
+      ],
+      "control_scales": [
+        0.75,
+        1,
+        1.35
+      ],
+      "mirrored": true,
+      "control_modes": [
+        "buttons",
+        "sliders"
+      ]
+    },
+    "desktop_full_game": {
+      "checks": 55,
+      "failures": [],
+      "passed": true,
+      "renderer": "mobile",
+      "switch_samples": [
+        {
+          "audio_ms": 0.212,
+          "buffer_bytes": 173244544,
+          "feedback_wait_ms": 1.168,
+          "model": {
+            "assembly_ms": 92.554,
+            "instantiate_ms": 2.275,
+            "resource_ms": 32.749
+          },
+          "paint_ms": 0.02,
+          "plate_ms": 1.139,
+          "preferences_ms": 0.61,
+          "presented_ms": 142.401,
+          "texture_bytes": 237168128,
+          "total_ms": 128.799,
+          "vehicle": "amg",
+          "view_ms": 125.373
+        },
+        {
+          "audio_ms": 0.231,
+          "buffer_bytes": 177667564,
+          "feedback_wait_ms": 15.899,
+          "model": {
+            "assembly_ms": 94.748,
+            "instantiate_ms": 4.394,
+            "resource_ms": 116.729
+          },
+          "paint_ms": 0.036,
+          "plate_ms": 1.483,
+          "preferences_ms": 1.121,
+          "presented_ms": 244.356,
+          "texture_bytes": 237168128,
+          "total_ms": 230.653,
+          "vehicle": "prado",
+          "view_ms": 211.58
+        },
+        {
+          "audio_ms": 0.3,
+          "buffer_bytes": 154740620,
+          "feedback_wait_ms": 0.071,
+          "model": {
+            "assembly_ms": 0.532,
+            "cache_hit": true
+          },
+          "paint_ms": 0.006,
+          "plate_ms": 0.04,
+          "preferences_ms": 0.86,
+          "presented_ms": 5.489,
+          "texture_bytes": 232945152,
+          "total_ms": 2.126,
+          "vehicle": "amg",
+          "view_ms": 0.539
+        },
+        {
+          "audio_ms": 0.246,
+          "buffer_bytes": 154740620,
+          "feedback_wait_ms": 0.061,
+          "model": {
+            "assembly_ms": 0.328,
+            "cache_hit": true
+          },
+          "paint_ms": 0.006,
+          "plate_ms": 0.044,
+          "preferences_ms": 0.737,
+          "presented_ms": 5.883,
+          "texture_bytes": 232945152,
+          "total_ms": 1.717,
+          "vehicle": "prado",
+          "view_ms": 0.333
+        },
+        {
+          "buffer_bytes": 154740620,
+          "no_op": true,
+          "presented_ms": 2.4,
+          "texture_bytes": 232945152,
+          "total_ms": 0,
+          "vehicle": "prado"
+        }
+      ],
+      "viewport": "(1480.0, 720.0)"
+    },
+    "controls_passed": true,
+    "map": {
+      "bounds": {
+        "minX": -1828.779052734375,
+        "minY": -1346.4091798028971,
+        "maxX": 1876.7469482421875,
+        "maxY": 1616.847045807642
+      },
+      "roadTriangles": 104049,
+      "max_texture_side": 2048,
+      "gpu_compressed": true,
+      "mipmaps": true,
+      "north_up": true,
+      "peer_source": "Interpolated native remote roots from protocol snapshots",
+      "peer_expiry_ms": 3000,
+      "multiplayer_qa": "Two periodic protocol snapshot fixtures; no public relay contact",
+      "street_samples_verified": 14,
+      "false_shortcuts_avoided": 7
+    },
+    "screenshots": [
+      "mobile-manual-hud-070.webp",
+      "mobile-multiplayer-minimap-070.webp",
+      "mobile-expanded-map-070.webp"
+    ],
+    "opengl_apk": {
+      "path": "android/build/DriveAtBaku-native-opengl.apk",
+      "sha256": "66930cf0062ada524faad83690d451afebdc0e109088527a1574355bc6a08593",
+      "signature_verified": true,
+      "physical_device_tested": false,
+      "desktop_interface_tested": true
+    }
+  },
+  "patch_071": {
+    "date": "2026-10-16",
+    "version": "0.7.1-native-preview",
+    "version_code": 10,
+    "apk": "android/build/DriveAtBaku-native-debug.apk",
+    "apk_sha256": "cdfc495b5353cdff4a5653134b3eba260cea107be5c6a98ced0ed207912c5e67",
+    "apk_signature_verified": true,
+    "device": {
+      "model": "SM-G960F",
+      "android": "10",
+      "density": "Physical density: 480\r\nOverride density: 640",
+      "primaryPreferencesUnchanged": true,
+      "report": {
+        "checks": 67,
+        "failures": [],
+        "passed": true,
+        "renderer": "mobile",
+        "switch_samples": [
+          {
+            "audio_ms": 2.192,
+            "buffer_bytes": 173238268,
+            "feedback_wait_ms": 4.767,
+            "model": {
+              "assembly_ms": 168.195,
+              "instantiate_ms": 11.829,
+              "resource_ms": 107.559
+            },
+            "paint_ms": 0.033,
+            "plate_ms": 3.505,
+            "preferences_ms": 0.504,
+            "presented_ms": 429.103,
+            "texture_bytes": 289147712,
+            "total_ms": 287.696,
+            "vehicle": "amg",
+            "view_ms": 275.927
+          },
+          {
+            "audio_ms": 0.757,
+            "buffer_bytes": 178813588,
+            "feedback_wait_ms": 16.38,
+            "model": {
+              "assembly_ms": 179.509,
+              "instantiate_ms": 20.133,
+              "resource_ms": 304.591
+            },
+            "paint_ms": 0.041,
+            "plate_ms": 4.118,
+            "preferences_ms": 0.514,
+            "presented_ms": 652.393,
+            "texture_bytes": 289147712,
+            "total_ms": 506.892,
+            "vehicle": "prado",
+            "view_ms": 484.325
+          },
+          {
+            "audio_ms": 1.03,
+            "buffer_bytes": 154734344,
+            "feedback_wait_ms": 0.137,
+            "model": {
+              "assembly_ms": 1.391,
+              "cache_hit": true
+            },
+            "paint_ms": 0.011,
+            "plate_ms": 0.124,
+            "preferences_ms": 0.819,
+            "presented_ms": 44.432,
+            "texture_bytes": 284916544,
+            "total_ms": 4.566,
+            "vehicle": "amg",
+            "view_ms": 1.409
+          },
+          {
+            "audio_ms": 1.179,
+            "buffer_bytes": 154734344,
+            "feedback_wait_ms": 0.152,
+            "model": {
+              "assembly_ms": 1.431,
+              "cache_hit": true
+            },
+            "paint_ms": 0.012,
+            "plate_ms": 0.142,
+            "preferences_ms": 1.066,
+            "presented_ms": 33.512,
+            "texture_bytes": 284916544,
+            "total_ms": 5.199,
+            "vehicle": "prado",
+            "view_ms": 1.448
+          },
+          {
+            "buffer_bytes": 154734344,
+            "no_op": true,
+            "presented_ms": 34.452,
+            "texture_bytes": 284916544,
+            "total_ms": 0,
+            "vehicle": "prado"
+          }
+        ],
+        "vehicle_visibility": [
+          {
+            "car_rect": "[P: (551.1514, 337.8469), S: (376.863, 274.7087)]",
+            "clear": true,
+            "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+            "vehicle": "ferrari"
+          },
+          {
+            "car_rect": "[P: (600.4355, 325.1229), S: (279.15, 263.3802)]",
+            "clear": true,
+            "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+            "vehicle": "elantra"
+          },
+          {
+            "car_rect": "[P: (573.2, 331.9056), S: (333.6063, 258.1611)]",
+            "clear": true,
+            "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+            "vehicle": "amg"
+          },
+          {
+            "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+            "clear": true,
+            "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+            "vehicle": "prado"
+          },
+          {
+            "car_rect": "[P: (573.2, 331.9056), S: (333.6063, 258.1612)]",
+            "clear": true,
+            "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+            "vehicle": "amg"
+          },
+          {
+            "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+            "clear": true,
+            "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+            "vehicle": "prado"
+          },
+          {
+            "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+            "clear": true,
+            "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+            "vehicle": "prado"
+          },
+          {
+            "car_rect": "[P: (602.2045, 310.1032), S: (275.5893, 260.8097)]",
+            "clear": true,
+            "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+            "vehicle": "prado"
+          }
+        ],
+        "viewport": "(1480.0, 720.0)"
+      }
+    },
+    "desktop_full_game": {
+      "checks": 67,
+      "failures": [],
+      "passed": true,
+      "renderer": "mobile",
+      "switch_samples": [
+        {
+          "audio_ms": 0.317,
+          "buffer_bytes": 173215904,
+          "feedback_wait_ms": 1.204,
+          "model": {
+            "assembly_ms": 105.215,
+            "instantiate_ms": 3.113,
+            "resource_ms": 33.017
+          },
+          "paint_ms": 0.027,
+          "plate_ms": 1.491,
+          "preferences_ms": 0.77,
+          "presented_ms": 156.392,
+          "texture_bytes": 237037056,
+          "total_ms": 142.509,
+          "vehicle": "amg",
+          "view_ms": 138.316
+        },
+        {
+          "audio_ms": 0.254,
+          "buffer_bytes": 174558532,
+          "feedback_wait_ms": 15.85,
+          "model": {
+            "assembly_ms": 88.913,
+            "instantiate_ms": 4.637,
+            "resource_ms": 100.052
+          },
+          "paint_ms": 0.024,
+          "plate_ms": 1.428,
+          "preferences_ms": 0.677,
+          "presented_ms": 220.484,
+          "texture_bytes": 237037056,
+          "total_ms": 207.588,
+          "vehicle": "prado",
+          "view_ms": 189.067
+        },
+        {
+          "audio_ms": 0.264,
+          "buffer_bytes": 154712492,
+          "feedback_wait_ms": 0.04,
+          "model": {
+            "assembly_ms": 0.332,
+            "cache_hit": true
+          },
+          "paint_ms": 0.005,
+          "plate_ms": 0.036,
+          "preferences_ms": 0.789,
+          "presented_ms": 5.178,
+          "texture_bytes": 232814080,
+          "total_ms": 1.754,
+          "vehicle": "amg",
+          "view_ms": 0.336
+        },
+        {
+          "audio_ms": 0.335,
+          "buffer_bytes": 154712492,
+          "feedback_wait_ms": 0.048,
+          "model": {
+            "assembly_ms": 0.328,
+            "cache_hit": true
+          },
+          "paint_ms": 0.005,
+          "plate_ms": 0.035,
+          "preferences_ms": 0.671,
+          "presented_ms": 5.424,
+          "texture_bytes": 232814080,
+          "total_ms": 1.706,
+          "vehicle": "prado",
+          "view_ms": 0.333
+        },
+        {
+          "buffer_bytes": 154734344,
+          "no_op": true,
+          "presented_ms": 2.259,
+          "texture_bytes": 232814080,
+          "total_ms": 0,
+          "vehicle": "prado"
+        }
+      ],
+      "vehicle_visibility": [
+        {
+          "car_rect": "[P: (550.7396, 337.1576), S: (377.2157, 274.2765)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "ferrari"
+        },
+        {
+          "car_rect": "[P: (600.4355, 325.1228), S: (279.15, 263.3803)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "elantra"
+        },
+        {
+          "car_rect": "[P: (573.2, 331.9056), S: (333.6063, 258.1612)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "amg"
+        },
+        {
+          "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "prado"
+        },
+        {
+          "car_rect": "[P: (573.2, 331.9056), S: (333.6063, 258.1611)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "amg"
+        },
+        {
+          "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "prado"
+        },
+        {
+          "car_rect": "[P: (602.2083, 310.1015), S: (275.5892, 260.8185)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "prado"
+        },
+        {
+          "car_rect": "[P: (602.2045, 310.1032), S: (275.5893, 260.8097)]",
+          "clear": true,
+          "readout_rect": "[P: (608.0, 646.0), S: (264.0, 62.0)]",
+          "vehicle": "prado"
+        }
+      ],
+      "viewport": "(1480.0, 720.0)"
+    },
+    "desktop_interface": {
+      "vulkan": true,
+      "opengl": true,
+      "window_sizes": [
+        [
+          1280,
+          720
+        ],
+        [
+          1600,
+          720
+        ],
+        [
+          1024,
+          768
+        ]
+      ],
+      "control_scales": [
+        0.75,
+        1,
+        1.35
+      ],
+      "mirrored": true,
+      "control_modes": [
+        "buttons",
+        "sliders"
+      ]
+    },
+    "design": {
+      "readout_size": [
+        264,
+        62
+      ],
+      "previous_readout_size": [
+        392,
+        166
+      ],
+      "readout_background": false,
+      "readout_bottom_padding": 12,
+      "minimap_target": [
+        152,
+        152
+      ],
+      "minimap_circle_diameter": 144,
+      "previous_minimap_target": [
+        240,
+        222
+      ],
+      "toolbar_pitch": 64,
+      "previous_toolbar_pitch": 88,
+      "toolbar_glass_side": 56,
+      "car_projection_clearance_tested": true
+    },
+    "device_initial_run": {
+      "result": "Process exited during city preparation before NATIVE_READY, without a Godot script/shader diagnostic",
+      "cause": "Unconfirmed",
+      "relaunch_passed": true
+    },
+    "screenshots": [
+      "mobile-minimal-hud-071.webp",
+      "mobile-minimal-map-071.webp",
+      "mobile-minimal-night-071.webp"
+    ],
+    "opengl_apk": {
+      "path": "android/build/DriveAtBaku-native-opengl.apk",
+      "sha256": "0a390efed5c4d605f97f1e0877aa034d35d3eb7a8378724ea351ee1888235952",
+      "signature_verified": true,
+      "physical_device_tested": false,
+      "desktop_interface_tested": true
+    }
+  }
+}

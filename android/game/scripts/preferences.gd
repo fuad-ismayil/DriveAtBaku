@@ -49,6 +49,13 @@ func _store_plate():
 	plates[values.vehicle] = plate_settings()
 	values.plates_by_vehicle = plates
 
+func update_plate(settings: Dictionary):
+	var normalized = preload("res://scripts/license_plate_settings.gd").normalize(settings)
+	for field in ["enabled", "region", "letters", "serial", "hyphens", "format"]:
+		values["plate_" + field] = normalized[field]
+	_store_plate()
+	save()
+
 func save():
 	var config = ConfigFile.new()
 	for key in values:

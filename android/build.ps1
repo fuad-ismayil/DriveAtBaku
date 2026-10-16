@@ -18,11 +18,20 @@ Push-Location $repository
 try {
     function Invoke-Checked([string]$Program, [string[]]$Arguments) {
         $scriptFault = $false
-        & $Program @Arguments 2>&1 | ForEach-Object {
-            if ("$_" -match 'SCRIPT ERROR:|Parse Error:|Shader compilation failed') { $scriptFault = $true }
-            Write-Output $_
+        # Windows PowerShell wraps native stderr as error records. A Godot
+        # warning must not abort before the exit-code/script-error checks run.
+        $previousErrorAction = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            & $Program @Arguments 2>&1 | ForEach-Object {
+                if ("$_" -match 'SCRIPT ERROR:|Parse Error:|Shader compilation failed') { $scriptFault = $true }
+                Write-Output $_
+            }
+            $nativeExitCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $previousErrorAction
         }
-        if ($LASTEXITCODE -ne 0) { throw "$Program failed with exit code $LASTEXITCODE" }
+        if ($nativeExitCode -ne 0) { throw "$Program failed with exit code $nativeExitCode" }
         if ($scriptFault) { throw "$Program reported a script or shader error despite returning exit code zero." }
     }
     if (-not $GodotBinary) {
@@ -84,6 +93,8 @@ try {
         Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', 'res://tests/features.tscn')
         Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', 'res://tests/audio_plate.tscn')
         Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', 'res://tests/interface.tscn')
+        Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', 'res://tests/vehicle_switch.tscn')
+        Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', 'res://tests/badge.tscn')
         Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', '--', '--smoke-test')
         $env:GODOT_BIN = $GodotBinary
         Invoke-Checked node @('android/tools/verify_network.mjs')

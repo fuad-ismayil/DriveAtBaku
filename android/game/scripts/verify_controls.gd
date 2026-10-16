@@ -29,6 +29,7 @@ func run():
 	controls.active = true
 	Preferences.values.control_mode = "sliders"
 	Preferences.values.automatic = false
+	controls.set_automatic(false)
 	var gas: Rect2 = controls.regions.throttle
 	var brake: Rect2 = controls.regions.brake
 	var steering: Rect2 = controls.regions.steering
@@ -89,6 +90,8 @@ func run():
 				Preferences.values.control_mode = mode
 				controls.clear()
 				controls._layout()
+				for key in controls.regions:
+					check(controls.regions[key].size.x >= 88 and controls.regions[key].size.y >= 88, "Small control sizes must retain a full touch target: " + key)
 				var horn: Rect2 = controls.regions.horn
 				var steering_control: Rect2 = controls.regions.steering if mode == "sliders" else controls.regions.left
 				if mode == "sliders":
@@ -114,6 +117,10 @@ func run():
 				touch(21, horn.get_center(), true)
 				controls.clear()
 				check(not controls.sample(1.0 / 120).horn, "Opening a menu must release horn input")
+	controls.safe_insets = Vector4(60, 0, 60, 30)
+	controls._layout()
+	for rect in controls.regions.values():
+		check(rect.position.x >= 60 and rect.end.x <= controls.size.x - 60 and rect.end.y <= controls.size.y - 30, "Controls must respect physical safe-area insets")
 	Preferences.values = saved
 	controls.queue_free()
 	await get_tree().process_frame

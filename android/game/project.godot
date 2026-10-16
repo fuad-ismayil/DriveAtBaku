@@ -4,7 +4,12 @@ config_version=5
 [application]
 config/name="DriveAtBaku"
 config/description="Native driving in Baku"
-config/icon="res://icon.svg"
+config/icon="res://icon.png"
+config/windows_native_icon="res://branding/app.ico"
+boot_splash/image="res://branding/boot.png"
+boot_splash/bg_color=Color(0.051, 0.09, 0.106, 1)
+boot_splash/fullsize=false
+boot_splash/use_filter=true
 run/main_scene="res://main.tscn"
 run/main_scene.network_verification="res://tests/network.tscn"
 run/main_scene.visual_verification="res://tests/visual.tscn"

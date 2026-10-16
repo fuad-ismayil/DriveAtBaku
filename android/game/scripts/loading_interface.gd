@@ -56,6 +56,14 @@ func _ready():
 	safe.add_child(content)
 	var header = HBoxContainer.new()
 	content.add_child(header)
+	header.add_theme_constant_override("separation", 12)
+	var logo = TextureRect.new()
+	logo.texture = preload("res://branding/mark.png")
+	logo.custom_minimum_size = Vector2(44, 44)
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.add_child(logo)
 	_label(header, "DriveAtBaku", 26)
 	var spacer = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
