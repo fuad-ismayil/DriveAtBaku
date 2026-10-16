@@ -8,10 +8,11 @@ desktop mode and iPadOS desktop identities at any viewport size. See the
 
 The loading screen, main menu, garage, controls, pause settings and driving HUD share a Liquid Glass design. Transparent capsules and rounded panels show the scene behind them, with neutral shading, soft reflections and a fine illuminated rim. The background supplies the color; the shared glass material does not impose a warm or brown tint.
 
-![Main menu with clear glass panels and capsule controls over the Baku game world](images/baku-menu.webp)
+![v1.0.0 main menu with versioned native downloads and current map and HUD highlights](images/web-menu-v1.0.0.webp)
 
-*Earlier interface capture from Chrome; the current release adds versioned
-downloads and the compact desktop HUD described below.*
+*Released v1.0.0 Web menu, captured on 16 October 2026. The
+[screenshot gallery](SCREENSHOTS.md) also shows the Windows interface,
+current driving HUD, full map and mobile download pages.*
 
 ## Shared material and icons
 

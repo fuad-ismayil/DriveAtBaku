@@ -4,9 +4,13 @@ A fan-made browser driving game set on Baku's streets. Explore the city in four 
 
 **[Play DriveAtBaku](https://www.driveatbaku.games/)** · [Download Windows & Android](https://github.com/fuad-ismayil/DriveAtBaku/releases/latest) · [Vercel mirror](https://driveatbaku.vercel.app/) · [Documentation](docs/README.md)
 
-![Mercedes-AMG on Baku's boulevard with the Liquid Glass driving HUD and assist indicators visible](docs/images/baku-gameplay.webp)
+![Ferrari on Baku's boulevard in v1.0.0, with the larger circular minimap and compact bottom-center driving readout](docs/images/web-gameplay-v1.0.0.webp)
 
-*Current driving HUD, captured from the development build in Chrome.*
+*v1.0.0 Web gameplay, captured from the live website on 16 October 2026.*
+
+![The v1.0.0 Web main menu with current feature highlights and Windows and Android downloads](docs/images/web-menu-v1.0.0.webp)
+
+*Updated Web main menu. See the [screenshot gallery](docs/SCREENSHOTS.md) for Windows, maps and mobile download pages.*
 
 ## Features
 
@@ -18,7 +22,7 @@ A fan-made browser driving game set on Baku's streets. Explore the city in four 
 - Four native 4K loading scenes captured from the current game, with animated crossfades, selectable chapters, pause/resume, real download progress and retry handling.
 - Independent nighttime room lights, [Government House](docs/GOVERNMENT_HOUSE.md) stone and window detail with a wind-driven Azerbaijani flag, and [rounded tree shading](docs/FOLIAGE_LIGHTING.md).
 - Sunny, overcast, wet-road, rain and snow modes, adjustable precipitation and vehicle surface water. Weather affects appearance; it does not change driving grip.
-- Performance, Balanced and Cinematic graphics presets, independent render/props distances, ambient occlusion and rendering-resolution controls. Balanced/Cinematic use HDR, SMAA and supported scene MSAA, cached shadows and local car reflections.
+- Performance, Balanced, High and Ultra graphics presets, independent render/props distances, ambient occlusion and rendering-resolution controls. Balanced/High/Ultra use HDR, SMAA and supported scene MSAA, cached shadows and local car reflections.
 - Multiplayer with interpolated remote vehicles, player names and replicated vehicle appearance/effects. Remote cars are visual ghosts and do not collide with one another; a separate relay is required.
 - An [ARM64 Android development preview](android/README.md) built with Godot, using the original driving equations, packaged assets, mobile Liquid Glass menus/loading, touch controls and compatible web/Android multiplayer.
 - A [native Windows build](windows/README.md) using Godot Forward+, with four graphics presets, cascaded city shadows, ambient occlusion, screen-space reflections, keyboard/mouse controls and portable x64 packaging. Build it with `.\windows\build.ps1`.

@@ -3,6 +3,11 @@
 Native Godot 4.6.1 driving through Baku, with all four cars, offline play,
 weather, night lighting and compatible multiplayer.
 
+![Windows v1.0.0 driving with Forward+ graphics, circular minimap and compact instruments](https://raw.githubusercontent.com/fuad-ismayil/DriveAtBaku/main/docs/images/windows-gameplay-v1.0.0.webp)
+
+*Windows Godot verification capture of the v1.0.0 source, 16 October 2026.
+See the [gallery](https://github.com/fuad-ismayil/DriveAtBaku/blob/main/docs/SCREENSHOTS.md) for the native menu and Web comparison.*
+
 ## Play
 
 Extract the entire ZIP, then open **DriveAtBaku.exe**. Keep the executable,

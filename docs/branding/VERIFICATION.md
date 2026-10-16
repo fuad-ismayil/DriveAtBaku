@@ -45,6 +45,9 @@ package over the user's existing game.
 
 ## Final menu previews
 
+These captures preserve the 0.7.2 branding validation. For current v1.0.0
+Web and Windows previews, see the [screenshot gallery](../SCREENSHOTS.md).
+
 Website, actual Chrome capture:
 
 ![A1 website main menu](web-menu.webp)

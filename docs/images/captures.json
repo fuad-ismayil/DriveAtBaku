@@ -1,0 +1,91 @@
+{
+  "version": "1.0.0",
+  "website": "https://www.driveatbaku.games/",
+  "note": "Unretouched game/browser captures, encoded as WebP at original dimensions. Native captures use the matching Windows verification scene. Mobile browser identities are simulated; these are not physical-device screenshots.",
+  "captures": [
+    {
+      "file": "web-gameplay-v1.0.0.webp",
+      "width": 1600,
+      "height": 900,
+      "bytes": 186206,
+      "sha256": "dd40ed8bd6dd675478255b7d80b691d69c2faec28b6d602b3efc1194a77081d0",
+      "sourceCapture": "artifacts/release-review/live-desktop/driving.png",
+      "capturedAt": "2026-10-16T19:37:21.562Z",
+      "description": "Released Web game; Chromium on Windows",
+      "build": "production",
+      "sourceCommit": "fe6377066fbce079c36d493bf7425e5116e8e326"
+    },
+    {
+      "file": "web-menu-v1.0.0.webp",
+      "width": 1600,
+      "height": 900,
+      "bytes": 167706,
+      "sha256": "030ad72aa379fe33aa66d0275f580ce2d16b0e03ba63f57781d6a91621c64359",
+      "sourceCapture": "artifacts/release-review/live-desktop/main-menu.png",
+      "capturedAt": "2026-10-16T19:36:49.027Z",
+      "description": "Released Web main menu; Chromium on Windows",
+      "build": "production",
+      "sourceCommit": "fe6377066fbce079c36d493bf7425e5116e8e326"
+    },
+    {
+      "file": "windows-gameplay-v1.0.0.webp",
+      "width": 1600,
+      "height": 900,
+      "bytes": 169840,
+      "sha256": "8bc9077a58b73dbe667e5a1b06ef0ded98747b22930df1e376e8074e5ce6ea92",
+      "sourceCapture": "artifacts/release-review/native/driving.png",
+      "capturedAt": "2026-10-16T19:23:26.493Z",
+      "description": "Native Godot Windows verification scene; Forward+",
+      "build": "verification",
+      "sourceCommit": "fe6377066fbce079c36d493bf7425e5116e8e326"
+    },
+    {
+      "file": "windows-menu-v1.0.0.webp",
+      "width": 1600,
+      "height": 900,
+      "bytes": 160920,
+      "sha256": "f91172645c9207291bc35f9ed933dd77a4d042248f9df269fb7ebb63ec7162c1",
+      "sourceCapture": "artifacts/release-review/native/main-menu.png",
+      "capturedAt": "2026-10-16T19:23:25.664Z",
+      "description": "Native Godot Windows verification scene; Forward+",
+      "build": "verification",
+      "sourceCommit": "fe6377066fbce079c36d493bf7425e5116e8e326"
+    },
+    {
+      "file": "web-city-map-v1.0.0.webp",
+      "width": 1600,
+      "height": 900,
+      "bytes": 74880,
+      "sha256": "c895af9bee86ebae8588c2503508e1888625c0bf6241d268a1a34e90c521c2f2",
+      "sourceCapture": "artifacts/desktop-parity/web/full-map.png",
+      "capturedAt": "2026-10-16T19:20:22.562Z",
+      "description": "Web desktop parity scene; Chrome on Windows",
+      "build": "verification",
+      "sourceCommit": "fe6377066fbce079c36d493bf7425e5116e8e326"
+    },
+    {
+      "file": "web-mobile-android-v1.0.0.webp",
+      "width": 390,
+      "height": 844,
+      "bytes": 22870,
+      "sha256": "d9cd080cb7446753c1fc289a0512d0e30e222a7c916afdc76321e4153da0eff0",
+      "sourceCapture": "artifacts/release-review/mobile-live/chromium-android-chrome-phone.png",
+      "capturedAt": "2026-10-16T19:34:50.972Z",
+      "description": "Production Web page; simulated Android identity in Chromium on Windows",
+      "build": "production",
+      "sourceCommit": "fe6377066fbce079c36d493bf7425e5116e8e326"
+    },
+    {
+      "file": "web-mobile-ipados-v1.0.0.webp",
+      "width": 390,
+      "height": 844,
+      "bytes": 24388,
+      "sha256": "3692b4fd62806eaf6f67651e580ea09fc0bcb83c0fa7f27cfff5aaf402aca54d",
+      "sourceCapture": "artifacts/release-review/mobile-live/webkit-ipad-desktop-mode.png",
+      "capturedAt": "2026-10-16T19:36:17.282Z",
+      "description": "Production Web page; simulated iPadOS desktop identity in WebKit on Windows, narrow viewport",
+      "build": "production",
+      "sourceCommit": "fe6377066fbce079c36d493bf7425e5116e8e326"
+    }
+  ]
+}

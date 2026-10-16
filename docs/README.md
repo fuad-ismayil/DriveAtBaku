@@ -4,6 +4,7 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 
 | Guide | Contents |
 | --- | --- |
+| [Current screenshots](SCREENSHOTS.md) | v1.0.0 Web and Windows menus/gameplay, city map and mobile download pages |
 | [Unreleased change review](UNRELEASED_CHANGES.md) | v1.0.0 changes since 62f3a26, release review, current checks and limits |
 | [Brand identity](branding/README.md) | Approved A1 meaning, masters, platform icons, regeneration and proposal history |
 | [Rendering](RENDERING.md) | Current presets, resolution, post-processing, visibility, shadows and reflections |
@@ -35,7 +36,7 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 
 [history/](history/README.md) preserves earlier rendering research, model-fitting decisions and measured investigations. These reports describe particular development stages and hardware, rather than the current defaults or universal performance guarantees. Screenshots, raw measurements and comparison baselines referenced there are local files under ignored `artifacts/`; they are not published evidence in this repository.
 
-The selected gameplay and menu previews in `images/` record earlier interface revisions. Current v1.0.0 validation is described in the release review. Runtime collision audits in `src/` are executable data used to validate the supplied map, rather than temporary reports.
+The selected previews in `images/` show v1.0.0. The [gallery](SCREENSHOTS.md) and [capture metadata](images/captures.json) identify their build and source; Web menu/gameplay and mobile pages were captured from production. Historical Android and branding reports retain their dated evidence. Runtime collision audits in `src/` are executable data used to validate the supplied map, rather than temporary reports.
 
 Android recordings, raw device logs, APKs and generated assets likewise remain local and ignored. Selected screenshots and compact functional verification summaries are committed under `android/` alongside the guides and reproduction commands. They do not imply that a local build has been published to the public website.
 
