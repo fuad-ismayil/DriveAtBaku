@@ -6,6 +6,7 @@ import { PLATE_FITMENTS } from './licensePlateFitments.js';
 
 const THICKNESS = .0011, EMBOSS = .0015;
 const glyphCache = new Map();
+export const PLATE_LIGHTING = Object.freeze({ color: 0xeef3ff, intensity: .012, range: .45, angle: 1.26, penumbra: .72, decay: 2 });
 let finishes;
 function materials() {
   if (finishes) return finishes;
@@ -125,6 +126,17 @@ function characters(group, layout, settings) {
       line('-', [-.0165], -.035, .015, .010);
     }
   }
+  stampParts(group, parts);
+}
+// Shared by the native asset exporter: retain the exact DIN contours, bevels,
+// enamel and stamp shoulders instead of substituting a system text font.
+export function createPlateGlyph(character, width, height) {
+  const group = new THREE.Group();
+  stampParts(group, [glyphGeometry(character, width, height).clone()]);
+  return group;
+}
+function stampParts(group, parts) {
+  const f = materials();
   // ExtrudeGeometry groups are per shape. Merge into two material batches.
   const batches = [[], []];
   for (const part of parts) {
@@ -259,7 +271,8 @@ function carrier(vehicle, vehicleId, side, settings, calibration) {
     // inward.  The broad, overlapping cones keep the outer characters as
     // legible as the centre instead of concentrating both beams on the middle.
     for (const sideSign of [-1, 1]) {
-      const lamp = new THREE.SpotLight(0xeef3ff, vehicle.userData.plateLightsEnabled ? .009 : 0, .45, 1.26, .72, 2);
+      const lamp = new THREE.SpotLight(PLATE_LIGHTING.color, vehicle.userData.plateLightsEnabled ? PLATE_LIGHTING.intensity : 0,
+        PLATE_LIGHTING.range, PLATE_LIGHTING.angle, PLATE_LIGHTING.penumbra, PLATE_LIGHTING.decay);
       lamp.name = 'Rear registration lamp';
       lamp.position.set(sideSign * d.width * .32, d.height / 2 + .018, .13);
       lamp.target.position.set(sideSign * d.width * .10, -d.height * .16, 0);
@@ -312,7 +325,7 @@ export function installLicensePlates(vehicle, vehicleId, value) {
 export function setLicensePlateLighting(vehicle, enabled) {
   vehicle.userData.plateLightsEnabled = enabled;
   for (const rig of vehicle.userData.licensePlates?.rigs ?? []) rig.traverse(o => {
-    if (o.name === 'Rear registration lamp') o.intensity = enabled ? .012 : 0;
+    if (o.name === 'Rear registration lamp') o.intensity = enabled ? PLATE_LIGHTING.intensity : 0;
   });
 }
 export function updateLicensePlates(vehicle, value) {

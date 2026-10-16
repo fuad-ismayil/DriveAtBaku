@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { createHash } from 'node:crypto';
+import { mkdirSync, writeFileSync } from 'node:fs';
+const execute = promisify(execFile);
+const binary = process.env.ADB_BIN || `${process.env.USERPROFILE}/Android/Sdk/platform-tools/adb.exe`;
+const adb = (...args) => execute(binary, args, { windowsHide: true, maxBuffer: 8 * 1024 * 1024 });
+const pkg = 'games.driveatbaku.nativegame';
+const preferenceHash = async () => createHash('sha256').update((await adb('shell', 'run-as', pkg, 'cat', 'files/preferences.cfg')).stdout).digest('hex');
+mkdirSync('artifacts/android', { recursive: true });
+const before = await preferenceHash();
+await adb('install', '-r', 'android/build/DriveAtBaku-native-debug.apk');
+const afterInstall = await preferenceHash();
+await adb('shell', 'am', 'start', '-W', '-n', `${pkg}/com.godot.game.GodotAppLauncher`);
+const pid = (await adb('shell', 'pidof', pkg)).stdout.trim();
+let output = '';
+for (let step = 0; step < 180; step++) {
+  output = (await adb('logcat', '-d', `--pid=${pid}`, '-s', 'godot')).stdout;
+  if (/NATIVE_READY|SCRIPT ERROR/.test(output)) break;
+  await new Promise(resolve => setTimeout(resolve, 750));
+}
+writeFileSync('artifacts/android/device-primary-0.4.log', output);
+assert.match(output, /NATIVE_READY/);
+assert.doesNotMatch(output, /SCRIPT ERROR|Shader compilation failed/);
+const afterLaunch = await preferenceHash();
+const version = (await adb('shell', 'dumpsys', 'package', pkg)).stdout.match(/versionCode=.*|versionName=.*/g);
+assert.ok(version.some(line => line.includes('versionCode=4')) && version.some(line => line.includes('0.4.0-native-preview')));
+const report = { before, afterInstall, afterLaunch, identical: before === afterInstall && before === afterLaunch, version, ready: output.match(/NATIVE_READY .*/)?.[0] };
+writeFileSync('artifacts/android/preferences-0.4-verification.json', JSON.stringify(report, null, 2));
+assert.equal(report.identical, true, 'Saved preferences changed during update');
+console.log(JSON.stringify(report));

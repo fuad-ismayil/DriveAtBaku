@@ -119,6 +119,10 @@ function sanitizeState(raw) {
       if (Array.isArray(item.cp) && item.cp.length === 3 && item.cp.every(Number.isFinite)) {
         wheelEntry.cp = item.cp.map(n => Math.round(n * 1000) / 1000);
       }
+      if (Array.isArray(item.n) && item.n.length === 3 && item.n.every(Number.isFinite)) {
+        const length = Math.hypot(...item.n);
+        if (length > .01) wheelEntry.n = item.n.map(n => Math.round(n / length * 1000) / 1000);
+      }
       wheels.push(wheelEntry);
     }
   }
@@ -146,6 +150,11 @@ function sanitizeState(raw) {
     plt,
     rpm,
     gr,
+    au: {
+      ld: Number.isFinite(raw.au?.ld) ? Math.max(0, Math.min(1, raw.au.ld)) : input.th,
+      sh: Number.isFinite(raw.au?.sh) ? Math.max(0, Math.min(2, raw.au.sh)) : 0,
+      ac: Number.isFinite(raw.au?.ac) ? Math.max(-12, Math.min(12, raw.au.ac)) : 0,
+    },
     p: p.map(n => Math.round(n * 1000) / 1000),
     q: q.map(n => Math.round(n * 10000) / 10000),
     v: v.map(n => Math.round(n * 100) / 100),
@@ -314,6 +323,7 @@ wss.on('connection', (ws, req) => {
         spawnIndex,
         players: currentPlayers,
         serverTime: Date.now(),
+        features: ['vehicle-indicators-v1', 'license-plates-v1', 'vehicle-audio-v1'],
       });
 
       broadcast({

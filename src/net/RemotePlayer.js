@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { createCarModel, setHeadlightBulbs } from '../carModel.js';
 import { updateLicensePlates } from '../licensePlates.js';
 import { createTireEffects } from '../tireEffects.js';
-import { ENGINE_BANKS } from '../engineAudio.js';
+import { RemoteEngineVoice } from '../engineAudio.js';
+import { VEHICLES } from '../vehicleCatalog.js';
+import { remoteEngineState } from './engineState.js';
 import { INTERP_DELAY_MS } from './protocol.js';
 import { updateVehicleIndicators, disposeVehicleIndicators, isNewerSequence } from '../vehicleIndicators.js';
 
@@ -195,25 +197,16 @@ export class RemotePlayer {
     canvas.height = 128;
     const ctx = canvas.getContext('2d');
 
-    const pad = 8;
-    ctx.fillStyle = 'rgba(17, 21, 24, 0.88)';
-    ctx.beginPath();
-    ctx.roundRect(pad, pad, canvas.width - pad * 2, canvas.height - pad * 2, 28);
-    ctx.fill();
-
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.stroke();
-
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(60, canvas.height / 2, 20, 0, Math.PI * 2);
-    ctx.fill();
-
     ctx.font = 'bold 50px "Space Grotesk", system-ui, sans-serif';
-    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(this.nick, 100, canvas.height / 2);
+    // A narrow text outline preserves readability without a background panel.
+    ctx.lineWidth = 5;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(9, 13, 18, 0.85)';
+    ctx.strokeText(this.nick, canvas.width / 2, canvas.height / 2, canvas.width - 24);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(this.nick, canvas.width / 2, canvas.height / 2, canvas.width - 24);
 
     this.nameplateTexture = new THREE.CanvasTexture(canvas);
     this.nameplateTexture.minFilter = THREE.LinearFilter;
@@ -241,9 +234,9 @@ export class RemotePlayer {
       let panner = null;
       if (ctx.createStereoPanner) {
         panner = ctx.createStereoPanner();
-        gain.connect(panner).connect(this.engineAudio.master || ctx.destination);
+        gain.connect(panner).connect(this.engineAudio.remoteMaster || this.engineAudio.master || ctx.destination);
       } else {
-        gain.connect(this.engineAudio.master || ctx.destination);
+        gain.connect(this.engineAudio.remoteMaster || this.engineAudio.master || ctx.destination);
       }
 
       const hornGain = ctx.createGain();
@@ -305,7 +298,7 @@ export class RemotePlayer {
     updateVehicleIndicators(this.car, li?.sig ?? 'off', li?.sigAt ?? 0, this.getServerTime?.() ?? Date.now() + this.serverTimeOffsetMs);
     this._updateEffects(dt);
     this._updateNameplate(camera?.position);
-    this._updateAudio(camera);
+    this._updateAudio(camera, dt);
   }
 
   _interpolate(dt) {
@@ -413,7 +406,7 @@ export class RemotePlayer {
     const isBraking = Boolean(li.brake);
     const brakes = this.car.userData.brakeLights;
     for (const mat of Array.isArray(brakes) ? brakes : brakes ? [brakes] : []) {
-      mat.emissiveIntensity = isBraking ? 3.6 : 0.3;
+      mat.emissiveIntensity = isBraking ? 3.6 : headMode > 0 ? 0.72 : 0.3;
     }
 
     const isReverse = Boolean(li.rev);
@@ -475,9 +468,11 @@ export class RemotePlayer {
         wSynth.contact.copy(this.currentPosition);
       }
       wSynth.steer = wNet.st || 0;
+      if (wNet.n) wSynth.normal.fromArray(wNet.n).normalize();
+      else wSynth.normal.set(0, 0, 1);
       wSynth.load = wNet.sk ? 220 : 0;
       wSynth.surfaceMu = 1.0;
-      wSynth.slideSpeed = wNet.sk ? (2.8 + (wNet.sl || 0)) : (wNet.sm > 0 ? 5.2 : 0);
+      wSynth.slideSpeed = wNet.sl || 0;
     }
 
     this.tireEffects.update(dt, this.syntheticTireState, { wheelWidth: 0.28 }, { wet: 0, snow: 0 }, true, true);
@@ -492,10 +487,11 @@ export class RemotePlayer {
     if (cameraPosition) {
       const dist = this.currentPosition.distanceTo(cameraPosition);
       this.nameplate.visible = dist < 150;
+      this.nameplate.material.opacity = 1 - THREE.MathUtils.smoothstep(dist, 120, 150);
     }
   }
 
-  _updateAudio(camera) {
+  _updateAudio(camera, dt) {
     // The multiplayer session may be created before the user gesture that
     // starts Web Audio. Initialise lazily so remote engines still get a
     // dedicated graph once audio becomes available.
@@ -514,38 +510,30 @@ export class RemotePlayer {
       return;
     }
 
-    // Lazy start engine audio source if needed
-    if (!this.audioActive) {
-      try {
-        const bank = this.engineAudio.banks?.get(this.carId) || this.engineAudio.banks?.get('ferrari');
-        const buffer = bank?.idle?.source?.buffer || bank?.on?.[0]?.source?.buffer;
-        if (buffer) {
-          const src = ctx.createBufferSource();
-          src.buffer = buffer;
-          src.loop = true;
-          src.connect(this.audioGain);
-          src.start();
-          this.audioSource = src;
-          this.audioActive = true;
-        }
-      } catch { /* ignore */ }
+    const latest = this.buffer.at(-1)?.state;
+    if (!latest || latest.cid !== this.carId) return;
+    if (!this.audioSource && this.engineAudio.banks.has(this.carId)) {
+      this.audioSource = new RemoteEngineVoice(this.engineAudio, this.carId, this.audioGain);
+      this.audioActive = true;
     }
+    const renderTime = Date.now() + this.serverTimeOffsetMs - this.interpolationDelayMs;
+    let older = this.buffer[0], newer = older;
+    for (const item of this.buffer) {
+      if (item.timestamp <= renderTime) older = item;
+      newer = item;
+      if (item.timestamp >= renderTime) break;
+    }
+    const alpha = THREE.MathUtils.clamp((renderTime - older.timestamp) / Math.max(1, newer.timestamp - older.timestamp), 0, 1);
+    const audioState = older.state.cid !== this.carId || newer.state.cid !== this.carId
+      ? remoteEngineState(latest) : remoteEngineState(older.state, newer.state, alpha);
+    this.audioSource?.update(audioState, VEHICLES[this.carId], this.engineAudio.enabled, dt);
 
     // Attenuation with distance
-    const distFactor = THREE.MathUtils.smoothstep(105, 5, dist);
+    const distFactor = 1 - THREE.MathUtils.smoothstep(dist, 5, 105);
     const targetVolume = 0.42 * distFactor * distFactor;
     this.audioGain.gain.setTargetAtTime(targetVolume, ctx.currentTime, 0.05);
-    const latest = this.buffer[this.buffer.length - 1]?.state;
-    this.remoteHornGain?.gain.setTargetAtTime(latest?.in?.hn ? 0.38 * distFactor : 0, ctx.currentTime, 0.02);
 
-    // Modulate pitch from RPM
-    if (this.audioSource && this.buffer.length > 0) {
-      const rpm = latest.rpm || 900;
-      const bankConfig = ENGINE_BANKS[this.carId] || ENGINE_BANKS.ferrari;
-      const baseRpm = bankConfig.idle?.rpm || 950;
-      const rate = THREE.MathUtils.clamp(rpm / baseRpm, 0.65, 2.8);
-      this.audioSource.playbackRate.setTargetAtTime(rate, ctx.currentTime, 0.04);
-    }
+    this.remoteHornGain?.gain.setTargetAtTime(latest?.in?.hn ? 0.38 * distFactor : 0, ctx.currentTime, 0.02);
 
     // Pan based on camera-relative position
     if (this.audioPanner) {
@@ -568,6 +556,7 @@ export class RemotePlayer {
     }
     this.tireEffects?.dispose();
     this._disposeAudioSource();
+    this.audioPanner?.disconnect();
     for (const oscillator of this.remoteHornOscillators) {
       try { oscillator.stop(); oscillator.disconnect(); } catch { /* ignore */ }
     }
@@ -583,7 +572,7 @@ export class RemotePlayer {
 
   _disposeAudioSource() {
     if (this.audioSource) {
-      try { this.audioSource.stop(); this.audioSource.disconnect(); } catch { /* ignore */ }
+      try { this.audioSource.dispose(); } catch { /* ignore */ }
     }
     this.audioSource = null;
     this.audioActive = false;

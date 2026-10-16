@@ -63,6 +63,7 @@ function finishMaterial(source, role, paints, headlights, brakes, reverse, setti
     material.emissive.setHex(0xe8f4ff); material.emissiveIntensity = 0;
     material.userData.headlightScale = .7;
     material.userData.highBeamOnly = true;
+    material.userData.lampEmissionMask = `(1.0 - smoothstep(${.076 * scale}, ${.080 * scale}, length(vec2(abs(lampPosition.x) - ${.78619 * scale}, lampPosition.y - ${1.10809 * scale + height})))) * step(${(bodyCenter.z - 2.08) * scale + offset}, lampPosition.z) * step(lampPosition.z, ${(bodyCenter.z - 1.98) * scale + offset})`;
     material.onBeforeCompile = shader => {
       shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 pradoHighBeamPosition;')
         .replace('#include <begin_vertex>', '#include <begin_vertex>\npradoHighBeamPosition = position;');
@@ -96,6 +97,7 @@ function finishMaterial(source, role, paints, headlights, brakes, reverse, setti
     // Gate their emission by fitted body position so braking cannot light the nose.
     if (settings.id === 'amg' && role !== 'reverse') {
       const direction = role === 'headlight' ? -1 : 1;
+      material.userData.lampEmissionMask = `step(${settings.dims.length * .3}, lampPosition.z * ${direction}.0)`;
       material.onBeforeCompile = shader => {
         shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying float vehicleLampZ;')
           .replace('#include <begin_vertex>', '#include <begin_vertex>\nvehicleLampZ = position.z;');
@@ -110,6 +112,7 @@ function finishMaterial(source, role, paints, headlights, brakes, reverse, setti
     // at Y=1.15..1.20. Only this clear band emits; red brake lenses are untouched.
     const level = { value: 0 }, height = settings.modelFit.bodyHeightOffset;
     material.userData.reverseLightLevel = level;
+    material.userData.reverseEmissionMask = `smoothstep(${1.14 * scale + height}, ${1.15 * scale + height}, lampPosition.y) * (1.0 - smoothstep(${1.198 * scale + height}, ${1.208 * scale + height}, lampPosition.y)) * step(${.74 * scale}, abs(lampPosition.x)) * step(${2 * scale}, lampPosition.z)`;
     material.onBeforeCompile = shader => {
       shader.uniforms.reverseLightLevel = level;
       shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 pradoLampPosition;')

@@ -41,7 +41,7 @@ export function round(val, decimals = 3) {
 }
 
 /**
- * Format client state into the §4 compact wire payload (<400 bytes)
+ * Format client state into the compact protocol-1 payload with optional effects/audio.
  */
 export function formatStatePayload(seq, ts, raw) {
   return {
@@ -53,6 +53,12 @@ export function formatStatePayload(seq, ts, raw) {
     plt: raw.plt || null,
     rpm: Math.round(raw.rpm || 900),
     gr: raw.gr ?? 1,
+    // Optional in protocol 1 so older clients remain compatible.
+    au: {
+      ld: round(raw.au?.ld ?? raw.in.th, 3),
+      sh: round(raw.au?.sh ?? 0, 3),
+      ac: round(raw.au?.ac ?? 0, 3),
+    },
     p: [round(raw.p[0], 3), round(raw.p[1], 3), round(raw.p[2], 3)],
     q: [round(raw.q[0], 4), round(raw.q[1], 4), round(raw.q[2], 4), round(raw.q[3], 4)],
     v: [round(raw.v[0], 2), round(raw.v[1], 2), round(raw.v[2], 2)],
@@ -86,6 +92,7 @@ export function formatStatePayload(seq, ts, raw) {
       if (wheel.c && wheel.cp) {
         entry.cp = [round(wheel.cp[0], 3), round(wheel.cp[1], 3), round(wheel.cp[2], 3)];
       }
+      if (wheel.c && wheel.n) entry.n = wheel.n.map(value => round(value, 3));
       return entry;
     }),
   };

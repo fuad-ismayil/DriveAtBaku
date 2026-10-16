@@ -9,6 +9,34 @@ npm run build
 
 The GitHub **Verify** workflow runs these checks, the production build and a local relay traffic test on Node.js 24/Linux. It does not make GPU-performance or visual-quality claims. Vite currently reports a large JavaScript chunk; the warning is retained and the build succeeds.
 
+## Native Android and cross-platform checks
+
+The [Android build guide](../android/README.md) covers Windows prerequisites,
+preparation and `android/build.ps1 -Target Verify`. Native verification checks
+the original equations/contact fixtures, touch controls, PCM loops, mixer
+targets, light states and protocol compatibility. Generated fixtures, SDKs,
+exported binaries and raw recordings stay outside Git; Godot source UIDs and
+import/export configuration remain versioned.
+
+The [16 October S9 results](android/DEVICE_RESULTS.md) record exact agreement
+for 57,600 physics samples, 564 plate/audio checks, and 155 checks in the full
+Android/Chrome multiplayer run over 16 phases and four cars. The web test uses
+the actual Join gesture under normal autoplay policy, measures remote audio,
+and acknowledges each measured phase before advancing. It checks engine
+RPM/load/shift targets, actual wheel-slip sound, distance, pause and room
+cleanup; the native master recording also contains output for every phase.
+See the [audio/plate report](android/AUDIO_AND_PLATE_FIXES.md) for reproduction,
+idle boundary measurements and the remaining public-client deployment step.
+The Linux workflow does not run the Godot toolchain or certify device behavior.
+
+The pre-push review against `73e94a2` reran all 26 web suites and the production
+build successfully. All 29 staged JavaScript modules/tools passed syntax
+checks, all 79 checked local documentation links resolved, and the staged diff
+passed whitespace checks. The staged source contains no large generated
+artifacts; ignore checks cover assets/cache, native libraries, APKs, local CMake
+configuration and signing credentials. Raw release-review output remains in
+ignored `artifacts/android/push-web-verification.log` and `push-web-build.log`.
+
 ## Browser checks
 
 Browser scripts use the declared `playwright`, `pngjs` and `sharp` development dependencies. Install Google Chrome separately; the runners launch its `chrome` channel. Use a hardware-accelerated WebGL 2 session. Some checks reject software rendering or require GPU timer queries, so generic headless CI is insufficient for their measurements.

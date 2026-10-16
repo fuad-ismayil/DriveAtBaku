@@ -103,6 +103,7 @@ function attachVehicleNetHooks(vehicle) {
         sm: smokeIntensity,
         c: w.grounded ? 1 : 0,
         cp: w.grounded && w.contact ? [w.contact.x, w.contact.y, w.contact.z] : null,
+        n: w.grounded && w.normal ? [w.normal.x, w.normal.y, w.normal.z] : null,
       });
     }
     const isBraking = Boolean(handling && (handling.brakeForceInput > 0.1 || handling.handbrake));
@@ -113,6 +114,7 @@ function attachVehicleNetHooks(vehicle) {
       plt: plateSelections[activeVehicle.id] || null,
       rpm: handling ? handling.rpm : 900,
       gr: handling ? handling.gear : 1,
+      au: { ld: handling?.engineLoad ?? handling?.throttle ?? 0, sh: handling?.shiftTimer ?? 0, ac: handling?.acceleration ?? 0 },
       p: [vehicle.position.x, vehicle.position.y, vehicle.position.z],
       q: [vehicle.quaternion.x, vehicle.quaternion.y, vehicle.quaternion.z, vehicle.quaternion.w],
       v: handling ? [handling.velocity.x, handling.velocity.y, handling.velocity.z] : [0, 0, 0],
@@ -1178,6 +1180,8 @@ if (mpUi.btn) {
     mpUi.joinBtn.disabled = true;
 
     try {
+      // Unlock Web Audio in the Join gesture, before a cold module download.
+      engineAudio.activate().catch(console.warn);
       isMultiplayer = true;
       const { MultiplayerSession } = await import('./net/MultiplayerSession.js');
       startDrive();

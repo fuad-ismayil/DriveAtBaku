@@ -20,6 +20,7 @@ A fan-made browser driving game set on Baku's streets. Explore the city in four 
 - Sunny, overcast, wet-road, rain and snow modes, adjustable precipitation and vehicle surface water. Weather affects appearance; it does not change driving grip.
 - Performance, Balanced and Cinematic graphics presets, independent render/props distances, ambient occlusion and rendering-resolution controls. Balanced/Cinematic use HDR, SMAA and supported scene MSAA, cached shadows and local car reflections.
 - Multiplayer with interpolated remote vehicles, player names and replicated vehicle appearance/effects. Remote cars are visual ghosts and do not collide with one another; a separate relay is required.
+- An [ARM64 Android development preview](android/README.md) built with Godot, using the original driving equations, packaged assets, touch controls and compatible web/Android multiplayer. Its mobile interface is still a functional preview.
 
 ## Getting started
 
@@ -44,6 +45,8 @@ npm run preview
 The production site is `dist/`. Netlify and Vercel configuration files already specify the build command and output directory. Keep `public/generated/asset-manifest.json`, its compressed asset parts, collision data and route data together. The build also includes the generated room-window mask under `public/assets/environment/`; its source metadata is `src/windowLightingAtlas.json`. Static hosting serves the game; it does not run the multiplayer relay.
 
 See [map conversion](docs/MAP_CONVERSION.md) for optional asset regeneration and [verification](docs/VERIFICATION.md) for the checks to run before a release.
+
+For the native Android client, follow the separate [Windows setup and build guide](android/README.md). Android assets, downloaded tools, native binaries and APKs are regenerated locally and excluded from Git; retain the source scripts, Godot resource UIDs and import/export settings. The [device results](docs/android/DEVICE_RESULTS.md) record the Galaxy S9 checks and limits. The [0.4 audio/plate report](docs/android/AUDIO_AND_PLATE_FIXES.md) explains the idle-loop correction, real registration lamps and measured bidirectional audio. Deploy the matching web client for public rooms; the latest recorded public relay probe already preserves the required audio state.
 
 ## Controls
 

@@ -53,6 +53,37 @@ ingress:
 
 Then run `cloudflared tunnel run driveatbaku`. Add the game host to `ALLOWED_ORIGINS` when using a different client domain. Tunnel credentials and machine-specific configuration stay outside Git.
 
+## Verify a deployed relay after updating
+
+Restart the deployed Node process after publishing `server/server.js` and its
+shared imports from `src/`. An already-running Node process continues executing
+the old code even if the files change. Keep the existing TLS/origin configuration.
+
+From the repository root, inspect only a temporary diagnostic client's own state:
+
+```sh
+node android/tools/probe_relay.mjs wss://server.driveatbaku.games/
+```
+
+`indicatorsPreserved`, `engineStatePreserved` and `platesPreserved` must be
+`true`, and the returned `li` must include `sig`,
+`sigRev` and `sigAt`. Current welcome messages advertise
+`vehicle-indicators-v1`, `license-plates-v1` and `vehicle-audio-v1`; protocol version remains 1.
+The diagnostic disconnects after its own state is echoed and does not send chat.
+
+The latest recorded 0.4 probe on 16 October 2026 preserves audio state,
+indicators and plates on the public relay. Earlier probes on the same day
+found missing indicator fields, then missing `au`; those are historical
+deployment results. `au` carries optional protocol-1 engine state (`ld` load,
+`sh` remaining shift seconds, `ac` acceleration). This relay validates and
+forwards those fields plus optional wheel contact normals (`n`).
+
+The public website still served the older client during that audit. Publish
+the matching web client for complete Android/web audio reconstruction; the
+relay does not need reinstalling when the current probe already passes. For
+an older deployment, the portable bundle and diagnostic are documented in
+[the Android relay guide](../docs/android/RELAY_UPDATE.md).
+
 ## Load test
 
 Start a local relay first, then use a second terminal:

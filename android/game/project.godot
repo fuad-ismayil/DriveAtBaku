@@ -1,0 +1,50 @@
+; Native Android client. Assets are generated from the existing web project.
+config_version=5
+
+[application]
+config/name="DriveAtBaku"
+config/description="Native driving in Baku"
+config/icon="res://icon.svg"
+run/main_scene="res://main.tscn"
+run/main_scene.network_verification="res://tests/network.tscn"
+run/main_scene.visual_verification="res://tests/visual.tscn"
+run/main_scene.feature_verification="res://tests/features.tscn"
+run/main_scene.multiplayer_feature_verification="res://tests/multiplayer_features.tscn"
+run/main_scene.audio_plate_verification="res://tests/audio_plate.tscn"
+config/features=PackedStringArray("4.6", "Mobile")
+config/auto_accept_quit=false
+
+[autoload]
+Preferences="*res://scripts/preferences.gd"
+
+[display]
+window/size/viewport_width=1480
+window/size/viewport_height=720
+window/size/window_width_override=1480
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/handheld/orientation=0
+window/vsync/vsync_mode=1
+
+[input_devices]
+pointing/emulate_touch_from_mouse=true
+pointing/emulate_mouse_from_touch=true
+
+[physics]
+common/physics_ticks_per_second=120
+common/max_physics_steps_per_frame=8
+3d/default_gravity=0.0
+
+[rendering]
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
+textures/vram_compression/import_etc2_astc=true
+textures/default_filters/use_nearest_mipmap_filter=false
+anti_aliasing/quality/msaa_3d=1
+environment/defaults/default_clear_color=Color(0.48, 0.65, 0.78, 1)
+lights_and_shadows/directional_shadow/size=1024
+reflections/reflection_atlas/reflection_size=128
+reflections/reflection_atlas/reflection_size.mobile=128
+
+[audio]
+driver/enable_input=false

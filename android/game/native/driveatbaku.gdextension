@@ -1,0 +1,8 @@
+[configuration]
+entry_symbol = "driveatbaku_library_init"
+compatibility_minimum = "4.5"
+reloadable = false
+
+[libraries]
+windows.x86_64 = "res://native/driveatbaku.windows.x86_64.dll"
+android.arm64 = "res://native/libdriveatbaku.android.arm64.so"

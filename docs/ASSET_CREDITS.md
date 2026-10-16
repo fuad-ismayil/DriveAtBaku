@@ -33,6 +33,17 @@ The gameplay preview and loading images are captures rendered with these game
 assets; they do not establish additional redistribution rights. Tire audio is
 credited alongside the engine recordings in the linked source list.
 
+## Native preview dependencies
+
+The Android preview uses Godot 4.6.1 and its matching export templates; the
+Godot C++ bindings are downloaded at the revision pinned in `android/build.ps1`,
+rather than vendored as generated build output. Deterministic elementary math
+comes from V8 13.6.233 / Sun fdlibm: the source notices and BSD license are
+retained under [android/native/third_party/fdlibm](../android/native/third_party/fdlibm/README.md).
+The generated in-app credits also retain the math, font and audio notices.
+Packaging existing vehicle and city assets for Android does not establish new
+redistribution rights for those assets.
+
 There is no project-wide source-code license. Map and supplied-vehicle terms
 remain unresolved; individual Ferrari, audio, font and decoder licenses do not
 cover those files. This fan-made project is not affiliated with Forza, Ferrari,

@@ -90,6 +90,7 @@ function materialFor(part, entry, index, textures, brakeMaterials, paintMaterial
     brakeMaterials.push(result);
     const reverseLightLevel = { value: 0 };
     result.userData.reverseLightLevel = reverseLightLevel;
+    result.userData.reverseEmissionMask = 'smoothstep(0.56, 0.59, abs(lampPosition.x)) * (1.0 - smoothstep(0.68, 0.71, abs(lampPosition.x))) * smoothstep(2.14, 2.17, lampPosition.z) * (1.0 - smoothstep(2.23, 2.27, lampPosition.z)) * (1.0 - smoothstep(-0.245, -0.20, lampPosition.y))';
     result.onBeforeCompile = shader => {
       shader.uniforms.reverseLightLevel = reverseLightLevel;
       shader.vertexShader = shader.vertexShader

@@ -48,7 +48,7 @@ export const ENGINE_BANKS = {
   },
 };
 
-function smoothBuffer(context, original) {
+export function smoothBuffer(context, original) {
   // Overlap the tail with the beginning so the wrap is sample-continuous.
   const overlap = Math.min(Math.floor(original.sampleRate * 0.045), Math.floor(original.length * 0.14));
   const length = original.length - overlap;
@@ -108,6 +108,27 @@ function tireSquealLayer(context, buffer, destination) {
   return { source, filter: tone, gain };
 }
 
+// Local and remote vehicles use this identical bank update path. Only the
+// destination/spatial envelope and the source of driving state differ.
+export function updateEngineBank(bank, vehicle, targets, rpm, load, active, now) {
+  bank.bus.gain.setTargetAtTime(active ? (vehicle.soundVol ?? 1) * 0.95 * (bank.config.gain ?? 1) : 0, now, 0.12);
+  bank.tone.frequency.setTargetAtTime(Math.max(bank.config.cutoffFloor, Math.min(6800,
+    (420 + rpm * 0.4 + load * 1100) * bank.config.brightness)), now, 0.065);
+  const levels = engineLayerGains(bank.config, rpm, targets.idle, targets.running, load);
+  bank.idle.gain.gain.setTargetAtTime(active ? levels.idle : 0, now, 0.07);
+  bank.idle.source.playbackRate.setTargetAtTime(Math.max(0.75, Math.min(1.45, rpm / bank.idle.rpm)), now, 0.045);
+  for (const [role, layers] of [['on', bank.on], ['off', bank.off]]) layers.forEach((layer, index) => {
+    layer.gain.gain.setTargetAtTime(active ? levels[role][index] : 0, now, 0.075);
+    layer.source.playbackRate.setTargetAtTime(Math.max(0.62, Math.min(1.7, rpm / layer.rpm)), now, 0.045);
+  });
+  if (bank.character) {
+    const layer = bank.character;
+    const presence = targets.running * (0.38 + 0.62 * load) * Math.max(0, Math.min(1, (5500 - rpm) / 1700));
+    layer.gain.gain.setTargetAtTime(active ? layer.level * presence : 0, now, 0.09);
+    layer.source.playbackRate.setTargetAtTime(Math.max(0.45, Math.min(1.65, rpm / layer.rpm)), now, 0.055);
+  }
+}
+
 export class EngineAudio {
   constructor() {
     this.context = null;
@@ -147,6 +168,10 @@ export class EngineAudio {
     compressor.release.value = 0.22;
     master.connect(compressor).connect(context.destination);
     this.master = master;
+    // Room audio follows listener volume/mute, independently of local pause.
+    this.remoteMaster = context.createGain();
+    this.remoteMaster.gain.value = this.enabled ? this.volume : 0;
+    this.remoteMaster.connect(compressor);
 
     const noise = context.createBuffer(1, context.sampleRate, context.sampleRate);
     const samples = noise.getChannelData(0);
@@ -224,7 +249,7 @@ export class EngineAudio {
     }
   }
 
-  shiftSound(level) {
+  shiftSound(level, destination = this.master) {
     if (!this.context || !this.noiseBuffer) return;
     const context = this.context;
     const source = context.createBufferSource();
@@ -238,7 +263,7 @@ export class EngineAudio {
     gain.gain.setValueAtTime(0, now);
     gain.gain.linearRampToValueAtTime(level, now + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
-    source.connect(filter).connect(gain).connect(this.master);
+    source.connect(filter).connect(gain).connect(destination);
     source.start(now, Math.random() * 0.6, 0.14);
     source.stop(now + 0.15);
   }
@@ -259,27 +284,8 @@ export class EngineAudio {
 
     for (const [id, bank] of this.banks) {
       const selected = id === vehicle.id;
-      bank.bus.gain.setTargetAtTime(active && selected ? (vehicle.soundVol ?? 1) * 0.95 * (bank.config.gain ?? 1) : 0, now, selected ? 0.12 : 0.18);
-      if (!selected) continue;
-      bank.tone.frequency.setTargetAtTime(
-        Math.max(bank.config.cutoffFloor, Math.min(6800, (420 + this.audioRpm * 0.4 + this.mixLoad * 1100) * bank.config.brightness)), now, 0.065,
-      );
-      const levels = engineLayerGains(bank.config, this.audioRpm, targets.idle, targets.running, this.mixLoad);
-      bank.idle.gain.gain.setTargetAtTime(active ? levels.idle : 0, now, 0.07);
-      bank.idle.source.playbackRate.setTargetAtTime(Math.max(0.75, Math.min(1.45, this.audioRpm / bank.idle.rpm)), now, 0.045);
-      for (const [role, layers] of [['on', bank.on], ['off', bank.off]]) {
-        layers.forEach((layer, index) => {
-          layer.gain.gain.setTargetAtTime(active ? levels[role][index] : 0, now, 0.075);
-          layer.source.playbackRate.setTargetAtTime(Math.max(0.62, Math.min(1.7, this.audioRpm / layer.rpm)), now, 0.045);
-        });
-      }
-      if (bank.character) {
-        const character = bank.character;
-        const lowRpmFade = Math.max(0, Math.min(1, (5500 - this.audioRpm) / 1700));
-        const presence = targets.running * (0.38 + 0.62 * this.mixLoad) * lowRpmFade;
-        character.gain.gain.setTargetAtTime(active ? character.level * presence : 0, now, 0.09);
-        character.source.playbackRate.setTargetAtTime(Math.max(0.45, Math.min(1.65, this.audioRpm / character.rpm)), now, 0.055);
-      }
+      if (!selected) { bank.bus.gain.setTargetAtTime(0, now, 0.18); continue; }
+      updateEngineBank(bank, vehicle, targets, this.audioRpm, this.mixLoad, active, now);
     }
 
     const speed = targets.speedKmh;
@@ -300,11 +306,57 @@ export class EngineAudio {
     }
     this.lastGear = state.gear;
     this.master.gain.setTargetAtTime(active ? this.volume : 0, now, active ? 0.08 : 0.04);
+    this.remoteMaster?.gain.setTargetAtTime(this.enabled && context.state === 'running' ? this.volume : 0, now, 0.04);
   }
 
   setVolume(value) { this.volume = Math.max(0, Math.min(0.65, Number(value) || 0)); }
   setEnabled(enabled) {
     this.enabled = Boolean(enabled);
     if (!this.enabled && this.context) this.master.gain.setTargetAtTime(0, this.context.currentTime, 0.04);
+    if (!this.enabled && this.context) this.remoteMaster?.gain.setTargetAtTime(0, this.context.currentTime, 0.04);
+  }
+}
+
+export class RemoteEngineVoice {
+  constructor(owner, id, destination) {
+    this.owner = owner;
+    this.id = id;
+    const context = owner.context, original = owner.banks.get(id);
+    const bus = context.createGain(), tone = context.createBiquadFilter();
+    bus.gain.value = 0; tone.type = 'lowpass'; tone.frequency.value = 1500; tone.Q.value = .52;
+    bus.connect(tone).connect(destination);
+    const layer = (source, index) => {
+      const node = context.createBufferSource(), gain = context.createGain();
+      node.buffer = source.source.buffer; node.loop = true; gain.gain.value = 0;
+      node.connect(gain).connect(bus); node.start(0, (index * .173) % node.buffer.duration);
+      return { ...source, source: node, gain };
+    };
+    this.bank = { bus, tone, config: original.config, idle: layer(original.idle, 0),
+      on: original.on.map((v, i) => layer(v, i + 1)), off: original.off.map((v, i) => layer(v, i + 7)),
+      character: original.character ? layer(original.character, 12) : null };
+    this.rpm = null; this.load = .08; this.lastGear = null; this.destination = destination;
+    this.skid = tireSquealLayer(context, owner.skid.source.buffer, destination);
+  }
+  update(state, vehicle, enabled, dt) {
+    const targets = engineMixTargets(state, vehicle);
+    if (this.rpm === null) { this.rpm = targets.rpm; this.load = targets.load; }
+    this.rpm += (targets.rpm - this.rpm) * (1 - Math.exp(-25 * dt));
+    this.load += (targets.load - this.load) * (1 - Math.exp(-(targets.shifting ? 18 : 9) * dt));
+    updateEngineBank(this.bank, vehicle, targets, this.rpm, this.load, enabled, this.owner.context.currentTime);
+    const sliding = Math.max(0, ...state.wheels.map(wheel => wheel.grounded ? Math.max(0, wheel.slideSpeed - 2.2) / 8 : 0));
+    const now = this.owner.context.currentTime;
+    this.skid.gain.gain.setTargetAtTime(enabled ? Math.min(.16, sliding * .14) : 0, now, .06);
+    this.skid.filter.frequency.setTargetAtTime(3000 + 1800 * Math.min(sliding, 1), now, .08);
+    this.skid.source.playbackRate.setTargetAtTime(.9 + .18 * Math.min(sliding, 1), now, .08);
+    if (enabled && this.lastGear !== null && state.gear !== this.lastGear && state.gear > 1 && targets.speedKmh > 7)
+      this.owner.shiftSound(.014 * (vehicle.soundVol ?? 1), this.destination);
+    this.lastGear = state.gear;
+  }
+  dispose() {
+    this.skid.source.stop(); this.skid.source.disconnect(); this.skid.filter.disconnect(); this.skid.gain.disconnect();
+    for (const layer of [this.bank.idle, ...this.bank.on, ...this.bank.off, this.bank.character].filter(Boolean)) {
+      layer.source.stop(); layer.source.disconnect(); layer.gain.disconnect();
+    }
+    this.bank.bus.disconnect(); this.bank.tone.disconnect();
   }
 }

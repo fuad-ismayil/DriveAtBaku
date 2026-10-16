@@ -1,0 +1,69 @@
+shader_type spatial;
+render_mode /*MODE*/;
+uniform vec4 tint : source_color = vec4(1.0);
+uniform sampler2D color_texture : source_color,filter_linear_mipmap_anisotropic;
+uniform bool has_texture = false;
+uniform sampler2D normal_texture : hint_normal,filter_linear_mipmap;
+uniform bool has_normal = false;
+uniform float normal_scale = 1.0;
+uniform float roughness_value = .5;
+uniform float metallic_value = 0.0;
+uniform vec3 base_emission : source_color = vec3(0.0);
+uniform float base_emission_energy = 0.0;
+uniform mat4 world_to_vehicle;
+uniform float carWaterWetness = 0.0;
+uniform float carWaterRain = 0.0;
+uniform float carWaterTime = 0.0;
+uniform float carWaterDetail = 0.0;
+uniform vec3 carWaterTravel = vec3(0.0);
+uniform vec3 carWaterFlow = vec3(0.0);
+uniform vec3 carWaterGravity = vec3(0,0,-1);
+uniform vec3 carWaterBounds = vec3(1.0,2.2,1.5);
+uniform bool is_glass = false;
+uniform float base_coat = 0.0;
+uniform float base_coat_roughness = .3;
+varying vec3 vCarWaterPosition;
+#include "res://shaders/car_water.gdshaderinc"
+void vertex(){vCarWaterPosition=(world_to_vehicle*MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;}
+void fragment(){
+ vec4 color=tint;if(has_texture){color*=texture(color_texture,UV);}
+ ALBEDO=color.rgb;METALLIC=metallic_value;ROUGHNESS=roughness_value;
+ CLEARCOAT=base_coat;CLEARCOAT_ROUGHNESS=base_coat_roughness;
+ EMISSION=base_emission*base_emission_energy;
+ if(has_normal){vec2 xy=(texture(normal_texture,UV).rg*2.0-1.0)*normal_scale;NORMAL=normalize(TANGENT*xy.x+BINORMAL*xy.y+NORMAL*sqrt(max(0.0,1.0-dot(xy,xy))));}
+ if(carWaterWetness>0.0){
+  vec3 n=normalize(mat3(world_to_vehicle)*mat3(INV_VIEW_MATRIX)*NORMAL);
+  float facingSky=max(dot(n,-carWaterGravity),0.0);
+  vec2 shell=abs(vCarWaterPosition.xy)/max(carWaterBounds.xy,vec2(.01));
+  float outerShell=smoothstep(.35,.67,max(shell.x,shell.y));
+  float outward=smoothstep(.0,.35,dot(n.xy,vCarWaterPosition.xy/max(carWaterBounds.xy,vec2(.01))));
+  float aboveFloor=smoothstep(.12,.35,vCarWaterPosition.z/max(carWaterBounds.z,.1));
+  float exposure=max(facingSky,outerShell*outward*.88)*aboveFloor*smoothstep(-.42,-.06,n.z);
+  vec3 axes=abs(n),tangentTravel=carWaterTravel-n*dot(carWaterTravel,n),tangentFlow=carWaterFlow-n*dot(carWaterFlow,n);
+  vec2 p,travel,flow;
+  if(axes.z>=axes.x&&axes.z>=axes.y){p=vCarWaterPosition.xy;travel=tangentTravel.xy;flow=tangentFlow.xy;}
+  else if(axes.x>=axes.y){p=vCarWaterPosition.yz;travel=tangentTravel.yz;flow=tangentFlow.yz;}
+  else{p=vCarWaterPosition.xz;travel=tangentTravel.xz;flow=tangentFlow.xz;}
+  vec2 footprint=sqrt(dFdx(p)*dFdx(p)+dFdy(p)*dFdy(p));
+  float pixelMetres=max(footprint.x,footprint.y),coarseFade=1.0-smoothstep(.025,.065,pixelMetres);
+  float fineFade=(1.0-smoothstep(.002,.010,pixelMetres))*carWaterDetail;
+  float stretch=clamp(length(flow)*9.0,0.0,2.5),mobile=smoothstep(.18,.85,carWaterWetness)*(1.0-facingSky*.65);
+  vec3 drops=vec3(0.0),smallDrops=vec3(0.0);
+  if(coarseFade>.001){drops=carWaterDrops((p-travel)*48.0,footprint*48.0,flow,stretch,carWaterWetness,mobile)*coarseFade;}
+  if(fineFade>.001){smallDrops=carWaterDrops((p-travel*.08)*135.0,footprint*135.0,flow,.15,carWaterWetness,.0)*fineFade;}
+  vec2 slope=(drops.xy+smallDrops.xy)*carWaterWetness*exposure;
+  vec3 localSlope;
+  if(axes.z>=axes.x&&axes.z>=axes.y){localSlope=vec3(slope,0.0);}
+  else if(axes.x>=axes.y){localSlope=vec3(0.0,slope);}
+  else{localSlope=vec3(slope.x,0.0,slope.y);}
+  localSlope-=n*dot(n,localSlope);
+  vec3 viewSlope=mat3(VIEW_MATRIX)*transpose(mat3(world_to_vehicle))*localSlope;
+  NORMAL=normalize(NORMAL-viewSlope);
+  float beads=clamp(max(drops.z,smallDrops.z)*exposure,0.0,1.0),film=carWaterWetness*exposure;
+  ROUGHNESS=mix(ROUGHNESS,min(ROUGHNESS,is_glass?.075:.19),film*.55);
+  ROUGHNESS=mix(ROUGHNESS,.055,beads*carWaterWetness*.8);
+  CLEARCOAT=mix(base_coat,1.0,film*.55);
+  CLEARCOAT_ROUGHNESS=mix(base_coat_roughness,.065,max(film*.45,beads*carWaterWetness));
+ }
+ /*ALPHA*/
+}

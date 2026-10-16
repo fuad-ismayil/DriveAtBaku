@@ -8,6 +8,11 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 | [Verification](VERIFICATION.md) | Repeatable automated checks, browser prerequisites and profiling |
 | [Multiplayer](MULTIPLAYER.md) | State replication, interpolation and known limits |
 | [Relay setup](../server/README.md) | Local server, configuration, tunnels and load testing |
+| [Native Android preview](../android/README.md) | Windows toolchain, asset preparation, ARM64/desktop exports and touch controls |
+| [Android implementation](android/IMPLEMENTATION.md) | Original simulation port, native presentation, effects and protocol integration |
+| [Android device verification](android/DEVICE_RESULTS.md) | S9 results, exact physics fixtures, audio/lighting checks and measurement limits |
+| [Android audio and plate fixes](android/AUDIO_AND_PLATE_FIXES.md) | Real plate lamps, PCM boundary correction, remote braking audio and bidirectional tests |
+| [Android UI roadmap](android/UI_ROADMAP.md) | Loading, navigation, mobile layouts and the later Liquid Glass pass |
 | [Map conversion](MAP_CONVERSION.md) | Optional source conversion, packing and collision pipeline |
 | [City map audit](CITY_MAP.md) | Audited event geometry exclusions and preservation checks |
 | [City collisions](CITY_CLEANUP.md) | Event-enclosure removal, visible facades and tree trunks |
@@ -25,3 +30,5 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 [history/](history/README.md) preserves earlier rendering research, model-fitting decisions and measured investigations. These reports describe particular development stages and hardware, rather than the current defaults or universal performance guarantees. Screenshots, raw measurements and comparison baselines referenced there are local files under ignored `artifacts/`; they are not published evidence in this repository.
 
 The selected gameplay and menu previews in `images/` show the current interface. Runtime collision audits in `src/` are executable data used to validate the supplied map, rather than temporary reports.
+
+Android recordings, raw device logs, APKs and generated assets likewise remain local and ignored. The committed guides describe the recorded runs and their reproduction commands; they do not embed those raw artifacts or imply that a local build has been published to the public website.
