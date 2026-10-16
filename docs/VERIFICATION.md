@@ -141,3 +141,50 @@ The interface and loading changes since `6c2ddfb` were reviewed on Windows with 
 | Source and documentation | Changed JavaScript modules/scripts passed syntax checks, current local documentation links resolved, and `git diff --check` passed |
 
 Loading layouts cover 1440 × 900, 1920 × 1080, 390 × 844, 844 × 390 and 320 × 568; menu/pause/HUD checks substitute 1280 × 720 for the 1920 × 1080 case. The multiplayer check exercises the form, not a live relay session. This update records interface behavior and image quality checks, with no new frame-rate claim or full-route/long-session certification.
+
+## Android 0.5 and horn update verification — 16 October 2026
+
+The changes since `0ddd64b` replace the native development tabs with mobile
+Liquid Glass menus/loading, preserve game/preferences/navigation behavior,
+refine pedal/handbrake controls and add a hold-to-sound horn. Web changes clear
+the horn on pause and silence stale remote audio using fresh sequence receipt.
+Protocol version and relay implementation remain unchanged.
+
+| Check | Result |
+| --- | --- |
+| `npm run verify` | All 26 non-browser suites passed again during final source/documentation review |
+| `npm run build` | Passed again; existing large JavaScript chunk warning remains |
+| `android/build.ps1 -Target Verify` | Passed again during final review: 57,600 physics comparisons, ground/swept contacts, controls, presentation, features, audio/plate, interface, four-car smoke and native/browser relay checks |
+| Native controls | Button/slider input, scale/mirroring, multi-finger horn, release/cancellation/menu clearing and handbrake bounds passed |
+| Native feature / audio-plate checks | 266 / 584 checks passed; the latter includes generated PCM horn and audio lifecycle regressions |
+| Standalone native interface | Progress/retry, destinations, Back, reconnect, support URL, held-input clearing, selection context and four landscape sizes passed; rendered desktop OpenGL inspection completed |
+| Full-game UI | Desktop Vulkan and Galaxy S9 Android 10 Vulkan each passed 18 checks; selected device screenshots and a compact result are committed |
+| Actual Android ↔ Chrome web horn audio | Final S9 run passed 56 native checks and all 10 browser scenarios, including both directions, simultaneous hold, pause/release, stale-peer silence/recovery and departure |
+| Public-relay horn transport | Five two-way on/off combinations passed; no relay update needed for `in.hn` |
+| Main Android APK | Final Vulkan development APK exported/signed successfully; no primary 0.5 upgrade/install is claimed |
+
+Use the [native build guide](../android/README.md),
+[rendered interface and isolated phone commands](android/MOBILE_INTERFACE.md)
+and [horn QA export/test commands](android/HORN_MULTIPLAYER.md) to reproduce
+these checks. Finish Godot exports before USB multiplayer tests; editor exit
+can remove ADB reverse tunnels. Full preparation includes generated interface
+artwork, a guarded PCM horn loop and the second import after configuring WAVs.
+
+The 18-check UI screenshot run predates the final driving-control refinements;
+those passed subsequent control, rendered-interface and physical horn checks.
+The 584-check audio/plate result is desktop; the earlier 0.4 phone run remains
+564. The [device report](android/DEVICE_RESULTS.md) distinguishes these runs
+and the isolated UI package's verified primary-preference hash. The upgrade
+helper permits only accessibility keys absent before an update; previously
+saved accessibility values remain part of its preservation check. An
+unavailable preference file is reported as unverified, not as unchanged.
+
+Selected screenshots and compact functional JSON are in `docs/android/`;
+raw captures, WAVs and logs stay ignored. No new sustained-performance or
+thermal benchmark, two-physical-Android test or public web deployment is
+claimed. Install the updated APK and publish the matching web build for live
+players to receive the fixes. See [remaining UI work](android/UI_ROADMAP.md).
+The final headless audio/plate process emitted an ObjectDB leak warning at
+exit; the rendered UI device run retains the seven texture-RID shutdown
+warnings described in the device report. These checks do not resolve
+long-session resource behavior.

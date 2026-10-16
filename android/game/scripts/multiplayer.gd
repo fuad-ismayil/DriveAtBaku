@@ -23,6 +23,7 @@ var rtt_samples: Array = []
 var status = "OFFLINE"
 var sequence = 0
 var send_accumulator = 0.0
+var last_horn = false
 var closing_sockets: Array[WebSocketPeer] = []
 
 func milliseconds() -> float:
@@ -74,6 +75,7 @@ func disconnect_from_relay():
 	reconnect_attempts = 0
 	sequence = 0
 	send_accumulator = 0
+	last_horn = false
 	rtt = 0
 	rtt_samples.clear()
 	server_epoch = 0
@@ -157,8 +159,9 @@ func _message(packet: Dictionary):
 
 func send_vehicle(state: Dictionary, visual_position: Vector3, vehicle_id: String, headlights: int, indicator: Dictionary, dt: float, immediate = false):
 	if not joined or state.is_empty(): return
+	var horn_pressed = bool(state.get("horn", false))
 	send_accumulator += dt
-	if not immediate and send_accumulator < 1.0 / 30: return
+	if not immediate and horn_pressed == last_horn and send_accumulator < 1.0 / 30: return
 	send_accumulator = fmod(send_accumulator, 1.0 / 30)
 	sequence = (sequence + 1) & 0xffffffff
 	var wheel_states: Array = []
@@ -178,3 +181,4 @@ func send_vehicle(state: Dictionary, visual_position: Vector3, vehicle_id: Strin
 		"w": wheel_states
 	}
 	send(packet)
+	last_horn = horn_pressed

@@ -2,6 +2,8 @@ extends Control
 
 signal action_requested(action: String)
 
+const Icons = preload("res://scripts/ui_icons.gd")
+
 var active = false
 var fingers: Dictionary = {}
 var regions: Dictionary = {}
@@ -29,15 +31,20 @@ func _layout():
 	var h = size.y
 	var pedal_h = 205.0 * factor
 	var pedal_w = 90.0 * factor
+	var handbrake_side = 88.0 * factor
+	var handbrake_center_y = minf(h * 0.5, h - pedal_h - 40 - 16 * factor - handbrake_side * 0.5)
+	var horn_side = 88.0 * factor
+	var horn_y = h - (240.0 if Preferences.values.control_mode == "sliders" else 140.0) * factor
 	regions = {
 		"steering": Rect2(48, h - 136 * factor, 350 * factor, 92 * factor),
 		"left": Rect2(48, h - 150 * factor, 118 * factor, 108 * factor),
-		"right": Rect2(188 * factor, h - 150 * factor, 118 * factor, 108 * factor),
+		"right": Rect2(48 + 232 * factor, h - 150 * factor, 118 * factor, 108 * factor),
+		"horn": Rect2(48 + 131 * factor, horn_y, horn_side, horn_side),
 		"throttle": Rect2(w - 142 * factor, h - pedal_h - 40, pedal_w, pedal_h),
 		"brake": Rect2(w - 260 * factor, h - pedal_h - 40, pedal_w, pedal_h),
 		"shift_down": Rect2(w - 370 * factor, h - 132 * factor, 80 * factor, 90 * factor),
 		"shift_up": Rect2(w - 370 * factor, h - 238 * factor, 80 * factor, 90 * factor),
-		"handbrake": Rect2(450 * factor, h - 112 * factor, 100 * factor, 70 * factor),
+		"handbrake": Rect2(w - 24 - handbrake_side, handbrake_center_y - handbrake_side * 0.5, handbrake_side, handbrake_side),
 		"clutch": Rect2(570 * factor, h - 112 * factor, 100 * factor, 70 * factor)
 	}
 	if Preferences.values.left_handed:
@@ -156,7 +163,7 @@ func sample(dt: float) -> Dictionary:
 		"brake": maxf(brake, float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN))),
 		"handbrake": held.has("handbrake") or Input.is_physical_key_pressed(KEY_SPACE),
 		"clutch": held.has("clutch") or Input.is_physical_key_pressed(KEY_X),
-		"horn": Input.is_physical_key_pressed(KEY_H),
+		"horn": held.has("horn") or Input.is_physical_key_pressed(KEY_H),
 		"shift_up": shift == "shift_up", "shift_down": shift == "shift_down"
 	}
 	queue_redraw()
@@ -175,12 +182,12 @@ func _draw():
 		style.bg_color = Color(0.035, 0.06, 0.09, 0.32 if not pressed else 0.58)
 		style.border_color = Color(0.85, 0.93, 1.0, 0.28 if not pressed else 0.72)
 		style.set_border_width_all(1)
-		style.set_corner_radius_all(30)
+		style.set_corner_radius_all(roundi(r.size.x * 0.5) if key in ["handbrake", "horn"] else 30)
 		style.shadow_color = Color(0.005, 0.015, 0.025, 0.18)
 		style.shadow_size = 5
 		draw_style_box(style, r)
-		draw_line(r.position + Vector2(30, 1), Vector2(r.end.x - 30, r.position.y + 1), Color(1, 1, 1, 0.28), 1, true)
-		var text = {"left": "‹", "right": "›", "throttle": "GAS", "brake": "BRAKE", "shift_up": "+", "shift_down": "−", "handbrake": "H / B", "clutch": "CLUTCH", "steering": ""}[key]
+		if key not in ["handbrake", "horn"]: draw_line(r.position + Vector2(30, 1), Vector2(r.end.x - 30, r.position.y + 1), Color(1, 1, 1, 0.28), 1, true)
+		var text = {"left": "‹", "right": "›", "throttle": "", "brake": "", "shift_up": "+", "shift_down": "−", "handbrake": "", "horn": "", "clutch": "CLUTCH", "steering": ""}[key]
 		if key == "steering":
 			var middle = r.get_center()
 			draw_line(Vector2(r.position.x + 24, middle.y), Vector2(r.end.x - 24, middle.y), Color(0.02, 0.04, 0.06, 0.55), 9, true)
@@ -197,7 +204,16 @@ func _draw():
 			liquid.bg_color = Color(0.35, 0.72, 1.0, 0.42) if key == "throttle" else Color(1.0, 0.55, 0.38, 0.42)
 			liquid.set_corner_radius_all(18)
 			if fill.size.y > 0: draw_style_box(liquid, fill)
-			text += "\n%d%%" % int(value * 100)
+		if key in ["throttle", "brake", "handbrake", "horn"]:
+			var icon_side = minf(44.0 * float(Preferences.values.control_scale), minf(r.size.x, r.size.y) - 24)
+			var center = r.get_center() - Vector2(0, 14 if sliders and key in ["throttle", "brake"] else 0)
+			draw_texture_rect(Icons.get_icon(key), Rect2(center - Vector2.ONE * icon_side * 0.5, Vector2.ONE * icon_side), false)
+			if sliders and key in ["throttle", "brake"]:
+				var value = throttle if key == "throttle" else brake
+				var percent = "%d%%" % int(value * 100)
+				var width = font.get_string_size(percent, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
+				draw_string(font, Vector2(r.get_center().x - width * 0.5, center.y + icon_side * 0.5 + 27), percent, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+			continue
 		var lines = str(text).split("\n")
 		for i in lines.size():
 			var fs = 42 if key in ["left", "right", "shift_up", "shift_down"] else 17

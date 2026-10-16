@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { smoothBuffer } from '../../src/engineAudio.js';
+import './prepare_horn.mjs';
 
 const root = 'android/game/assets/audio';
 mkdirSync(root, { recursive: true });

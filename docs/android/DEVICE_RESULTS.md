@@ -144,8 +144,8 @@ standalone runs and the final full verification passed after lifecycle cleanup.
 The engine tests establish matching bank/state/mixer behavior. They do not
 establish sample-identical audio through different devices or subjective
 speaker quality. The captures and short tests are not sustained thermal or
-peak-memory benchmarks. The UI overhaul is scheduled in the
-[mobile UI roadmap](UI_ROADMAP.md).
+peak-memory benchmarks. The UI overhaul was still pending at this stage;
+the 0.5 results below cover its implementation.
 
 The known seven texture RID warnings still occur at renderer shutdown. The
 completed 0.3 S9 run has no script/shader error or native crash, and remote audio
@@ -211,4 +211,54 @@ Android task list before initialization, with no recorded game crash.
 These checks use the real audio mixers and production network paths with
 explicit test drivetrain states. They establish functional cross-platform
 reconstruction and output, not sample-identical speakers or long-session
-thermal behavior. The major mobile UI redesign remains the next separate pass.
+thermal behavior. The mobile UI redesign followed in the 0.5 pass below.
+
+## 0.5 mobile interface, controls and multiplayer horns — 16 October 2026
+
+The main APK preset now uses `0.5.0-native-preview`; OpenGL uses
+`0.5.0-native-preview-opengl` (both code 5). The final primary APK was exported and signed successfully, but this pass
+did **not** install it over the primary app. Device verification used separate
+`games.driveatbaku.interfaceqa` and `games.driveatbaku.hornqa` packages. The
+0.4 primary-install result above remains the last recorded upgrade test.
+
+- Desktop Vulkan and SM-G960F Android 10 Vulkan full-game interface flows each
+  passed 18 navigation checks. Main menu, loading and pause screenshots are
+  published in the [mobile interface guide](MOBILE_INTERFACE.md), with a
+  [compact device result](interface-verification.json). The UI QA run verified
+  that the primary app's saved-preference hash remained unchanged.
+- The standalone interface check exercised loading progress/retry, navigation,
+  Back, reconnect feedback, coffee presence/URL, input cancellation and bounds
+  at 1480 × 720, 1280 × 720, 1600 × 720 and 1024 × 768. Rendered desktop OpenGL
+  inspection also covered the menus and loading shader. This does not record
+  a new physical-device OpenGL run.
+- The final pedal icons, right-edge handbrake and steering-area horn followed
+  the 18-check screenshot run. Expanded controls checks cover button/slider
+  layouts, scale/mirroring, independent fingers, cancellation and held-input
+  clearing. Native feature checks passed 266 assertions; the expanded desktop
+  audio/plate suite passed 584, including horn PCM, release, pause and focus.
+- The final full-city S9 ↔ actual Chrome web-game horn run passed **56 native
+  checks and all 10 browser scenarios**. Native touches and web H events drove
+  the real controls. Measurements isolate horn output through the receiving
+  audio mix, including the native Master bus after spatial gain/pan. Both
+  directions, simultaneous horns, release, pause, lost updates/recovery and
+  departure while held passed. See [horn details](HORN_MULTIPLAYER.md) and the
+  [saved functional report](horn-verification.json).
+- The separate public relay passed five two-way `in.hn` on/off combinations.
+  That establishes transport at the time of the probe, not deployment of the
+  updated web client. Public browser players still need the matching web build
+  for the new pause/stale-audio fixes; Android players need the updated APK.
+
+These are functional and visual checks on the recorded device and desktop,
+not a sustained FPS, thermal, memory or two-physical-Android benchmark. The UI
+run still reports seven texture RIDs at renderer shutdown, without script or
+shader compilation errors. That known shutdown warning does not establish
+long-session allocation behavior. Raw logs, screenshots, audio and APKs stay
+under ignored `artifacts/android/` and `android/build/`; only selected previews
+and compact functional reports are committed.
+
+The final `build.ps1 -Target Verify` rerun passed physics, contacts, controls,
+presentation, features, 584 audio/plate checks, interface, four-car smoke and
+native/browser network checks. Its headless audio/plate process emitted an
+ObjectDB leak warning at exit; this remains separate from the rendered-device
+texture-RID warning. All 26 web verification suites and the production build
+also passed again during final source/documentation review.

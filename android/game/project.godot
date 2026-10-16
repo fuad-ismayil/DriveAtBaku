@@ -11,6 +11,8 @@ run/main_scene.visual_verification="res://tests/visual.tscn"
 run/main_scene.feature_verification="res://tests/features.tscn"
 run/main_scene.multiplayer_feature_verification="res://tests/multiplayer_features.tscn"
 run/main_scene.audio_plate_verification="res://tests/audio_plate.tscn"
+run/main_scene.interface_verification="res://tests/interface_flow.tscn"
+run/main_scene.horn_verification="res://tests/horn_multiplayer.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 config/auto_accept_quit=false
 

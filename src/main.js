@@ -125,7 +125,7 @@ function attachVehicleNetHooks(vehicle) {
         br: handling?.braking ?? 0,
         st: handling?.steer ?? 0,
         hb: handling?.handbrake ? 1 : 0,
-        hn: handling?.horn ? 1 : 0,
+        hn: mode === 'drive' && !document.hidden && handling?.horn ? 1 : 0,
         rev: isReverse ? 1 : 0,
       },
       li: {
@@ -667,7 +667,7 @@ function releaseDrivePointer() {
   if (document.pointerLockElement === canvas) document.exitPointerLock?.();
 }
 function startDrive(){mode='drive';driveCamera.reset();cameraReady=false;cameraTransition=null;pointerSeen=false;pointerEdgeX=pointerEdgeY=0;ui.menu.classList.add('hidden');ui.hud.classList.remove('hidden');captureDrivePointer();engineAudio.activate().catch(console.warn);clock.getDelta();}
-function pause(){if(mode!=='drive')return;mode='pause';keys.clear();driveCamera.setRearHeld(false);pointerSeen=false;pointerEdgeX=pointerEdgeY=0;ui.pause.classList.remove('hidden');releaseDrivePointer();ui.resume.focus({preventScroll:true});}
+function pause(){if(mode!=='drive')return;mode='pause';keys.clear();if(handling)handling.horn=false;multiplayerSession?.sendImmediateState();driveCamera.setRearHeld(false);pointerSeen=false;pointerEdgeX=pointerEdgeY=0;ui.pause.classList.remove('hidden');releaseDrivePointer();ui.resume.focus({preventScroll:true});}
 function resume(){if(mode!=='pause')return;mode='drive';ui.pause.classList.add('hidden');document.activeElement?.blur();captureDrivePointer();engineAudio.activate().catch(console.warn);clock.getDelta();}
 function setAudioMuted(muted) {
   audioMuted = Boolean(muted);

@@ -1,0 +1,13 @@
+{
+  "model": "SM-G960F",
+  "android": "10",
+  "density": "Physical density: 480\r\nOverride density: 640",
+  "primaryPreferencesUnchanged": true,
+  "report": {
+    "checks": 18,
+    "failures": [],
+    "passed": true,
+    "renderer": "mobile",
+    "viewport": "(1480.0, 720.0)"
+  }
+}

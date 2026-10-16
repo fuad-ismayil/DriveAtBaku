@@ -68,26 +68,35 @@ func _ready():
 	session.player_left.connect(_remote_left)
 	session.snapshot_received.connect(_snapshot)
 	session.status_changed.connect(func(message):
+		interface.update_network(message)
 		if message == "OFFLINE" or message == "RECONNECTING" or message in ["SERVER FULL", "PROTOCOL MISMATCH", "CONNECTION REJECTED"]: _clear_remotes())
-	interface.show_loading("DRIVE AT BAKU\nPreparing your native drive…")
+	player.loading_progress.connect(func(progress): interface.show_loading("Preparing your vehicle…", lerpf(0.70, 0.85, progress) if not ready_to_drive else progress))
+	interface.show_loading("Preparing your drive…", 0.02)
 	await get_tree().process_frame
 	if not ClassDB.class_exists("NativeDriving"):
-		interface.show_loading("The native driving library is missing.\nBuild the C++ extension before running this project.")
+		interface.show_loading("The driving library could not start.", -1, true)
 		return
 	simulation = ClassDB.instantiate("NativeDriving")
 	vehicles = JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/vehicles.json"))
 	route = JSON.parse_string(FileAccess.get_file_as_string("res://assets/data/route.json"))
-	interface.show_loading("Preparing Baku streets…")
+	interface.show_loading("Preparing Baku streets…", 0.05)
 	for asset in ["baku", "buildings"]:
 		var path = "res://assets/world/%s.glb" % asset
 		if ResourceLoader.load_threaded_request(path) != OK:
-			interface.show_loading("Could not load %s.\nRun native asset preparation first." % asset)
+			interface.show_loading("Could not prepare the city streets.", -1, true)
 			return
 		while ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			var progress: Array = []
+			ResourceLoader.load_threaded_get_status(path, progress)
+			var base = 0.05 if asset == "baku" else 0.35
+			interface.show_loading("Preparing %s…" % ("Baku streets" if asset == "baku" else "the skyline"), base + float(progress[0] if not progress.is_empty() else 0) * 0.28)
 			await get_tree().process_frame
+		if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_LOADED:
+			interface.show_loading("The city could not finish loading.", -1, true)
+			return
 		var resource = ResourceLoader.load_threaded_get(path)
 		if resource == null:
-			interface.show_loading("The %s scene could not be loaded." % asset)
+			interface.show_loading("The %s scene could not be loaded." % asset, -1, true)
 			return
 		var city = resource.instantiate()
 		add_child(city)
@@ -102,16 +111,18 @@ func _ready():
 				if material is StandardMaterial3D and not lighting_materials.has(material.get_instance_id()):
 					lighting_materials[material.get_instance_id()] = {"material": material, "color": material.albedo_color, "roughness": material.roughness}
 		await get_tree().process_frame
-	interface.show_loading("Preparing road contact and suspension…")
+	interface.show_loading("Preparing road contact and suspension…", 0.65)
 	await get_tree().process_frame
 	if not simulation.load_world("res://assets/world/collisions.bin"):
-		interface.show_loading("The native collision asset is missing or invalid.")
+		interface.show_loading("The road contact data could not be loaded.", -1, true)
 		return
 	_setup_occlusion()
-	await _select_vehicle(Preferences.values.vehicle)
-	interface.show_loading("Preparing city windows and flag…")
+	if not await _select_vehicle(Preferences.values.vehicle): return
+	interface.show_loading("Preparing city windows and flag…", 0.86)
 	add_child(city_effects)
 	await city_effects.setup()
+	interface.show_loading("Setting the atmosphere…", 0.96)
+	await get_tree().process_frame
 	_setup_surface_materials()
 	_apply_graphics()
 	_apply_weather()
@@ -142,11 +153,13 @@ func _reset_at(position: Vector3, heading: float):
 	_present(1)
 
 func _select_vehicle(id: String):
-	if switching: return
+	if switching: return false
 	switching = true
 	var was_driving = is_driving
+	var was_paused = interface.paused
 	is_driving = false
-	interface.show_loading("Preparing %s…" % id.to_upper())
+	interface.show_loading("Preparing %s…" % Interface.VEHICLES.get(id, id), 0.0 if ready_to_drive else 0.70)
+	await get_tree().process_frame
 	var success = await player.load_vehicle(id)
 	if success:
 		Preferences.update("vehicle", id)
@@ -161,7 +174,9 @@ func _select_vehicle(id: String):
 	switching = false
 	if ready_to_drive:
 		if was_driving: _action("drive")
-		else: interface.show_menu()
+		else: interface.show_menu(was_paused, true)
+	if not success: interface.show_loading("Your vehicle could not finish loading.", -1, true)
+	return success
 
 func _physics_process(dt):
 	if not ready_to_drive or not is_driving or switching: return
@@ -193,6 +208,7 @@ func _process(dt):
 	player.signal_mode = indicator.mode
 	player.signal_epoch = indicator.epoch
 	player.animate(state, dt, session.server_time())
+	if not is_driving: state.horn = false
 	sound.update(state, is_driving, dt)
 	tire_effects.update(state, vehicles[player.vehicle_id], dt, is_driving)
 	session.send_vehicle(state, player.position, player.vehicle_id, player.headlight_mode, indicator, dt)
@@ -269,6 +285,11 @@ func _update_camera(dt: float):
 	camera.fov = lerpf(camera.fov, 62 if hood_camera else 60 + 2 * smoothstep(0, 150, speed_kmh) + 1.2 * camera_pullback / 1.55, 1 - exp(-5 * dt))
 
 func _action(action: String):
+	if action == "retry":
+		sound.shutdown()
+		session.disconnect_from_relay()
+		get_tree().reload_current_scene()
+		return
 	if action == "quit":
 		Preferences.save()
 		ready_to_drive = false
@@ -283,6 +304,11 @@ func _action(action: String):
 			interface.show_driving()
 		"pause":
 			is_driving = false
+			interface.show_menu(true)
+		"main_menu":
+			is_driving = false
+			session.disconnect_from_relay()
+			_clear_remotes()
 			interface.show_menu()
 		"camera": hood_camera = not hood_camera
 		"transmission":
@@ -296,7 +322,9 @@ func _action(action: String):
 			indicator.revision = (indicator.revision + 1) & 0xffffffff
 			indicator.epoch = session.server_time()
 			session.send_vehicle(state, player.position, player.vehicle_id, player.headlight_mode, indicator, 0, true)
-		"restart": _reset_at(_from_wire(route.spawn), route.heading)
+		"restart":
+			_reset_at(_from_wire(route.spawn), route.heading)
+			_action("drive")
 		"recover":
 			var p = player.position
 			p.y = simulation.road_height(p)
@@ -607,6 +635,8 @@ func _update_remotes(dt: float):
 			var audio_state = preload("res://scripts/engine_mix.gd").from_wire(a.state, b.state, alpha)
 			if a.state.get("cid") != remote.vehicle or b.state.get("cid") != remote.vehicle:
 				audio_state = preload("res://scripts/engine_mix.gd").from_wire(incoming, incoming, 0)
+			# Horn edges follow the latest packet, independently of movement interpolation.
+			audio_state.horn = bool(incoming.get("in", {}).get("hn", 0))
 			remote.audio.update(audio_state, session.joined and fresh and distance < 105 and incoming.get("cid") == remote.vehicle, dt)
 		var effect_wheels: Array = []
 		for wheel in incoming.get("w", []):
@@ -622,13 +652,14 @@ func _notification(what):
 		is_driving = false
 		if is_instance_valid(interface) and interface.is_inside_tree():
 			interface.controls.clear()
-			if ready_to_drive: interface.show_menu()
+			if ready_to_drive and interface.driving: interface.show_menu(true)
 	elif what in [NOTIFICATION_APPLICATION_FOCUS_IN, NOTIFICATION_APPLICATION_RESUMED]:
 		sound.set_suspended(false)
 		for remote in remotes.values():
 			if is_instance_valid(remote.audio): remote.audio.set_suspended(false)
 	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
-		_action("pause")
+		if is_driving: _action("pause")
+		else: interface.back()
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_action("quit")
 

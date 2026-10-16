@@ -66,6 +66,7 @@ try {
     Invoke-Checked node @('android/tools/prepare_water_shader.mjs')
     Invoke-Checked node @('android/tools/prepare_sky_shader.mjs')
     Invoke-Checked node @('android/tools/prepare_presentation_reference.mjs')
+    Invoke-Checked node @('android/tools/prepare_interface.mjs')
     Invoke-Checked $cmake @('-S', 'android/native', '-B', 'android/native/build-desktop', '-G', 'Ninja', '-DCMAKE_BUILD_TYPE=Release', "-DCMAKE_CXX_COMPILER=$NativeCompiler", "-DCMAKE_MAKE_PROGRAM=$ninja", '-DCMAKE_SYSTEM_NAME=Windows', '-DCMAKE_SYSTEM_PROCESSOR=AMD64')
     Invoke-Checked $cmake @('--build', 'android/native/build-desktop', '-j', '8')
     Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', '--editor', '--import', '--quit')
@@ -82,6 +83,7 @@ try {
         Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', 'res://tests/parity.tscn')
         Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', 'res://tests/features.tscn')
         Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', 'res://tests/audio_plate.tscn')
+        Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', 'res://tests/interface.tscn')
         Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', '--', '--smoke-test')
         $env:GODOT_BIN = $GodotBinary
         Invoke-Checked node @('android/tools/verify_network.mjs')

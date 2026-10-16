@@ -20,7 +20,7 @@ A fan-made browser driving game set on Baku's streets. Explore the city in four 
 - Sunny, overcast, wet-road, rain and snow modes, adjustable precipitation and vehicle surface water. Weather affects appearance; it does not change driving grip.
 - Performance, Balanced and Cinematic graphics presets, independent render/props distances, ambient occlusion and rendering-resolution controls. Balanced/Cinematic use HDR, SMAA and supported scene MSAA, cached shadows and local car reflections.
 - Multiplayer with interpolated remote vehicles, player names and replicated vehicle appearance/effects. Remote cars are visual ghosts and do not collide with one another; a separate relay is required.
-- An [ARM64 Android development preview](android/README.md) built with Godot, using the original driving equations, packaged assets, touch controls and compatible web/Android multiplayer. Its mobile interface is still a functional preview.
+- An [ARM64 Android development preview](android/README.md) built with Godot, using the original driving equations, packaged assets, mobile Liquid Glass menus/loading, touch controls and compatible web/Android multiplayer.
 
 ## Getting started
 
@@ -47,6 +47,8 @@ The production site is `dist/`. Netlify and Vercel configuration files already s
 See [map conversion](docs/MAP_CONVERSION.md) for optional asset regeneration and [verification](docs/VERIFICATION.md) for the checks to run before a release.
 
 For the native Android client, follow the separate [Windows setup and build guide](android/README.md). Android assets, downloaded tools, native binaries and APKs are regenerated locally and excluded from Git; retain the source scripts, Godot resource UIDs and import/export settings. The [device results](docs/android/DEVICE_RESULTS.md) record the Galaxy S9 checks and limits. The [0.4 audio/plate report](docs/android/AUDIO_AND_PLATE_FIXES.md) explains the idle-loop correction, real registration lamps and measured bidirectional audio. Deploy the matching web client for public rooms; the latest recorded public relay probe already preserves the required audio state.
+
+The [0.5 Android interface](docs/android/MOBILE_INTERFACE.md) adds mobile Liquid Glass menus, a cinematic local loading screen, native pause navigation and the web's coffee support link. Pedal icons, an edge-mounted handbrake and a centered horn support both touch layouts. [Multiplayer horn verification](docs/android/HORN_MULTIPLAYER.md) covers sound in both directions, release, pause and stale peers; publish the updated web build and install the updated APK to receive these changes. Pushing source alone does not install an Android build.
 
 ## Controls
 

@@ -72,6 +72,48 @@ func run():
 	check(controls.sample(1.0 / 120).steer == 0, "Opposing steering buttons must cancel")
 	controls.clear()
 	check(controls.fingers.is_empty() and controls.shifts.is_empty() and controls.throttle == 0 and controls.brake == 0, "Cancellation must clear all held inputs")
+	for mirrored in [false, true]:
+		Preferences.values.left_handed = mirrored
+		for scale_value in [0.75, 1.0, 1.35]:
+			Preferences.values.control_scale = scale_value
+			controls._layout()
+			var handbrake: Rect2 = controls.regions.handbrake
+			check(absf((handbrake.position.x if mirrored else controls.size.x - handbrake.end.x) - 24) < 0.01, "Handbrake must stay close to the outer edge")
+			check(handbrake.end.y < controls.regions.throttle.position.y, "Handbrake must not overlap pedals at any control size")
+			check(handbrake.position.y > 0 and handbrake.end.y < controls.size.y, "Handbrake must remain inside the screen")
+			touch(20, handbrake.get_center(), true)
+			check(controls.sample(1.0 / 120).handbrake, "The relocated handbrake must respond to touch")
+			touch(20, handbrake.get_center(), false)
+			check(not controls.sample(1.0 / 120).handbrake, "Handbrake release must clear input")
+			for mode in ["buttons", "sliders"]:
+				Preferences.values.control_mode = mode
+				controls.clear()
+				controls._layout()
+				var horn: Rect2 = controls.regions.horn
+				var steering_control: Rect2 = controls.regions.steering if mode == "sliders" else controls.regions.left
+				if mode == "sliders":
+					check(absf(horn.get_center().x - steering_control.get_center().x) < 0.01 and horn.end.y < steering_control.position.y, "Horn must sit centered above the steering slider")
+				else:
+					var left: Rect2 = controls.regions.left
+					var right: Rect2 = controls.regions.right
+					check(absf(horn.get_center().x - (left.get_center().x + right.get_center().x) * 0.5) < 0.01, "Horn must sit between steering buttons")
+					check(not horn.intersects(left) and not horn.intersects(right), "Horn must not overlap steering buttons")
+				touch(21, horn.get_center(), true)
+				touch(22, steering_control.get_center(), true)
+				touch(23, controls.regions.throttle.get_center(), true)
+				var held = controls.sample(1.0 / 120)
+				check(held.horn and held.throttle > 0 and controls.fingers.size() == 3, "Horn, steering and throttle must work simultaneously")
+				touch(21, horn.get_center(), false)
+				check(not controls.sample(1.0 / 120).horn, "Releasing horn must stop it")
+				touch(21, horn.get_center(), true)
+				var canceled = InputEventScreenTouch.new()
+				canceled.index = 21
+				canceled.canceled = true
+				controls._input(canceled)
+				check(not controls.sample(1.0 / 120).horn, "Canceled horn touches must stop it")
+				touch(21, horn.get_center(), true)
+				controls.clear()
+				check(not controls.sample(1.0 / 120).horn, "Opening a menu must release horn input")
 	Preferences.values = saved
 	controls.queue_free()
 	await get_tree().process_frame

@@ -81,6 +81,7 @@ export class RemotePlayer {
     this.audioActive = false;
     this.remoteHornGain = null;
     this.remoteHornOscillators = [];
+    this.lastStateReceivedAt = 0;
 
     this._initNameplate();
     this._initVehicle(this.carId);
@@ -267,6 +268,7 @@ export class RemotePlayer {
     // Relay snapshots repeat the latest stationary state. Keeping just the
     // newest version avoids a flat receive-time staircase in the history.
     if (last && !isNewerSequence(state.seq, last.state.seq)) return;
+    this.lastStateReceivedAt = performance.now();
     const timestamp = Number.isFinite(serverTime) ? serverTime : Date.now() + this.serverTimeOffsetMs;
     this.buffer.push({ timestamp: Math.max(timestamp, (last?.timestamp ?? -Infinity) + 0.001), state });
     if (this.buffer.length > this.maxBufferSize) {
@@ -504,14 +506,14 @@ export class RemotePlayer {
 
     // Remote engines and horns use the same spatial envelope.  The old gain
     // was multiplied by master volume twice, making nearby cars nearly silent.
-    if (dist > 105 || !this.engineAudio.enabled) {
+    const latest = this.buffer.at(-1)?.state;
+    const fresh = performance.now() - this.lastStateReceivedAt < 1500;
+    if (dist > 105 || !this.engineAudio.enabled || !fresh || !latest || latest.cid !== this.carId) {
       this.audioGain.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
       this.remoteHornGain?.gain.setTargetAtTime(0, ctx.currentTime, 0.04);
       return;
     }
 
-    const latest = this.buffer.at(-1)?.state;
-    if (!latest || latest.cid !== this.carId) return;
     if (!this.audioSource && this.engineAudio.banks.has(this.carId)) {
       this.audioSource = new RemoteEngineVoice(this.engineAudio, this.carId, this.audioGain);
       this.audioActive = true;

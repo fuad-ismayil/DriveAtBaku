@@ -72,6 +72,20 @@ func _ready():
 		sound = preload("res://scripts/engine_audio.gd").new()
 		add_child(sound)
 		sound.setup(id, profiles[id])
+		check(sound.horn.stream is AudioStreamWAV and sound.horn.stream.format == AudioStreamWAV.FORMAT_16_BITS, id + " horn must retain uncompressed loop PCM")
+		state.horn = true
+		for frame in 30: sound.update(state, true, 1.0 / 120)
+		check(sound.horn.playing and sound.horn_gain > 0.99, id + " held horn must sound")
+		state.horn = false
+		for frame in 30: sound.update(state, true, 1.0 / 120)
+		check(sound.horn_gain < 0.0001, id + " released horn must fade out")
+		state.horn = true
+		sound.set_suspended(true)
+		check(sound.horn.stream_paused and sound.horn_gain == 0, id + " focus loss must silence horn")
+		sound.set_suspended(false)
+		for frame in 30: sound.update(state, false, 1.0 / 120)
+		check(sound.horn_gain < 0.0001, id + " pause must suppress held horn")
+		state.horn = false
 		if DisplayServer.get_name() != "headless":
 			await get_tree().create_timer(2).timeout
 			var recording = AudioEffectRecord.new()

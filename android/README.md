@@ -14,18 +14,18 @@ default, following substantially better driving performance reported on that
 device. The Android manifest minimum is API 24; other devices and Android
 versions have not been validated.
 
-Open the landscape app, choose a vehicle and press Drive. Single-player uses
+Open the landscape app, choose a vehicle in Your garage and press Start driving. Single-player uses
 packaged assets and requires no connection. Multiplayer connects only when
 Join is selected. The default endpoint is the existing public relay; a local
-relay can be selected in the Multiplayer tab.
+relay can be selected in Drive together.
 
-The Driving tab offers buttons or sliders, steering sensitivity, steering
+Settings → Driving offers buttons or sliders, steering sensitivity, steering
 weight, rapid steering response, self-centering, control size and mirrored
 controls. Slider mode supports independent steering, accelerator and brake
-fingers. Manual mode adds clutch and shift controls. The Garage tab contains
+fingers. Manual mode adds clutch and shift controls. Your garage contains
 all four vehicles, paint, plates and driving aids. Preferences persist locally.
 
-Desktop controls: WASD/arrows, Q/E shifting, T transmission, C camera and R
+Desktop controls: WASD/arrows, Q/E shifting, T transmission, H horn, C camera and R
 recovery. See `game/scripts/driving_controls.gd` for the complete bindings.
 
 ## Build on Windows
@@ -125,10 +125,10 @@ is preserved.
 - Source sky colors, clouds, stars and sun/moon are converted to a native sky.
   Clouds stay static to avoid continuous radiance rebuilding on this phone.
 
-The public relay now preserves indicators and plates, but drops the 0.3 engine
+The 0.3 public-relay probe preserved indicators and plates, but dropped the engine
 state fields. The app reports that limitation while keeping multiplayer
-connected. Updating the server on the second PC and publishing the updated web
-client are required for complete public-room engine fidelity; see
+connected. That relay limitation was resolved in the 0.4 probe below. For the
+historical server update procedure, see
 [relay update instructions](../docs/android/RELAY_UPDATE.md). Generate the small
 portable ZIP with `node android/tools/package_relay.mjs`.
 
@@ -136,9 +136,9 @@ portable ZIP with `node android/tools/package_relay.mjs`.
 
 The complete original rendering pipeline is not yet reproduced. Post-processing,
 world shadows, foliage, reflection fidelity and full map UI still need work.
-Wind and native horn audio remain unfinished. The mobile loading screen,
-main menu and Liquid Glass interface are the next milestone; see the
-[UI roadmap](../docs/android/UI_ROADMAP.md).
+Wind audio remains unfinished. The mobile interface is now
+implemented; see the [0.5 interface guide](../docs/android/MOBILE_INTERFACE.md)
+and [remaining UI work](../docs/android/UI_ROADMAP.md).
 Sustained driving performance, thermal behavior and peak memory still need
 controlled measurement and optimization. There is no 60 FPS claim.
 
@@ -204,3 +204,41 @@ The full-web test uses the actual Join interaction without an autoplay override
 and measures both output graphs, remote braking, listener distance and pause.
 Install the matching Android build and publish the matching web build together;
 the public relay already preserves the required state as of the 0.4 probe.
+
+## 0.5 mobile Liquid Glass interface
+
+Primary Vulkan uses `0.5.0-native-preview`; OpenGL uses
+`0.5.0-native-preview-opengl` (both code 5).
+The main menu, pause menu, garage, settings and multiplayer screens share
+neutral transparent glass, refractive rims, consistent vector icons and
+88-unit primary menu touch targets. The city stays visible behind the menus. Main menu and
+pause both include **Buy me a coffee**, opening the same developer support URL
+as the web client in the Android browser.
+
+Startup uses two packaged in-game captures with crossfades, optional visual
+pause, real resource preparation progress and failure/retry handling. Native
+Back navigates out of settings, resumes a paused drive, and exits from the
+main menu. Opening a menu clears held controls. Vehicle changes retain the
+garage and pause context. Reduced motion and increased glass contrast are
+available under Settings → Accessibility.
+
+`build.ps1` prepares the small UI assets automatically. For interface QA:
+
+```powershell
+& $env:GODOT_BIN --headless --path android/game res://tests/interface.tscn
+& $env:GODOT_BIN --path android/game res://tests/interface_flow.tscn
+& $env:GODOT_BIN --headless --path android/game --export-debug 'Android Interface QA' ../build/DriveAtBaku-interface-qa.apk
+node android/tools/verify_interface_device.mjs
+```
+
+See [screenshots, rendering details and verification](../docs/android/MOBILE_INTERFACE.md).
+
+Driving controls include pedal icons, an edge-mounted handbrake and a
+hold-to-sound horn. The horn sits between the steering buttons or centered
+above the steering slider. Its two-tone sound uses the web horn's frequencies
+and filter settings, follows audio volume and stops on release, cancellation,
+pause or loss of focus.
+
+Multiplayer horn audio is checked in both directions against the real web
+game, including simultaneous horns, pause, stale packets and departure.
+See [multiplayer horn behavior and verification](../docs/android/HORN_MULTIPLAYER.md).

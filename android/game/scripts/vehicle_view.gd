@@ -1,5 +1,7 @@
 extends Node3D
 
+signal loading_progress(progress: float)
+
 const IDS = ["ferrari", "elantra", "amg", "prado"]
 var vehicle_id = ""
 var model: Node3D
@@ -25,7 +27,12 @@ func load_vehicle(id: String) -> bool:
 	var path = "res://assets/vehicles/%s.glb" % id
 	if ResourceLoader.load_threaded_request(path) != OK: return false
 	while ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		var progress: Array = []
+		ResourceLoader.load_threaded_get_status(path, progress)
+		loading_progress.emit(float(progress[0]) if not progress.is_empty() else 0.0)
 		await get_tree().process_frame
+	if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_LOADED: return false
+	loading_progress.emit(1.0)
 	var packed = ResourceLoader.load_threaded_get(path)
 	if packed == null: return false
 	if is_instance_valid(model): model.queue_free()

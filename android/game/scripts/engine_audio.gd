@@ -21,6 +21,8 @@ var spatial_pan = 0.0
 var panner: AudioEffectPanner
 var shift_player: AudioStreamPlayer
 var last_gear = -1
+var horn: AudioStreamPlayer
+var horn_gain = 0.0
 
 func _bus(suffix: String, destination: String) -> int:
 	var name = "NativeVehicle_%d_%s" % [get_instance_id(), suffix]
@@ -37,6 +39,7 @@ func setup(id: String, settings: Dictionary):
 	layers.clear()
 	if is_instance_valid(tire): tire.queue_free()
 	if is_instance_valid(shift_player): shift_player.queue_free()
+	if is_instance_valid(horn): horn.queue_free()
 	_remove_buses()
 	var master_index = _bus("Master", "Master")
 	var compressor = AudioEffectCompressor.new()
@@ -67,6 +70,7 @@ func setup(id: String, settings: Dictionary):
 	bank_gain = 0
 	skid_gain = 0
 	last_gear = -1
+	horn_gain = 0.0
 	for role in ["idle", "on", "off", "character"]:
 		if not bank.has(role): continue
 		var entries = [bank[role]] if role in ["idle", "character"] else bank[role]
@@ -92,6 +96,12 @@ func setup(id: String, settings: Dictionary):
 	shift_player.bus = buses[0]
 	shift_player.volume_db = linear_to_db(0.014 * float(profile.get("soundVol", 1)))
 	add_child(shift_player)
+	horn = AudioStreamPlayer.new()
+	horn.stream = _loop("horn-loop.wav")
+	horn.bus = buses[0]
+	horn.volume_db = -80
+	add_child(horn)
+	horn.play()
 	running = true
 	set_suspended(suspended)
 
@@ -122,6 +132,10 @@ func update(state: Dictionary, enabled: bool, dt: float):
 	bank_gain = lerpf(bank_gain, float(profile.get("soundVol", 1)) * 0.95 * float(bank.get("gain", 1)) if enabled else 0.0, 1 - exp(-dt / 0.12))
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(buses[0]), linear_to_db(maxf(master_gain, 0.00001)))
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(engine_bus), linear_to_db(maxf(bank_gain, 0.00001)))
+	# The baked loop already includes the web's 0.2 horn gain. Keep its envelope
+	# independent of RPM/bank gain, but share listener volume and spatial routing.
+	horn_gain = lerpf(horn_gain, 1.0 if enabled and state.get("horn", false) else 0.0, 1 - exp(-dt / 0.025))
+	horn.volume_db = linear_to_db(maxf(horn_gain, 0.00001))
 	var cutoff = maxf(bank.cutoffFloor, minf(6800, (420 + audio_rpm * 0.4 + mix_load * 1100) * bank.brightness))
 	tone.cutoff_hz = lerpf(tone.cutoff_hz, cutoff, 1 - exp(-dt / 0.065))
 	var on_weights = Mix.weights(bank.on, audio_rpm)
@@ -173,17 +187,25 @@ func shutdown():
 		tire.stop()
 		tire.stream = null
 	if is_instance_valid(shift_player): shift_player.stop()
+	if is_instance_valid(horn):
+		horn.stop()
+		horn.stream = null
+	horn_gain = 0.0
 
 func set_suspended(value: bool):
 	suspended = value
 	if value:
 		master_gain = 0
 		bank_gain = 0
+		horn_gain = 0
 		if not buses.is_empty(): AudioServer.set_bus_mute(AudioServer.get_bus_index(buses[0]), true)
 	for item in layers:
 		if is_instance_valid(item.player): item.player.stream_paused = value
 	if is_instance_valid(tire): tire.stream_paused = value
 	if is_instance_valid(shift_player): shift_player.stream_paused = value
+	if is_instance_valid(horn):
+		horn.stream_paused = value
+		if value: horn.volume_db = -80
 
 func _remove_buses():
 	for name in buses:

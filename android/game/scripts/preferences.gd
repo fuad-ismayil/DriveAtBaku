@@ -2,6 +2,7 @@ extends Node
 
 const DEFAULTS = {
 	"version": 1, "nickname": "Player", "vehicle": "ferrari", "automatic": true,
+	"reduce_motion": false, "reduce_transparency": false,
 	"control_mode": "buttons", "sensitivity": 1.0, "weight": 0.4,
 	"quick_response": 0.7, "self_center": 0.7, "self_center_enabled": true,
 	"control_scale": 1.0, "left_handed": false, "volume": 0.65,

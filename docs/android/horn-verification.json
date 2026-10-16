@@ -1,0 +1,248 @@
+{
+  "date": "2026-10-16",
+  "device": "Samsung SM-G960F / Android 10 / Vulkan",
+  "passed": true,
+  "android": true,
+  "nativeReport": {
+    "checks": 56,
+    "failures": [],
+    "phases": [
+      {
+        "listener_rms": 0.00000147730325869419,
+        "name": "quiet",
+        "native_horn": false,
+        "stale": {
+          "rms": -1,
+          "seen": false
+        },
+        "web_horn": false
+      },
+      {
+        "listener_rms": 0.00000142382781853134,
+        "name": "native-hold",
+        "native_horn": true,
+        "stale": {
+          "rms": -1,
+          "seen": false
+        },
+        "web_horn": false
+      },
+      {
+        "listener_rms": 0.00000143537480816766,
+        "name": "native-release",
+        "native_horn": false,
+        "stale": {
+          "rms": -1,
+          "seen": false
+        },
+        "web_horn": false
+      },
+      {
+        "listener_rms": 0.0222595937413731,
+        "name": "web-hold",
+        "native_horn": false,
+        "stale": {
+          "rms": 0.0000013608049213091,
+          "seen": true
+        },
+        "web_horn": true
+      },
+      {
+        "listener_rms": 0.00000152758734544935,
+        "name": "web-release",
+        "native_horn": false,
+        "stale": {
+          "rms": -1,
+          "seen": false
+        },
+        "web_horn": false
+      },
+      {
+        "listener_rms": 0.02220300021822,
+        "name": "both-hold",
+        "native_horn": true,
+        "stale": {
+          "rms": -1,
+          "seen": false
+        },
+        "web_horn": true
+      },
+      {
+        "listener_rms": 0.0222582084350769,
+        "name": "native-pause",
+        "native_horn": false,
+        "stale": {
+          "rms": -1,
+          "seen": false
+        },
+        "web_horn": true
+      },
+      {
+        "listener_rms": 2.44426303419e-7,
+        "name": "web-pause",
+        "native_horn": false,
+        "stale": {
+          "rms": -1,
+          "seen": false
+        },
+        "web_horn": false
+      },
+      {
+        "listener_rms": 0.00000150311759819286,
+        "name": "resume",
+        "native_horn": false,
+        "stale": {
+          "rms": -1,
+          "seen": false
+        },
+        "web_horn": false
+      },
+      {
+        "listener_rms": 0.00000141401708487546,
+        "name": "leave-held",
+        "native_horn": true,
+        "stale": {
+          "rms": -1,
+          "seen": false
+        },
+        "web_horn": false
+      }
+    ]
+  },
+  "browserPhases": [
+    {
+      "index": 1,
+      "name": "quiet",
+      "native": false,
+      "web": false,
+      "listenerRms": 0,
+      "hornGain": 0,
+      "localHorn": 0,
+      "listenerGain": 0.3199999928474426
+    },
+    {
+      "index": 2,
+      "name": "native-hold",
+      "native": true,
+      "web": false,
+      "listenerRms": 0.013099355820643841,
+      "hornGain": 0.37910744547843933,
+      "localHorn": 0,
+      "listenerGain": 0.3199999928474426
+    },
+    {
+      "index": 3,
+      "name": "native-release",
+      "native": false,
+      "web": false,
+      "listenerRms": 0,
+      "hornGain": 0,
+      "localHorn": 0,
+      "listenerGain": 0.3199999928474426
+    },
+    {
+      "index": 4,
+      "name": "web-hold",
+      "native": false,
+      "web": true,
+      "listenerRms": 0,
+      "hornGain": 0,
+      "localHorn": 1,
+      "listenerGain": 0.3199999928474426
+    },
+    {
+      "index": 5,
+      "name": "web-release",
+      "native": false,
+      "web": false,
+      "listenerRms": 0,
+      "hornGain": 0,
+      "localHorn": 0,
+      "listenerGain": 0.3199999928474426
+    },
+    {
+      "index": 6,
+      "name": "both-hold",
+      "native": true,
+      "web": true,
+      "listenerRms": 0.013180906478338665,
+      "hornGain": 0.3791075348854065,
+      "localHorn": 1,
+      "listenerGain": 0.3199999928474426
+    },
+    {
+      "index": 7,
+      "name": "native-pause",
+      "native": false,
+      "web": true,
+      "listenerRms": 0,
+      "hornGain": 0,
+      "localHorn": 1,
+      "listenerGain": 0.3199999928474426
+    },
+    {
+      "index": 8,
+      "name": "web-pause",
+      "native": false,
+      "web": false,
+      "listenerRms": 0,
+      "hornGain": 0,
+      "localHorn": 0,
+      "listenerGain": 0.3199999928474426
+    },
+    {
+      "index": 9,
+      "name": "resume",
+      "native": false,
+      "web": false,
+      "listenerRms": 0,
+      "hornGain": 0,
+      "localHorn": 0,
+      "listenerGain": 0.3199999928474426
+    },
+    {
+      "index": 10,
+      "name": "leave-held",
+      "native": true,
+      "web": false,
+      "listenerRms": 0.013155140216208472,
+      "hornGain": 0.37910762429237366,
+      "localHorn": 0,
+      "listenerGain": 0.3199999928474426,
+      "staleRms": 0
+    }
+  ],
+  "disconnectRms": 0,
+  "errors": [],
+  "publicRelay": {
+    "passed": true,
+    "address": "wss://server.driveatbaku.games/",
+    "phases": [
+      {
+        "a": false,
+        "b": false,
+        "roundTripMs": 181
+      },
+      {
+        "a": true,
+        "b": false,
+        "roundTripMs": 188
+      },
+      {
+        "a": false,
+        "b": true,
+        "roundTripMs": 138
+      },
+      {
+        "a": true,
+        "b": true,
+        "roundTripMs": 142
+      },
+      {
+        "a": false,
+        "b": false,
+        "roundTripMs": 187
+      }
+    ]
+  }
+}

@@ -12,7 +12,9 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 | [Android implementation](android/IMPLEMENTATION.md) | Original simulation port, native presentation, effects and protocol integration |
 | [Android device verification](android/DEVICE_RESULTS.md) | S9 results, exact physics fixtures, audio/lighting checks and measurement limits |
 | [Android audio and plate fixes](android/AUDIO_AND_PLATE_FIXES.md) | Real plate lamps, PCM boundary correction, remote braking audio and bidirectional tests |
-| [Android UI roadmap](android/UI_ROADMAP.md) | Loading, navigation, mobile layouts and the later Liquid Glass pass |
+| [Android mobile interface](android/MOBILE_INTERFACE.md) | 0.5 Liquid Glass menus/loading, touch controls, accessibility, device screenshots and QA |
+| [Multiplayer horns](android/HORN_MULTIPLAYER.md) | Android/web horn audio, stale-peer protection, reproduction commands and measured two-way results |
+| [Android UI roadmap](android/UI_ROADMAP.md) | Completed mobile redesign and remaining device, layout and performance work |
 | [Map conversion](MAP_CONVERSION.md) | Optional source conversion, packing and collision pipeline |
 | [City map audit](CITY_MAP.md) | Audited event geometry exclusions and preservation checks |
 | [City collisions](CITY_CLEANUP.md) | Event-enclosure removal, visible facades and tree trunks |
@@ -31,4 +33,4 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 
 The selected gameplay and menu previews in `images/` show the current interface. Runtime collision audits in `src/` are executable data used to validate the supplied map, rather than temporary reports.
 
-Android recordings, raw device logs, APKs and generated assets likewise remain local and ignored. The committed guides describe the recorded runs and their reproduction commands; they do not embed those raw artifacts or imply that a local build has been published to the public website.
+Android recordings, raw device logs, APKs and generated assets likewise remain local and ignored. Selected screenshots and compact functional verification summaries are committed under `android/` alongside the guides and reproduction commands. They do not imply that a local build has been published to the public website.

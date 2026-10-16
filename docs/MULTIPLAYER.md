@@ -29,6 +29,18 @@ unlocks Web Audio before asynchronous module loading. See the
 output in both directions and the distinction between local tests and public
 client deployment.
 
+Horn state uses `in.hn`. Android press/release bypasses its usual 30 Hz send
+interval, and received horn state follows the latest packet rather than the
+120 ms movement interpolation timeline. Web pause clears and immediately sends
+the released horn; hidden/non-driving web clients cannot advertise a held horn.
+Both clients silence stale remote audio after 1.5 seconds without a newer state
+sequence, then restore it when fresh updates arrive. Horns share the normal
+listener volume, stereo pan and 105 m attenuation envelope. Leaving disposes
+remote voices. The [horn guide](android/HORN_MULTIPLAYER.md) records a physical
+Android ↔ real web-game test with measured audio in both directions and a
+separate public-relay transport check. The 16 October probe preserved `hn`
+without a relay update; the updated APK and web client are still required.
+
 Indicator fields in `li` are `sig` (`off`, `left`, `right`, `hazard`), `sigRev` (unsigned transition revision) and `sigAt` (blink epoch in server milliseconds). The client maps its monotonic activation time into the RTT-corrected server clock. The relay validates the timestamp and keeps the first accepted reference for an unchanged mode/revision and car. Driver acknowledgement and remote animation use that same epoch, with a shared 800 ms period, independently of movement interpolation. State changes send immediately; blink edges create no packets or timers. Existing snapshots/keep-alives repair missed updates and welcome packets carry current states. Older/duplicate sequences are rejected with unsigned wrap handling. Reconnect disposes the old remote roster, and pending model loads cannot attach after disposal. Changing local cars sends `off`; same-car garage/pause/recovery preserves signals.
 
 The version-1 extension defaults absent indicator fields to `off`, so old clients still connect. An older relay drops these fields and cannot synchronize indicators; deploy matching relay and client versions. Run the relay from the repository checkout: it also imports the shared, dependency-free `src/net/indicatorProtocol.js`.

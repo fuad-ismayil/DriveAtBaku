@@ -70,10 +70,11 @@ fragment logic are generated from the original files. A small cached reflection
 probe excludes vehicles and updates infrequently. Native lighting units require
 calibration against browser captures rather than copying numeric intensities.
 
-Indicator state already passes through the project relay. The deployed public
+Indicator state already passed through the project relay at this stage. The deployed public
 relay removes it, confirmed by an own-state WebSocket echo. The source bundle
 and [restart instructions](RELAY_UPDATE.md) are ready, but that separate PC must
 be updated before public cross-platform indicator synchronization can work.
+This historical limitation was resolved by the 0.4 public-relay probe below.
 
 ## 0.3 tire, lamp and multiplayer pass
 
@@ -101,10 +102,35 @@ remain available. Immediate connection rejection now enters retry handling.
 The 0.3 public-relay audit preserved indicators but removed `au`. The portable
 replacement bundle preserves engine state, indicators and plates in its echo
 test. Public-room fidelity requires that relay update and the updated web
-build. The [mobile UI roadmap](UI_ROADMAP.md) schedules loading/navigation and
-the main menu as the next implementation milestone.
+build. The [0.5 mobile interface](MOBILE_INTERFACE.md) now implements native
+loading/navigation, the main menu, pause and supporting screens.
 
 The 0.4 public-relay audit now preserves `au`, indicators and plates. The
 remaining web publication is the updated client bundle. Actual registration
 spotlights, guarded PCM boundaries, remote grounded-slip audio and independent
 web listener routing are described in the [0.4 audio/plate report](AUDIO_AND_PLATE_FIXES.md).
+
+## 0.5 mobile interface and horns
+
+`interface.gd` now owns native main/pause navigation and supporting pages;
+`loading_interface.gd` owns packaged artwork, slideshow transitions and actual
+preparation progress. `game.gd` preserves garage/pause context across car
+loads, handles threaded-load failures/retry and Android Back, and clears held
+driving input on menu/focus transitions. System fonts and `ui_icons.gd` replace
+the original development tabs. Accessibility adds reduced-motion and glass
+contrast preferences without renaming saved settings.
+
+`glass_panel.gd` and `liquid_glass.gdshader` share one scene copy for transparent
+rounded lenses. Performance samples once per fragment; Balanced samples five
+times. Loading uses its own artwork capture. `prepare_interface.mjs` derives
+two 1920-pixel-wide images from the repository's web captures; all runtime
+resources remain packaged and no browser runtime is introduced. See the
+[interface guide](MOBILE_INTERFACE.md) for screenshots, touch layouts and limits.
+
+`prepare_audio.mjs` also generates a guarded PCM horn loop through
+`prepare_horn.mjs`. The native engine-audio node plays it independently of RPM
+through existing listener gain/pan. Native edge sends and latest-packet horn
+decoding complement web pause release and sequence-based stale-audio muting.
+These remain protocol-v1 changes; no relay code changed. Separate interface
+and horn QA presets exercise the actual game with isolated app IDs. See
+[multiplayer horns](HORN_MULTIPLAYER.md) for measured two-way output.
