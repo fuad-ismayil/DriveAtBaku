@@ -2,6 +2,7 @@ extends VBoxContainer
 
 const Settings = preload("res://scripts/license_plate_settings.gd")
 var interface
+var desktop = false
 var edits: Dictionary = {}
 var options: VBoxContainer
 var disabled_note: Label
@@ -94,25 +95,26 @@ class PlatePreview extends Control:
 func _ready():
 	add_theme_constant_override("separation", 8)
 	var heading = interface._box(self, false, 16)
-	var title = interface._label(heading, "Registration", 30)
+	var title = interface._label(heading, "Registration", 18 if desktop else 30)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	interface._check(heading, "Show plates", "plate_enabled")
-	interface.fields.plate_enabled.custom_minimum_size.x = 340
+	if desktop: heading.get_child(1).custom_minimum_size.x = 150
+	interface.fields.plate_enabled.custom_minimum_size.x = 48 if desktop else 340
 	interface._hint(self, "Tap the numbers or letters on the plate to edit · Saved for this car.")
 	disabled_note = interface._hint(self, "Plates are hidden. Your design is saved for when you turn them on again.")
 	options = VBoxContainer.new()
 	options.add_theme_constant_override("separation", 12)
 	add_child(options)
-	var columns = interface._box(options, interface.root.size.x < 1400, 20)
+	var columns = interface._box(options, desktop or interface.root.size.x < 1400, 20)
 	var design = interface._box(columns, true, 12)
-	design.custom_minimum_size.x = 504
+	design.custom_minimum_size.x = 0 if desktop else 504
 	design.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var customization = interface._box(columns, true, 8)
-	customization.custom_minimum_size.x = 360
+	customization.custom_minimum_size.x = 0 if desktop else 360
 	customization.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	preview = PlatePreview.new()
-	preview.custom_minimum_size = Vector2(504, 240)
+	preview.custom_minimum_size = Vector2(0, 130) if desktop else Vector2(504, 240)
 	preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	preview.edits = edits
 	preview.accessibility_name = "Registration preview"
@@ -147,14 +149,14 @@ func _ready():
 		preview.add_child(edit)
 		edits[item[0]] = edit
 		interface.fields["plate_" + item[0]] = edit
-	interface._label(customization, "Plate format", 20, interface.MUTED)
+	interface._label(customization, "Plate format", 12 if desktop else 20, interface.MUTED)
 	var format = OptionButton.new()
-	format.custom_minimum_size.y = 88
+	format.custom_minimum_size.y = 40 if desktop else 88
 	format.add_item("Long · 520 × 110 mm")
 	format.add_item("Two rows · 300 × 150 mm")
 	format.selected = 1 if Preferences.values.plate_format == "compact" else 0
 	format.accessibility_name = "Plate format"
-	format.get_popup().add_theme_constant_override("v_separation", 56)
+	format.get_popup().add_theme_constant_override("v_separation", 12 if desktop else 56)
 	format.item_selected.connect(func(index): interface._change("plate_format", "compact" if index == 1 else "long"))
 	customization.add_child(format)
 	interface.fields.plate_format = format

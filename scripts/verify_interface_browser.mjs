@@ -41,6 +41,7 @@ try {
   await intro.route('**/src/startup.js*',async route=>{const response=await route.fetch();await route.fulfill({response,body:await response.text()+'\nwindow.loader = loadingScreen;'});});
   await intro.route('**/src/main.js*',route=>route.fulfill({body:'',contentType:'text/javascript'}));
   await intro.goto(origin);
+  await intro.waitForFunction(() => window.loader?.root);
   await intro.evaluate(async()=>{
     loader.plan({city:1000});loader.stage('Bringing the city into view…','THE CITY','Preparing your drive.',true);loader.bytes('city',680,1000);
   });
@@ -103,7 +104,7 @@ try {
     await inside(page,'.hero-copy');
     await page.locator('#drive-button').scrollIntoViewIfNeeded();await inside(page,'#drive-button');
     await checkIcons(page,'#menu');
-    if(width===844) assert.equal(await page.locator('.hero-copy').evaluate(el=>el.scrollHeight>el.clientHeight+1),false,'Short landscape shows the complete main menu');
+    await page.locator('[data-download]').last().scrollIntoViewIfNeeded();
     await page.screenshot({path:`${output}/menu-${width}x${height}.png`});
   }
   await page.setViewportSize({width:1440,height:900});
@@ -129,19 +130,26 @@ try {
   await page.waitForSelector('#hud:not(.hidden)');await page.waitForTimeout(1200);
   assert.equal(await page.locator('.suspension-bars').count(),0);
   for(const aid of ['abs','tcs','esc']){
-    assert.equal(await page.locator(`#aid-${aid} svg`).count(),1);
+    assert.equal(await page.locator(`#aid-${aid} svg`).isVisible(),false);
     const before=await page.locator(`#aid-${aid}`).getAttribute('aria-pressed');
     await page.keyboard.press({abs:'1',tcs:'2',esc:'3'}[aid]);await settle(page);
     assert.notEqual(await page.locator(`#aid-${aid}`).getAttribute('aria-pressed'),before,`${aid} keyboard toggle updates accessible state`);
   }
   await page.waitForTimeout(1800);
+  await inside(page,'.telemetry-panel');await inside(page,'.map-panel');
+  const instruments=await page.locator('.telemetry-panel').evaluate(element=>{
+    const style=getComputedStyle(element),rect=element.getBoundingClientRect();
+    return {width:rect.width,height:rect.height,background:style.backgroundColor};
+  });
+  assert.equal(instruments.width,264);assert.equal(instruments.height,62);
+  assert.equal(instruments.background,'rgba(0, 0, 0, 0)');
+  assert.equal(await page.locator('.dynamics-panel').isVisible(),false);
   await page.screenshot({path:`${output}/driving-1440x900.png`});
   await page.keyboard.press('Escape');await page.waitForSelector('#pause:not(.hidden)');
   for(const [width,height] of [[1440,900],[1280,720],[390,844],[844,390],[320,568]]){
     await page.setViewportSize({width,height});await settle(page);await inside(page,'.pause-card');
     await checkIcons(page,'#pause');
-    await inside(page,'.telemetry-panel');await inside(page,'.dynamics-panel');await inside(page,'.map-panel');
-    assert.ok(await page.evaluate(()=>document.querySelector('.dynamics-panel').getBoundingClientRect().right<document.querySelector('.telemetry-panel').getBoundingClientRect().left),'Driving instruments do not overlap');
+    assert.equal(await page.locator('#resume').evaluate(element=>element===document.activeElement),true,'Pause keeps keyboard focus on Resume');
     await page.screenshot({path:`${output}/pause-${width}x${height}.png`});
   }
   await page.setViewportSize({width:1440,height:900});

@@ -16,7 +16,7 @@ var hud = Control.new()
 var menu = Control.new()
 var safe = MarginContainer.new()
 var panel: Control
-var loading_screen = preload("res://scripts/loading_interface.gd").new()
+var loading_screen = (preload("res://scripts/loading_interface.gd") if OS.has_feature("mobile") else preload("res://scripts/desktop_loading_interface.gd")).new()
 var speed = Label.new()
 var status = Label.new()
 var telemetry = Label.new()
@@ -62,6 +62,7 @@ var menu_content: VBoxContainer
 var press_tweens: Dictionary = {}
 var scene_capture = BackBufferCopy.new()
 var medium_font: SystemFont
+var version_label = Label.new()
 
 func _ready():
 	add_child(root)
@@ -88,6 +89,11 @@ func _ready():
 	_full(loading_screen)
 	loading_screen.retry_requested.connect(func(): requested.emit("retry"))
 	_build_map()
+	root.add_child(version_label)
+	version_label.text = preload("res://scripts/build_info.gd").LABEL
+	version_label.add_theme_font_size_override("font_size", 14 if OS.has_feature("mobile") else 11)
+	version_label.modulate = Color(0.79, 0.83, 0.85, 0.7)
+	version_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.resized.connect(_safe_layout)
 	_safe_layout()
 	menu.hide()
@@ -148,6 +154,7 @@ func _full(node: Control):
 
 func _safe_layout():
 	var inset = Vector4(36, 24, 36, 24)
+	version_label.position = Vector2(24, root.size.y - 26)
 	if OS.has_feature("android"):
 		var area = DisplayServer.get_display_safe_area()
 		var window = Vector2(DisplayServer.window_get_size())
@@ -185,6 +192,7 @@ func _safe_layout():
 		if menu.visible: _build_menu()
 
 func _process(_dt):
+	version_label.visible = loading_screen.visible or (menu.visible and page == "home" and not paused)
 	if not OS.has_feature("android"): return
 	var height = DisplayServer.virtual_keyboard_get_height()
 	if height == keyboard_height: return
@@ -461,8 +469,8 @@ func close_map():
 	controls.active = driving
 	controls.queue_redraw()
 
-func update_map(state: Dictionary, drivers: Array):
-	minimap.update_location(state, drivers)
+func update_map(state: Dictionary, drivers: Array, camera_angle = 0.0):
+	minimap.update_location(state, drivers, camera_angle)
 	expanded_map.update_location(state, drivers)
 
 func _build_menu():
@@ -542,6 +550,7 @@ func _build_home(body: BoxContainer):
 	else:
 		_button(content, "Drive together", func(): navigate("multiplayer"), "people", "Multiplayer · Share the city")
 		_button(content, "Your garage", func(): navigate("garage"), "garage", "Four ways to make it yours")
+	_button(content, "Quit game", func(): requested.emit("quit"), "close")
 	var scene = _box(body, true, 14)
 	scene.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_space(scene)
@@ -553,6 +562,8 @@ func _build_home(body: BoxContainer):
 	_label(detail, "YOUR NEXT CHAPTER", 13, MUTED)
 	vehicle_label = _label(detail, VEHICLES[Preferences.values.vehicle], 25)
 	_label(detail, "Along the Caspian · " + ("After hours" if Preferences.values.night else "Daylight"), 17, MUTED)
+	if preload("res://scripts/graphics_profile.gd").desktop():
+		_label(detail, "WASD · Drive   Right-drag · Look   F11 · Fullscreen", 14, MUTED)
 	var utilities = _box(detail, false, 10)
 	if paused: _button(utilities, "Restart", func(): requested.emit("restart"), "recover")
 	else: _button(utilities, "Settings", func(): navigate("settings"), "settings")
@@ -713,7 +724,11 @@ func _settings(content: VBoxContainer):
 	_label(content, category, 32)
 	match category:
 		"Driving":
-			_hint(content, "Tune touch controls to suit the way you drive.")
+			if preload("res://scripts/graphics_profile.gd").desktop():
+				_hint(content, "WASD / Arrows · Drive   Space · Handbrake   Right-drag · Look\nC · Camera   R · Recover   H · Horn   M · Map   Esc · Pause\nT · Gearbox   Q / E · Shift   X · Clutch   L · Lights\nZ / V · Indicators   B · Hazards   F11 / Alt+Enter · Fullscreen")
+				_check(content, "Show touch controls", "touch_controls")
+			else:
+				_hint(content, "Tune touch controls to suit the way you drive.")
 			_option(content, "Touch controls", "control_mode", ["buttons", "sliders"], ["Buttons", "Analog sliders"])
 			_check(content, "Automatic transmission", "automatic")
 			_slider(content, "Steering sensitivity", "sensitivity", 0.4, 1.6)
@@ -728,9 +743,18 @@ func _settings(content: VBoxContainer):
 			_check(content, "Mirror control layout", "left_handed")
 		"Graphics & audio":
 			_hint(content, "Balance image detail, responsiveness and sound.")
-			_option(content, "Graphics quality", "quality", ["performance", "balanced"], ["Performance", "Balanced"])
-			_option(content, "Rendering height", "resolution", [540, 720, 900, 1080], ["540p", "720p", "900p", "1080p"])
-			_slider(content, "Render distance", "render_distance", 400, 3000, 100)
+			if preload("res://scripts/graphics_profile.gd").desktop():
+				_option(content, "Graphics quality", "quality", ["performance", "balanced", "high", "ultra"], ["Performance", "Balanced", "High", "Ultra"])
+				_option(content, "Rendering height", "resolution", [0, 720, 900, 1080, 1440, 2160], ["Native window resolution", "720p", "900p", "1080p", "1440p", "2160p"])
+				_slider(content, "Render distance", "render_distance", 400, 6000, 100)
+				_check(content, "Fullscreen · F11", "fullscreen")
+				_check(content, "Vertical sync", "vsync", "Match the display refresh rate to reduce tearing.")
+				_option(content, "Frame limit", "frame_limit", [0, 30, 60, 90, 120, 144, 165, 240], ["Unlimited", "30 FPS", "60 FPS", "90 FPS", "120 FPS", "144 FPS", "165 FPS", "240 FPS"])
+				_hint(content, "High adds soft world shadows, ambient occlusion and reflections. Ultra adds indirect lighting and atmospheric haze.")
+			else:
+				_option(content, "Graphics quality", "quality", ["performance", "balanced"], ["Performance", "Balanced"])
+				_option(content, "Rendering height", "resolution", [540, 720, 900, 1080], ["540p", "720p", "900p", "1080p"])
+				_slider(content, "Render distance", "render_distance", 400, 3000, 100)
 			_slider(content, "Engine volume", "volume", 0, 1)
 		"Atmosphere":
 			_hint(content, "Set the mood for your next drive.")
@@ -852,7 +876,7 @@ func _slider(parent: Node, title: String, key: String, low: float, high: float, 
 	fields[key] = slider
 
 func _setting_value(key: String, value: float) -> String:
-	if key == "render_distance": return "%d m" % roundi(value)
+	if key in ["render_distance", "props_distance"]: return "%d m" % roundi(value)
 	if key == "sensitivity": return "%.2f×" % value
 	return "%d%%" % roundi(value * 100)
 

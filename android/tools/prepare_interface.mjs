@@ -7,14 +7,16 @@ import { readMapGeometry } from '../../scripts/lib/readMapGeometry.mjs';
 // Reuse the web's original in-game captures; never download startup artwork.
 mkdirSync('android/game/assets/ui', { recursive: true });
 copyFileSync('public/assets/fonts/AlteDIN1451-Regular.ttf', 'android/game/assets/ui/plate-din.ttf');
+copyFileSync('public/branding/wordmark.svg', 'android/game/assets/ui/wordmark.svg');
+copyFileSync('shared/ui-spec.json', 'android/game/assets/data/ui-spec.json');
 copyFileSync('public/assets/fonts/AlteDIN1451-Pressed.ttf', 'android/game/assets/ui/plate-din-bold.ttf');
-for (const scene of ['city', 'night']) {
+for (const scene of ['city', 'night', 'weather', 'garage']) {
   await sharp(`public/assets/loading/${scene}.webp`)
     .resize({ width: 1920, withoutEnlargement: true })
     .webp({ quality: 88 })
     .toFile(`android/game/assets/ui/${scene}.webp`);
 }
-console.log('Native interface: two packaged city captures prepared.');
+console.log('Native interface: four packaged city captures prepared.');
 
 // Bake the exact same street layers as the web map at build time. On-device
 // rendering needs just one shared texture, never another copy of city geometry.

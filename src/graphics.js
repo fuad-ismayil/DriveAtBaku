@@ -5,10 +5,13 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { StreetSMAAPass } from './streetSMAAPass.js';
 import { StreetScenePass, StreetAOPass } from './streetAOPass.js';
 import { normalizeRenderingResolution, renderingSize } from './renderingResolution.js';
+import { displaySize } from './display.js';
 
 const PRESETS = {
   performance: { pixelRatio: 1, shadows: 1024, bloom: false },
   balanced: { pixelRatio: 1.5, shadows: 2048, bloom: true },
+  high: { pixelRatio: 2, shadows: 4096, bloom: true },
+  ultra: { pixelRatio: 2, shadows: 4096, bloom: true },
   cinematic: { pixelRatio: 2, shadows: 4096, bloom: true },
 };
 
@@ -50,7 +53,7 @@ export function createGraphics(renderer, scene, camera, sun) {
     const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
     composer = new StreetComposer(renderer, target);
     composer.setPixelRatio(1);
-    scenePass = new StreetScenePass(scene, camera, sampleCount(quality === 'cinematic' ? 4 : 2));
+    scenePass = new StreetScenePass(scene, camera, sampleCount(['cinematic', 'ultra'].includes(quality) ? 4 : 2));
     composer.addPass(scenePass);
     ao = new StreetAOPass(scene, camera, scenePass.target.depthTexture);
     composer.addPass(ao);
@@ -79,7 +82,7 @@ export function createGraphics(renderer, scene, camera, sun) {
     // SMAA's final blend converts and tone-maps exactly once, on screen.
   }
 
-  function resize(width = innerWidth, height = innerHeight) {
+  function resize(width = displaySize().width, height = displaySize().height) {
     viewportWidth = width; viewportHeight = height;
     const size = renderingSize(width, height, devicePixelRatio, PRESETS[quality].pixelRatio, renderScale, renderingResolution);
     // One drawing-buffer resize, keeping logical renderer size and DOM/pointer
@@ -123,8 +126,8 @@ export function createGraphics(renderer, scene, camera, sun) {
     if (preset.bloom && hdrSupported && !composer) createComposer();
     if (composer) {
       ao.enabled = aoWanted;
-      ao.blendIntensity = quality === 'cinematic' ? 0.48 : 0.38;
-      ao.updateGtaoMaterial({ samples: quality === 'cinematic' ? 16 : 8 });
+      ao.blendIntensity = ['cinematic', 'ultra'].includes(quality) ? 0.48 : 0.38;
+      ao.updateGtaoMaterial({ samples: ['cinematic', 'ultra'].includes(quality) ? 16 : 8 });
     }
     sun.shadow.mapSize.set(preset.shadows, preset.shadows);
     sun.shadow.map?.dispose();

@@ -1,9 +1,10 @@
 {
   "name": "driveatbaku",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "node scripts/sync_release.mjs",
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "build-branding": "node scripts/build_branding.mjs",
@@ -54,7 +55,12 @@
     "verify-engine": "node scripts/verify_engine.mjs",
     "verify-resolution-browser": "node scripts/verify_resolution_browser.mjs",
     "profile-engine": "node scripts/profile_engine.mjs",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "verify-desktop-parity-browser": "node scripts/verify_desktop_parity_browser.mjs",
+    "verify-mobile-download": "node scripts/verify_mobile_download.mjs",
+    "stage-release": "node scripts/stage_release.mjs",
+    "verify-mobile-gate": "node scripts/verify_mobile_gate.mjs",
+    "verify-release-metadata": "node scripts/verify_release_metadata.mjs"
   },
   "dependencies": {
     "three": "^0.180.0",

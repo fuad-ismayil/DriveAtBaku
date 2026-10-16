@@ -1,10 +1,17 @@
 # Interface and loading
 
+The v1.0.0 Web experience starts with a device check. Phones and tablets show
+the lightweight native-download page and never start the game loader or fetch
+city assets, vehicles, audio or loading photographs. This includes Android
+desktop mode and iPadOS desktop identities at any viewport size. See the
+[mobile download policy and browser matrix](MOBILE_DOWNLOAD_GATE.md).
+
 The loading screen, main menu, garage, controls, pause settings and driving HUD share a Liquid Glass design. Transparent capsules and rounded panels show the scene behind them, with neutral shading, soft reflections and a fine illuminated rim. The background supplies the color; the shared glass material does not impose a warm or brown tint.
 
 ![Main menu with clear glass panels and capsule controls over the Baku game world](images/baku-menu.webp)
 
-*Current interface, captured from the development build in Chrome.*
+*Earlier interface capture from Chrome; the current release adds versioned
+downloads and the compact desktop HUD described below.*
 
 ## Shared material and icons
 
@@ -18,29 +25,35 @@ The material uses light 5 px backdrop diffusion, opposing rim highlights and sof
 | `src/licensePlate.css` | Plate editor layout and locally bundled plate fonts; imported by `style.css` |
 | `src/loading.css` | Loading layout, scene drift, crossfades and progress animation |
 | `src/loadingScreen.js` | Scene selection, slideshow controls, progress reporting and failure handling |
-| `src/startup.js` | Starts the lightweight loading experience before importing the game |
+| `src/startup.js` | Applies the device gate before importing the desktop loader and game |
+| `src/desktop.css` | Desktop aspect sizing, compact instruments and menu refinements |
 
 `glass.css` and `loading.css` load directly from the document before the game bundle. General interface text uses local system fonts; the plate editor retains its bundled DIN fonts. No additional WebGL scene, remote image service or UI font download is required to show the loading screen.
 
 SVG icons share rounded strokes and explicit flex/grid slots so their placement does not depend on font baselines. Navigation uses straight arrows, the brand uses a road mark, and external links use a diagonal arrow. Day/night and audio toggles update the icon reference and text label independently.
 
-Phone layouts keep panels inside the viewport and allow long settings/garage panels to scroll. Short landscape menus place the introduction and actions beside one another. Small driving layouts retain the speed, gear, minimap and assist indicators while hiding the secondary engine readout.
+Desktop browser windows keep panels inside the viewport and allow long settings/garage panels to scroll, including small windows and short landscape layouts. Native Android retains its touch interface. The Web phone/tablet page has a scrollable download card with Android and iOS/iPadOS-specific copy.
 
 Keyboard focus remains visible. Reduced motion disables drift, sweeps, entry animations and animated transitions. Reduced transparency and browsers without backdrop blur receive a stronger neutral backing. These settings preserve labels and controls.
 
 ## Driving HUD
 
-The HUD combines the minimap, speed/gear instrument, engine readout and a pause control. The assist area contains only ABS, TCS and ESC icon buttons; the chassis heading and suspension graphs have been removed. Vehicle physics and suspension behavior are unchanged.
+The desktop HUD combines a 176 px circular camera-up minimap with a transparent
+264 × 62 px speed/gear/RPM instrument centered at the bottom. ABS, TCS and ESC
+appear as plain text in that instrument. White multiplayer names above cars
+use the shared Godot sizing, outline and distance fade without a background.
+The full city map is north-up and offers zoom, Your car and Fit city controls.
+Vehicle physics and suspension behavior are unchanged.
 
-- **Enabled:** a small mint status dot.
-- **Disabled:** a slash across the icon and an updated accessible pressed state.
-- **Intervening:** a restrained amber highlight.
+- **Enabled:** readable assist text and an updated accessible pressed state.
+- **Disabled:** the label is hidden and its accessible pressed state is false.
+- **Intervening:** a restrained mint text highlight.
 
-The controls retain the **1 / 2 / 3** keyboard shortcuts and descriptive accessible labels. **Escape** or the HUD pause button opens the settings menu.
+The controls retain the **1 / 2 / 3** keyboard shortcuts and descriptive accessible labels. **Escape** opens the pause settings with visible keyboard focus. Web offers Main menu and Download; native Windows and Android offer Quit game. Native pause and map menus release the cursor for mouse interaction.
 
 ## Loading artwork and slideshow
 
-The four loading scenes were captured on **15 October 2026** from the current game renderer at native **3840 × 2160**, with the Cinematic preset and current city, landmark, foliage and room-light detail.
+The four loading scenes were captured on **15 October 2026** from the game renderer at native **3840 × 2160**, with the former Cinematic preset and city, landmark, foliage and room-light detail. Current presets are Performance, Balanced, High and Ultra; old Cinematic preferences migrate to High.
 
 | Scene | Vehicle and conditions |
 | --- | --- |
@@ -49,7 +62,7 @@ The four loading scenes were captured on **15 October 2026** from the current ga
 | `weather.webp` | Mercedes-AMG on wet streets |
 | `garage.webp` | Toyota Prado in the city |
 
-The images are composed with the car to the right of the loading story. High-quality WebP encoding preserves native detail without upscaling or artificial sharpening. Each image has a **2,200,000-byte** transfer budget. Only the first image is preloaded; later images decode before a 1.7-second crossfade. A missing later image leaves the current scene visible.
+The images are composed with the car to the right of the loading story. High-quality WebP encoding preserves native detail without upscaling or artificial sharpening. Each image has a **2,200,000-byte** transfer budget. After the desktop device gate passes, the first image loads; later images decode before a 1.7-second crossfade. A missing later image leaves the current scene visible.
 
 The slideshow advances every seven seconds with a restrained photographic drift. Chapter capsules support click and keyboard selection, and a dedicated button pauses/resumes automatic changes and motion. Driver notes rotate independently every ten seconds. Hidden tabs stop scheduling chapter and note changes. Reduced motion keeps scene selection available and removes animated transitions.
 

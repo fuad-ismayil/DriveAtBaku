@@ -21,6 +21,7 @@ func touch(index: int, position: Vector2, pressed: bool):
 func run():
 	await get_tree().process_frame
 	var saved = Preferences.values.duplicate(true)
+	Preferences.values.touch_controls = true
 	controls = load("res://scripts/driving_controls.gd").new()
 	get_tree().root.add_child(controls)
 	controls.set_anchors_preset(Control.PRESET_TOP_LEFT)

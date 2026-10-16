@@ -53,6 +53,7 @@ func press(name: String):
 
 func run():
 	saved = Preferences.values.duplicate(true)
+	Preferences.values.touch_controls = true
 	if OS.has_feature("android"): output = "user://ui"
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(output))
 	Preferences.values.night = false

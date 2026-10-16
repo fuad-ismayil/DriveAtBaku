@@ -1,6 +1,11 @@
 # Verification
 
-Install the locked client dependencies with `npm ci` and relay dependencies with `npm ci --prefix server`. `npm run verify` runs all 27 non-browser suites sequentially and stops on the first failure. These cover vehicle handling and idle drivetrain, both cameras, engine audio, minimap, models/plates/loading, ground and world collision, rendering invariants, foliage, independent room lighting, Government House window geometry and materials, flag cloth physics, tire effects, culling/distance, GPU-timer/resolution logic, indicator state/lens fitment and an isolated three-client indicator relay test.
+Current v1.0.0 release checks are recorded at the end of this document and in
+[Windows verification](../windows/VERIFICATION.md). Dated Android sections
+below preserve the earlier physical-device results and publication state at
+the time of those tests; see [the release guide](RELEASE.md) for current downloads.
+
+Install the locked client dependencies with `npm ci` and relay dependencies with `npm ci --prefix server`. `npm run verify` runs all 29 non-browser suites sequentially and stops on the first failure. These cover vehicle handling and idle drivetrain, both cameras, engine audio, minimap, models/plates/loading, ground and world collision, rendering invariants, foliage, independent room lighting, Government House window geometry and materials, flag cloth physics, tire effects, culling/distance, GPU-timer/resolution logic, indicator state/lens fitment and an isolated three-client indicator relay test.
 
 ```sh
 npm run verify
@@ -206,3 +211,21 @@ The final headless audio/plate process emitted an ObjectDB leak warning at
 exit; the rendered UI device run retains the seven texture-RID shutdown
 warnings described in the device report. These checks do not resolve
 long-session resource behavior.
+
+## v1.0.0 release checks
+
+The current review is against 62f3a26. The full runner adds pure mobile-device
+classification and shared release metadata checks to the prior 27 suites.
+Run npm run verify-desktop-parity-browser against the development server for
+the matching desktop menus, map, HUD, names and display controls. The production
+mobile check is separate: npm run verify-mobile-download checks 27 identities
+in Chromium, Firefox and WebKit (81 cases), including desktop-site modes,
+large tablets, orientation changes and no-JavaScript fallback. It asserts zero
+attempted game requests. See [mobile download policy](MOBILE_DOWNLOAD_GATE.md).
+
+The native Windows builder checks controls, presentation, the mobile interface,
+desktop graphics/UI and Quit before testing the packaged executable. Rendered
+UI checks additionally validate cursor capture/release, keyboard focus, maps,
+garage selection and bounds at monitor aspect ratios. See
+[Windows verification](../windows/VERIFICATION.md). Use
+[scripts/stage_release.mjs](../scripts/stage_release.mjs) for package hashes.

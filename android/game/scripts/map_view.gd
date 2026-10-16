@@ -7,6 +7,7 @@ var bounds: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://
 var expanded = false
 var player = Vector2.ZERO
 var heading = 0.0
+var camera_heading = 0.0
 var speed_mps = 0.0
 var peers: Array = []
 var zoom = 1.0
@@ -27,12 +28,13 @@ func _ready():
 		resized.connect(func(): mask.set_shader_parameter("map_size", size))
 		mask.set_shader_parameter("map_size", size)
 	gui_input.connect(_gesture)
-	accessibility_name = "Baku city map, north up"
+	accessibility_name = "Baku city map, north up" if expanded else "Baku minimap, camera up"
 	accessibility_description = "Drag to pan. Pinch or use the zoom buttons to zoom." if expanded else "Current location"
 
-func update_location(state: Dictionary, drivers: Array):
+func update_location(state: Dictionary, drivers: Array, camera_angle = 0.0):
 	player = Vector2(state.position.x, -state.position.z)
 	heading = state.heading
+	camera_heading = camera_angle
 	speed_mps = Vector2(state.velocity.x, state.velocity.z).length()
 	peers = drivers
 	queue_redraw()
@@ -46,7 +48,7 @@ func center_world() -> Vector2:
 
 func project(point: Vector2) -> Vector2:
 	var delta = point - center_world()
-	return size * 0.5 + Vector2(delta.x, -delta.y) * map_scale() + pan
+	return size * 0.5 + Vector2(delta.x, -delta.y).rotated(0.0 if expanded else camera_heading) * map_scale() + pan
 
 func zoom_by(factor: float):
 	var before = zoom
@@ -108,7 +110,7 @@ func _marker(point: Vector2, angle: float, color: Color, local: bool):
 	if not expanded and at.distance_to(size * 0.5) > size.x * 0.5 - 10: return
 	var shape = PackedVector2Array()
 	var marker_scale = 1.0 if expanded else (0.65 if local else 0.5)
-	for vertex in [Vector2(0, -13), Vector2(9, 10), Vector2(0, 5), Vector2(-9, 10)]: shape.append(at + (vertex * marker_scale).rotated(-angle))
+	for vertex in [Vector2(0, -13), Vector2(9, 10), Vector2(0, 5), Vector2(-9, 10)]: shape.append(at + (vertex * marker_scale).rotated((0.0 if expanded else camera_heading) - angle))
 	if local:
 		draw_circle(at, 24 if expanded else 14, Color(0.44, 0.93, 0.9, 0.16), true, -1, true)
 	draw_colored_polygon(shape, color)
@@ -117,16 +119,26 @@ func _marker(point: Vector2, angle: float, color: Color, local: bool):
 	if local and expanded: draw_string(font, at + Vector2(-17, -23), "YOU", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
 
 func _draw():
+	if not expanded and material:
+		var rect = get_global_rect()
+		var viewport_size = get_viewport_rect().size
+		material.set_shader_parameter("map_rect", Vector4(rect.position.x / viewport_size.x, rect.position.y / viewport_size.y, rect.size.x / viewport_size.x, rect.size.y / viewport_size.y))
 	draw_rect(Rect2(Vector2.ZERO, size), Color("0c202b"))
 	var corner = project(Vector2(bounds.minX, bounds.maxY))
 	var extent = Vector2(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) * map_scale()
-	draw_texture_rect(ATLAS, Rect2(corner, extent), false)
+	if expanded:
+		draw_texture_rect(ATLAS, Rect2(corner, extent), false)
+	else:
+		draw_set_transform(size * 0.5, camera_heading, Vector2.ONE * map_scale())
+		draw_texture_rect(ATLAS, Rect2(Vector2(bounds.minX - player.x, player.y - bounds.maxY), Vector2(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY)), false)
+		draw_set_transform(Vector2.ZERO)
 	for driver in peers: _marker(driver.position, driver.heading, Color("f4c56a"), false)
 	_marker(player, heading, Color.WHITE, true)
 	if not expanded:
 		var center = size * 0.5
 		draw_circle(center, size.x * 0.5 - 1, Color(0.73, 0.9, 0.93, 0.32), false, 1, true)
-		draw_string(font, Vector2(center.x - 5, 19), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("c9e2e7"))
+		var north = center + Vector2(0, -size.x * 0.5 + 14).rotated(camera_heading)
+		draw_string(font, north + Vector2(-5, 4), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("c9e2e7"))
 		return
 	draw_string(font, Vector2(16, 29), "N ↑", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("c9e2e7"))
 	var metres = 100 if not expanded or zoom > 2 else 500

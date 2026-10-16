@@ -1,5 +1,5 @@
 export const RENDERING_RESOLUTIONS = Object.freeze({
-  native: null, '1920x1080': [1920, 1080], '1600x900': [1600, 900], '1280x720': [1280, 720],
+  native: null, '3840x2160': [3840, 2160], '2560x1440': [2560, 1440], '1920x1080': [1920, 1080], '1600x900': [1600, 900], '1280x720': [1280, 720],
 });
 export function normalizeRenderingResolution(value) {
   return Object.hasOwn(RENDERING_RESOLUTIONS, value) ? value : 'native';

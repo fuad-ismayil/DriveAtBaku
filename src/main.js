@@ -15,6 +15,8 @@ import { PLATE_FORMATS, readPlateSettings, savePlateSettings } from './licensePl
 import { createLicensePlateControls } from './licensePlateControls.js';
 import { EngineAudio } from './engineAudio.js';
 import { createMinimap, drawMinimap, drawFullMap } from './minimap.js';
+import { MapNavigation, installMapGestures } from './mapView.js';
+import { displaySize, frameLimit } from './display.js';
 import { createSky } from './sky.js';
 import { createGraphics, createSkyEnvironments } from './graphics.js';
 import { accelerationPullback, chaseCameraOffset } from './cameraTuning.js';
@@ -48,7 +50,7 @@ const canvas = document.getElementById('game');
 loadingScreen.stage('Preparing your graphics…', 'STARTING UP', 'Setting the scene for your drive.');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
-renderer.setSize(innerWidth, innerHeight);
+renderer.setSize(displaySize().width, displaySize().height);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -67,7 +69,7 @@ const skyEnvironments = createSkyEnvironments(renderer, sky);
 scene.environment = skyEnvironments.day.texture;
 room.dispose();
 environment.dispose();
-const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.15, 6000);
+const camera = new THREE.PerspectiveCamera(62, displaySize().width / displaySize().height, 0.15, 6000);
 camera.up.set(0, 0, 1);
 const graphicsOptions = new URLSearchParams(location.search);
 const worldOptimization = new WorldOptimization(camera, { occlusion: graphicsOptions.get('occlusion') !== 'off' });
@@ -150,6 +152,8 @@ let physicsPosition, previousBodyPosition, previousBodyQuaternion;
 const interpolatedBody = new THREE.Vector3(), interpolatedQuaternion = new THREE.Quaternion();
 const bodyOffset = new THREE.Vector3();
 const minimapForward = new THREE.Vector3();
+const cameraMapForward = new THREE.Vector3();
+const mapNavigation = new MapNavigation();
 let pendingShiftUp = false, pendingShiftDown = false;
 let padShiftUpHeld = false, padShiftDownHeld = false;
 let padCameraHeld = false, padTransmissionHeld = false;
@@ -222,8 +226,8 @@ const graphics = createGraphics(renderer, scene, camera, sun);
 const shadowCache = createShadowCache(scene, sun, camera);
 worldOptimization.installDistanceFog(scene);
 const graphicsQuality = document.getElementById('graphics-quality');
-let savedQuality = 'cinematic';
-try { savedQuality = localStorage.getItem('baku-graphics-quality') ?? 'cinematic'; } catch { /* storage is optional */ }
+let savedQuality = 'high';
+try { savedQuality = localStorage.getItem('baku-graphics-quality') ?? 'high'; if (savedQuality === 'cinematic') savedQuality = 'ultra'; } catch { /* storage is optional */ }
 graphicsQuality.value = graphics.setQuality(savedQuality);
 localReflections.setQuality(graphics.quality);
 weather.setQuality(graphics.quality);
@@ -659,8 +663,15 @@ function restartAtSpawn() {
 }
 function toast(text){ui.toast.textContent=text;ui.toast.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>ui.toast.classList.remove('show'),1700);}
 function captureDrivePointer() {
+  if (mode !== 'drive') return;
   document.body.classList.add('is-driving');
-  if (document.pointerLockElement !== canvas) canvas.requestPointerLock?.().catch(() => {});
+  if (document.pointerLockElement !== canvas) {
+    try {
+      Promise.resolve(canvas.requestPointerLock?.()).then(() => {
+        if (mode !== 'drive') releaseDrivePointer();
+      }).catch(() => {});
+    } catch { /* Camera fallback remains available when capture is denied. */ }
+  }
 }
 function releaseDrivePointer() {
   document.body.classList.remove('is-driving');
@@ -682,17 +693,25 @@ function fullMapLocalPlayer() {
   return { position: car.position, heading: Math.atan2(-minimapForward.x, minimapForward.y), nick: 'YOU' };
 }
 function renderFullMap() {
-  drawFullMap(ui['full-map-canvas'], minimap, fullMapLocalPlayer(), multiplayerSession?.getMapPlayers());
+  drawFullMap(ui['full-map-canvas'], minimap, fullMapLocalPlayer(), multiplayerSession?.getMapPlayers(), mapNavigation);
 }
 function openFullMap() {
   if (mode !== 'drive') return;
-  mode = 'map'; keys.clear(); driveCamera.setRearHeld(false); releaseDrivePointer();
+  mode = 'map'; keys.clear(); driveCamera.setRearHeld(false); releaseDrivePointer(); mapNavigation.reset();
+  ui.hud.classList.add('hidden');
   ui['full-map'].classList.remove('hidden'); renderFullMap();
 }
 function closeFullMap() {
   if (mode !== 'map') return;
   mode = 'drive'; ui['full-map'].classList.add('hidden'); captureDrivePointer(); clock.getDelta();
+  ui.hud.classList.remove('hidden');
 }
+document.querySelector('.engine-readout').append(document.querySelector('.aid-buttons'));
+document.getElementById('minimap-button').onclick = openFullMap;
+installMapGestures(ui['full-map-canvas'], mapNavigation, renderFullMap);
+for (const [id, factor] of [['map-zoom-out', .8], ['map-zoom-in', 1.25]]) document.getElementById(id).onclick = () => { mapNavigation.zoomBy(factor); renderFullMap(); };
+document.getElementById('map-fit').onclick = () => { mapNavigation.reset(); renderFullMap(); };
+document.getElementById('map-locate').onclick = () => { if (!minimap) return; mapNavigation.locate(car?.position, ui['full-map-canvas'].clientWidth, ui['full-map-canvas'].clientHeight, minimap.bounds); renderFullMap(); };
 function exitToMenu(){
   if (isMultiplayer && multiplayerSession) {
     multiplayerSession.stop();
@@ -700,6 +719,7 @@ function exitToMenu(){
     isMultiplayer = false;
   }
   mode='menu';keys.clear();driveCamera.setRearHeld(false);ui.pause.classList.add('hidden');ui.hud.classList.add('hidden');ui.menu.classList.remove('hidden');releaseDrivePointer();
+  ui['drive-button'].focus({preventScroll:true});
 }
 function openControls() {
   controlsOrigin = mode;
@@ -830,14 +850,20 @@ function updateCar(dt) {
   updateHUDText(ui.speed, Math.round(Math.hypot(handling.velocity.x, handling.velocity.y) * 3.6));
   updateHUDText(ui.gear, GEAR_LABELS[handling.gear] ?? '?');
   updateHUDText(ui.rpm, Math.round(handling.rpm));
-  updateHUDText(ui.transmission, handling.autoTransmission ? 'AUTO' : 'MANUAL');
+  updateHUDText(ui.transmission, handling.autoTransmission ? 'AUTO' : 'MAN');
   for (const aid of ['abs', 'tcs', 'esc']) {
+    document.getElementById(`pause-${aid}`).checked = handling.aids[aid];
     ui[`aid-${aid}`].classList.toggle('active', handling.aids[aid]);
     ui[`aid-${aid}`].classList.toggle('working', handling[`${aid}Active`]);
     ui[`aid-${aid}`].setAttribute('aria-pressed', String(handling.aids[aid]));
   }
+}
+
+function renderMinimap() {
+  if (!car || !handling || mode !== 'drive') return;
   minimapForward.set(0, 1, 0).applyQuaternion(car.quaternion);
-  drawMinimap(ui.minimap, minimap, car.position, Math.atan2(-minimapForward.x, minimapForward.y), Math.hypot(handling.velocity.x, handling.velocity.y), multiplayerSession?.getMapPlayers());
+  camera.getWorldDirection(cameraMapForward);
+  drawMinimap(ui.minimap, minimap, car.position, Math.atan2(-minimapForward.x, minimapForward.y), Math.hypot(handling.velocity.x, handling.velocity.y), multiplayerSession?.getMapPlayers(), Math.atan2(-cameraMapForward.x, cameraMapForward.y));
 }
 
 function updateHUDText(element, value) {
@@ -900,22 +926,25 @@ function updateCamera(dt) {
       const outward = new THREE.Vector3(0, 0, 1).transformDirection(rig.matrixWorld);
       const plateRight = new THREE.Vector3(1, 0, 0).transformDirection(rig.matrixWorld);
       const up = new THREE.Vector3(0, 1, 0).transformDirection(rig.matrixWorld);
-      const narrow = innerWidth < 700;
+      const { width: viewWidth, height: viewHeight } = displaySize();
+      const viewRect = document.getElementById('app').getBoundingClientRect();
+      const narrow = viewWidth < 700;
       const panel = ui.garage.querySelector('.garage-panel').getBoundingClientRect();
-      const width = narrow ? innerWidth : Math.max(100, innerWidth - panel.right);
-      const height = narrow ? Math.max(100, panel.top) : innerHeight;
+      const panelRight = panel.right - viewRect.left, panelTop = panel.top - viewRect.top;
+      const width = narrow ? viewWidth : Math.max(100, viewWidth - panelRight);
+      const height = narrow ? Math.max(100, panelTop) : viewHeight;
       const dimensions = PLATE_FORMATS[car.userData.licensePlates.settings.format];
       const halfFov = Math.tan(THREE.MathUtils.degToRad(47 / 2));
       const distance = Math.max(1.05,
-        (dimensions.width + .08) * innerHeight / (2 * halfFov * Math.max(80, width - 32)),
-        (dimensions.height + .10) * innerHeight / (2 * halfFov * Math.max(80, height - 32)));
+        (dimensions.width + .08) * viewHeight / (2 * halfFov * Math.max(80, width - 32)),
+        (dimensions.height + .10) * viewHeight / (2 * halfFov * Math.max(80, height - 32)));
       const desired = plateCenter.clone().addScaledVector(outward, distance).addScaledVector(plateRight, -.08).addScaledVector(up, .13);
       camera.position.lerp(desired, 1 - Math.exp(-dt * 5));
       cameraLook.copy(plateCenter);
       // Shift the projection into the unobscured area without moving the camera
       // sideways into the bumper or sending the registration beyond the viewport.
-      camera.setViewOffset(innerWidth, innerHeight, narrow ? 0 : -panel.right / 2,
-        narrow ? (innerHeight - height) / 2 : 0, innerWidth, innerHeight);
+      camera.setViewOffset(viewWidth, viewHeight, narrow ? 0 : -panelRight / 2,
+        narrow ? (viewHeight - height) / 2 : 0, viewWidth, viewHeight);
       camera.lookAt(cameraLook); camera.fov = THREE.MathUtils.damp(camera.fov, 47, 5, dt);
       camera.updateProjectionMatrix(); return;
     }
@@ -1019,7 +1048,15 @@ function toggleAid(aid) {
   handling.aids[aid] = !handling.aids[aid];
   ui[`aid-${aid}`].classList.toggle('active', handling.aids[aid]);
   ui[`aid-${aid}`].setAttribute('aria-pressed', String(handling.aids[aid]));
+  document.getElementById(`pause-${aid}`).checked = handling.aids[aid];
   toast(`${aid.toUpperCase()} ${handling.aids[aid] ? 'ON' : 'OFF'}`);
+}
+for (const aid of ['abs', 'tcs', 'esc']) document.getElementById(`pause-${aid}`).onchange = () => toggleAid(aid);
+for (const preference of ['reduce-motion', 'reduce-transparency']) {
+  const control = document.getElementById(preference);
+  try { control.checked = localStorage.getItem(`baku-${preference}`) === 'true'; } catch { /* optional */ }
+  document.body.classList.toggle(preference, control.checked);
+  control.onchange = () => { document.body.classList.toggle(preference, control.checked); try { localStorage.setItem(`baku-${preference}`, String(control.checked)); } catch { /* optional */ } };
 }
 function cycleCamera() {
   beginCameraTransition();
@@ -1070,13 +1107,15 @@ addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{keys.clear();pointerSeen=false;driveCamera.setRearHeld(false);});
 document.addEventListener('pointerlockchange', () => {
   pointerSeen = false;
+  // A pending browser request can complete after a menu has already opened.
+  if (mode !== 'drive') { releaseDrivePointer(); return; }
   if (mode === 'drive' && document.pointerLockElement !== canvas) {
     pointerLockLostAt = performance.now();
     pause();
   }
 });
 canvas.addEventListener('click', () => { if (mode === 'drive') captureDrivePointer(); });
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();graphics.resize();});
+addEventListener('displayresize',()=>{const {width,height}=displaySize();camera.aspect=width/height;camera.updateProjectionMatrix();graphics.resize(width,height);});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();pointerSeen=false;driveCamera.setRearHeld(false);}engineAudio.setEnabled(!document.hidden && !audioMuted);});
 document.addEventListener('pointermove', e => {
   if (mode !== 'drive') { pointerSeen = false; return; }
@@ -1235,13 +1274,17 @@ if (mpUi.btn) {
   };
 }
 
+let lastRenderedAt = 0;
 function frame() {
   requestAnimationFrame(frame);
   // The introduction has its own lightweight motion; don't render an unfinished city.
   if (mode === 'loading') return;
+  const now = performance.now(), cap = frameLimit();
+  if (cap > 0 && now - lastRenderedAt < 1000 / cap - 0.5) return;
+  lastRenderedAt = now;
   graphicsDiagnostics.begin();
   const dt = Math.min(clock.getDelta(), 0.1);
-  updateCar(dt); updateCamera(dt); updateSceneLighting(dt);
+  updateCar(dt); updateCamera(dt); renderMinimap(); updateSceneLighting(dt);
   if (isMultiplayer && indicatorState.serverAt !== null) {
     updateVehicleIndicators(car, indicatorState.mode, indicatorState.serverAt, multiplayerSession.client.getServerTime());
   } else updateVehicleIndicators(car, indicatorState.mode, indicatorState.startedAt, performance.now());

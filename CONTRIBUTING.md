@@ -24,3 +24,13 @@ Native Android changes follow the [Android build guide](android/README.md). Run 
 When reporting a bug, include steps to reproduce, expected and observed behavior, browser/OS, vehicle, graphics settings and any useful console errors. A screenshot or short clip helps with visual problems. For a pull request, describe the problem, resulting behavior, checks run and remaining limitations.
 
 New or replacement assets need a traceable source and explicit redistribution terms. Document them in [asset credits](docs/ASSET_CREDITS.md) and retain the required notices. The repository currently has no project-wide source license, and several existing asset terms remain unresolved; contribution guidance does not grant reuse rights.
+
+Changes to startup or device detection must pass npm run verify-mobile-gate and
+the production npm run verify-mobile-download matrix. Do not add game-image
+preloads, renderer imports or asset fetches before the device guard. Desktop
+identity does not prove a desktop device: Android tablets and iPadOS may use
+desktop user agents. See [mobile policy](docs/MOBILE_DOWNLOAD_GATE.md).
+
+Windows changes use windows/build.ps1 and its rendered desktop UI/Quit checks.
+Keep Web, Windows and Android version metadata synchronized through the shared
+release script and put the versioned ZIP and APK into one release.

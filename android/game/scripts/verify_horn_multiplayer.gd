@@ -45,6 +45,7 @@ func save_audio(frames: PackedVector2Array, name: String):
 
 func _ready():
 	var saved = Preferences.values.duplicate(true)
+	Preferences.values.touch_controls = true
 	DirAccess.make_dir_recursive_absolute(output)
 	Preferences.values.server_url = "ws://127.0.0.1:18787"
 	Preferences.values.nickname = "AndroidHornQA"

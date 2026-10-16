@@ -4,6 +4,7 @@ These reports retain the reasoning, test scenarios and measurements behind earli
 
 | Report | Purpose |
 | --- | --- |
+| [Android 0.7.2 review](ANDROID_0_7_2_REVIEW.md) | Previous release review and native UI evidence |
 | [Graphics research](GRAPHICS_RESEARCH.md) | Initial sky, lighting and HDR pipeline |
 | [Graphics roadmap](GRAPHICS_REALISM_ROADMAP.md) | Culling, batching, reflections and research tradeoffs |
 | [Browser verification](GRAPHICS_BROWSER_VERIFICATION.md) | Early integrated-GPU inspection and limitations |

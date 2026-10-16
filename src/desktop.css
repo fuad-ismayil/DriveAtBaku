@@ -1,0 +1,40 @@
+/* Shared desktop geometry: 176px map, 264×62px instruments, CSS pixel UI. */
+#app{width:var(--view-width,100%)!important;height:var(--view-height,100%)!important}
+#hud .telemetry-panel .speed em{border:0;background:none;border-radius:0;display:block;height:32px}
+#hud .telemetry-panel .aid-buttons svg{display:none!important}
+#hud .telemetry-panel .aid-buttons button span{font:14px 'Segoe UI',sans-serif;letter-spacing:0}
+#hud .telemetry-panel .engine-readout strong em{font:15px 'Segoe UI',sans-serif}
+#hud .telemetry-panel .engine-readout>strong{font:15px 'Segoe UI',sans-serif;letter-spacing:0}
+#hud .telemetry-panel .speed>span{top:14px;line-height:18px}
+html,body{background:#000}#app{position:fixed;left:var(--view-left,0px);top:var(--view-top,0px);width:var(--view-width,100%);height:var(--view-height,100%);overflow:hidden}.screen,.modal,#hud,#loading,.full-map{position:absolute!important;inset:0}
+.reduce-motion *{animation:none!important;transition:none!important}.reduce-transparency{--glass-panel-base:#101516ed;--glass-dialog-base:#101516f5}
+.version-label{position:absolute;left:24px;bottom:10px;font:11px 'Segoe UI',sans-serif;letter-spacing:.02em;color:#c9d4d9b3;z-index:150;pointer-events:none}
+[hidden]{display:none!important}
+.release-highlights{margin:-8px 0 20px;font-size:11px;line-height:1.6;color:#cbd5d8}.release-inline-version{font-size:10px;color:#c9d4d9;margin-left:4px}
+#mobile-download{position:fixed;inset:0;padding:112px 24px 48px;background:radial-gradient(ellipse at 80% 15%,#27494b,transparent 65%),#101819;color:#f3f5f5;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:safe center;gap:32px;overflow:auto}
+#mobile-download>.brand-wordmark{position:absolute;left:24px;top:28px}
+.mobile-download-card{max-width:440px;padding:28px;border:1px solid #ffffff28;border-radius:30px;background:#ffffff08}
+.mobile-download-card h1{font-size:54px;line-height:1;letter-spacing:-.05em;margin:20px 0}
+.mobile-download-card p{color:#cbd5d8;font-size:14px;line-height:1.7}.mobile-download-card a{margin:24px 0 12px;text-decoration:none;display:flex;justify-content:space-between;padding:18px 20px;border-radius:999px;background:#ffffff15;border:1px solid #ffffff40;color:white}
+.mobile-download-card small{font-size:11px;color:#bdcbce}.download-button{text-decoration:none;min-height:63px}
+body.is-driving #minimap-button{cursor:pointer!important}
+#hud .map-panel{top:12px;right:16px;width:var(--minimap-diameter,176px);height:var(--minimap-diameter,176px);border-radius:50%;padding:0;border:1px solid #b9e6eb66;background:#142b34aa;box-shadow:inset 0 0 0 2px #d9e4e244;pointer-events:auto;animation:none;overflow:hidden;display:block;line-height:1;appearance:none}
+#hud #minimap{position:absolute;inset:0;display:block!important;width:var(--minimap-canvas,168px)!important;height:var(--minimap-canvas,168px)!important;margin:auto!important;border:0!important;border-radius:50%;pointer-events:none}.map-expand{position:absolute;right:14px;bottom:14px;color:white;font-size:19px;pointer-events:none}
+#hud #minimap-button:focus-visible{outline:2px solid #b5f1e8;outline-offset:3px}
+#hud .map-expand{right:24px;bottom:24px;z-index:1;line-height:20px;text-shadow:0 1px 3px #000}
+#hud .telemetry-panel{position:absolute;left:50%;right:auto;bottom:12px;transform:translateX(-50%);width:264px;height:62px;min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;backdrop-filter:none;display:block;animation:none;font-family:'Segoe UI',sans-serif;text-shadow:0 1px 3px #000,0 0 3px #000}
+#hud .telemetry-panel::before,#hud .telemetry-panel::after{display:none}
+.telemetry-panel .speed{position:absolute;left:16px;top:-2px;width:248px;height:40px;display:block}
+.telemetry-panel .speed strong{position:absolute;right:158px;top:0;font-size:32px;font-weight:600;line-height:40px;letter-spacing:0}
+.telemetry-panel .speed>span{position:absolute;left:96px;top:19px;font-size:14px;letter-spacing:0}
+.telemetry-panel .speed em{position:absolute;left:148px;top:5px;width:32px;text-align:center;font:24px 'Segoe UI',sans-serif;color:#c8f3ee}
+.telemetry-panel .engine-readout{position:absolute;left:0;top:40px;width:264px;height:18px;display:flex;justify-content:center;align-items:center;gap:10px;border:0;padding:0;font-size:15px;letter-spacing:0}
+.engine-readout>small,#headlight-mode{display:none}.engine-readout>strong,.engine-readout strong em{font:15px 'Segoe UI',sans-serif;color:#e0edef;letter-spacing:0}
+#transmission{position:absolute;left:202px;top:-27px;font:12px 'Segoe UI',sans-serif;color:white;letter-spacing:0}
+#hud .dynamics-panel{position:static}.aid-buttons{display:contents!important}.aid-buttons button{font:14px 'Segoe UI',sans-serif!important;padding:0!important;width:auto!important;height:18px!important;min-height:0!important;border:0!important;box-shadow:none!important;background:none!important;backdrop-filter:none!important;color:#ccdee0b3!important}
+.aid-buttons button::before,.aid-buttons button::after,.aid-buttons svg{display:none!important}.aid-buttons button.working{color:#b5f1e8!important}.aid-buttons button:not(.active){display:none!important}
+.full-map{padding:24px 36px!important;gap:16px!important;grid-template-rows:56px minmax(0,1fr) 56px!important;background:#02070af0!important;backdrop-filter:none!important}
+.full-map-card{align-items:center!important}.full-map-card h2{font:500 24px 'Segoe UI',sans-serif!important;letter-spacing:0!important}.full-map-card>button{min-width:200px;height:56px;border-radius:24px}
+#full-map-canvas{width:100%!important;max-width:none!important;height:100%!important;border-radius:0!important;border:0!important;touch-action:none}
+.full-map-footer{display:flex;justify-content:space-between;align-items:center;gap:16px}.full-map-footer p{margin:0;color:#c9d4d9;font-size:14px;line-height:1.7}.full-map-footer>div{display:flex;gap:12px}.full-map-footer button{height:56px;min-width:56px;border-radius:24px;gap:24px}
+@media(max-height:560px){#mobile-download{overflow:auto;justify-content:flex-start;padding-top:104px;padding-bottom:42px}#mobile-download .version-label{position:fixed}.mobile-download-card h1{font-size:40px;margin:12px 0}.mobile-download-card{padding:20px}}

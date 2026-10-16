@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 
-const SIZES = { performance: 0, balanced: 128, cinematic: 256 };
+const SIZES = { performance: 0, balanced: 128, high: 256, ultra: 256, cinematic: 256 };
 
 // Complete probes blend in linear HDR into one stable texture. Neither an
 // unfinished cube nor a hard swap reaches the paint, glass or clearcoat.

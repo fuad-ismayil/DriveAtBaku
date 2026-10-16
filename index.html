@@ -11,7 +11,6 @@
     <meta name="theme-color" content="#0d171b" />
     <title>DriveAtBaku — Drive the city</title>
     <style>html,body{margin:0;background:#111516}#loading{position:fixed;inset:0;z-index:100;background:#111516;color:#f3f1e9}.hidden{display:none!important}</style>
-    <link rel="preload" href="/assets/loading/city.webp" as="image" fetchpriority="high" />
     <link rel="stylesheet" href="/src/glass.css" />
     <link rel="stylesheet" href="/src/loading.css" />
   </head>
@@ -35,9 +34,15 @@
     </svg>
     <div id="app">
       <canvas id="game" aria-label="DriveAtBaku game view"></canvas>
-      <section id="loading" aria-label="Welcome to DriveAtBaku" aria-busy="true">
+      <section id="mobile-download" aria-label="DriveAtBaku native downloads">
+        <img class="brand-wordmark" src="/branding/wordmark.svg" alt="DriveAtBaku — An open road experience" width="220" height="53" />
+        <div class="mobile-download-card glass-surface"><p class="eyebrow">BAKU. IN YOUR POCKET.</p><h1>Your city.<br>Your drive.</h1><p>The Web game is for desktop. Game assets are not downloaded on phones or tablets.</p><p id="mobile-app-copy">Explore Baku in the native Android app, with touch controls made for phones and tablets.</p><a class="primary" data-download href="https://github.com/fuad-ismayil/DriveAtBaku/releases/latest" target="_blank" rel="noopener noreferrer"><span id="mobile-download-label">Download for Android</span><span aria-hidden="true">↗</span></a><small id="mobile-download-note">Choose the Android APK on our latest release page.</small></div>
+        <span class="version-label" data-version></span>
+      </section>
+      <section id="loading" hidden aria-label="Welcome to DriveAtBaku" aria-busy="true">
+        <span class="version-label" data-version></span>
         <div class="loading-scenes" aria-hidden="true">
-          <img class="loading-scene is-active" src="/assets/loading/city.webp" alt="" fetchpriority="high" />
+          <img class="loading-scene is-active" alt="" fetchpriority="high" />
           <img class="loading-scene" alt="" />
         </div>
         <div class="loading-shade" aria-hidden="true"></div>
@@ -79,16 +84,19 @@
         </footer>
       </section>
       <main id="menu" class="screen hidden">
+        <span class="version-label" data-version></span>
         <div class="menu-topline"><img class="brand-wordmark" src="/branding/wordmark.svg" alt="DriveAtBaku — An open road experience" width="220" height="53" /></div>
         <span class="menu-place glass-surface"><i aria-hidden="true"></i> Baku, Azerbaijan</span>
         <section class="hero-copy glass-surface">
           <p class="eyebrow"><i aria-hidden="true"></i> THE CITY IS YOURS</p>
           <h1>DriveAt<span>Baku.</span></h1>
           <p class="lede">Nowhere to be. Everything to discover.</p>
+          <p class="release-highlights">Camera-up maps · Cleaner driving HUD · Native downloads</p>
           <div class="menu-actions" id="menu-main-actions">
             <button id="drive-button" class="primary"><span>Start driving <small>Single player · Free roam</small></span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-arrow-right"/></svg></span></button>
             <button id="multiplayer-button" class="secondary mp-btn"><span>Drive together <small>Multiplayer</small></span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-arrow-right"/></svg></span></button>
             <button id="garage-button" class="secondary"><span>Your garage <small>Four ways to make it yours</small></span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-garage"/></svg></span></button>
+            <a class="secondary download-button" data-download href="https://github.com/fuad-ismayil/DriveAtBaku/releases/latest" target="_blank" rel="noopener noreferrer"><span>Download <span class="release-inline-version" data-version-inline>v1.0.0</span><small>Windows ZIP · Android APK</small></span><span aria-hidden="true">↗</span></a>
           </div>
           <div id="mp-menu-panel" class="mp-menu-panel hidden">
             <p class="mp-panel-title">MULTIPLAYER DRIVE</p>
@@ -198,8 +206,9 @@
               <p class="pause-shortcut"><kbd>ESC</kbd> to resume your drive</p>
               <div class="pause-actions">
                 <button id="pause-garage" class="secondary"><span>GARAGE</span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-garage"/></svg></span></button>
-                <button id="restart" class="secondary"><span>RECOVER CAR</span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-recover"/></svg></span></button>
                 <button id="pause-controls" class="secondary"><span>CONTROLS</span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-keyboard"/></svg></span></button>
+                <button id="restart" class="secondary"><span>RECOVER CAR</span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-recover"/></svg></span></button>
+                <button id="exit" class="secondary"><span>MAIN MENU</span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-arrow-right"/></svg></span></button>
               </div>
               <a class="support-button" href="https://kofe.al/@fuadismayil" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee — support the developer (opens in a new tab)"><svg class="ui-icon support-icon" aria-hidden="true"><use href="#icon-coffee"/></svg><span>BUY ME A COFFEE</span><svg class="ui-icon support-arrow" aria-hidden="true"><use href="#icon-arrow-up-right"/></svg></a>
               <p class="pause-session-note">Make yourself comfortable.<br />Changes apply as you adjust.</p>
@@ -207,13 +216,16 @@
             <section class="pause-settings" aria-labelledby="graphics-heading">
               <h3 id="graphics-heading" class="pause-section-title"><span>01</span> GRAPHICS</h3>
               <div class="setting-row">
-                <label for="graphics-quality" class="setting-copy">Quality preset<small>Lighting, shadows &amp; reflections</small></label>
-                <select id="graphics-quality"><option value="performance">Performance</option><option value="balanced" selected>Balanced</option><option value="cinematic">Cinematic</option></select>
+                <label for="graphics-quality" class="setting-copy">Graphics quality<small>Lighting, shadows &amp; reflections</small></label>
+                <select id="graphics-quality"><option value="performance">Performance</option><option value="balanced">Balanced</option><option value="high" selected>High</option><option value="ultra">Ultra</option></select>
               </div>
               <div class="setting-row">
                 <label for="rendering-resolution" class="setting-copy">Rendering Resolution<small>Fits the view without changing the window</small></label>
-                <select id="rendering-resolution"><option value="native">Native</option><option value="1920x1080">1920×1080</option><option value="1600x900">1600×900</option><option value="1280x720">1280×720</option></select>
+                <select id="rendering-resolution"><option value="native">Native</option><option value="3840x2160">3840×2160</option><option value="2560x1440">2560×1440</option><option value="1920x1080">1920×1080</option><option value="1600x900">1600×900</option><option value="1280x720">1280×720</option></select>
               </div>
+              <div class="setting-row"><label for="desktop-aspect" class="setting-copy">Aspect ratio</label><select id="desktop-aspect"><option value="auto">Auto · Fill screen</option><option>16:9</option><option>16:10</option><option>21:9</option><option>4:3</option></select></div>
+              <div class="setting-row"><label for="desktop-fullscreen" class="setting-copy">Fullscreen · F11</label><label class="settings-switch"><input id="desktop-fullscreen" type="checkbox"><span></span></label></div>
+              <div class="setting-row"><label for="desktop-frame-limit" class="setting-copy">Frame limit</label><select id="desktop-frame-limit"><option value="0">Unlimited</option><option value="30">30 FPS</option><option value="60">60 FPS</option><option value="90">90 FPS</option><option value="120">120 FPS</option><option value="144">144 FPS</option><option value="165">165 FPS</option><option value="240">240 FPS</option></select></div>
               <div class="setting-row">
                 <label for="render-scale" class="setting-copy">Native render scale<small>Extra clarity uses more GPU power</small></label>
                 <select id="render-scale"><option value="1">Native</option><option value="1.25">125%</option><option value="1.5">150%</option></select>
@@ -261,18 +273,20 @@
                 <div class="setting-copy">Game audio<small>Mute all sounds</small></div>
                 <button id="pause-mute" class="secondary setting-chip" type="button" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="#icon-volume"/></svg><span class="button-label">Sound on</span></button>
               </div>
+            <div class="desktop-extra-settings"><div class="setting-row"><label class="setting-copy" for="reduce-motion">Reduce motion</label><label class="settings-switch"><input id="reduce-motion" type="checkbox"><span></span></label></div><div class="setting-row"><label class="setting-copy" for="reduce-transparency">Increase glass contrast</label><label class="settings-switch"><input id="reduce-transparency" type="checkbox"><span></span></label></div><div class="setting-row"><label class="setting-copy" for="pause-abs">ABS</label><label class="settings-switch"><input id="pause-abs" type="checkbox"><span></span></label></div><div class="setting-row"><label class="setting-copy" for="pause-tcs">TCS</label><label class="settings-switch"><input id="pause-tcs" type="checkbox"><span></span></label></div><div class="setting-row"><label class="setting-copy" for="pause-esc">ESC</label><label class="settings-switch"><input id="pause-esc" type="checkbox"><span></span></label></div></div>
             </section>
           </div>
-          <footer class="pause-footer"><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-check"/></svg>Graphics preferences save automatically</span><button id="exit" class="text-button"><span>EXIT TO MAIN MENU</span><span class="button-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-arrow-right"/></svg></span></button></footer>
+          <footer class="pause-footer"><span><svg class="ui-icon" aria-hidden="true"><use href="#icon-check"/></svg>Graphics preferences save automatically</span></footer>
         </div>
       </section>
       <section id="full-map" class="full-map hidden" aria-modal="true" role="dialog" aria-label="Full player map">
-        <div class="full-map-card"><div><p class="eyebrow">MULTIPLAYER / LIVE MAP</p><h2>ALL DRIVERS</h2></div><button id="full-map-close" class="secondary" type="button">BACK TO ROAD</button></div>
+        <div class="full-map-card"><h2>Baku · City map</h2><button id="full-map-close" class="secondary" type="button">Close map <span aria-hidden="true">×</span></button></div>
         <canvas id="full-map-canvas" aria-label="Full city map with all players"></canvas>
+        <div class="full-map-footer"><p>Drag to explore · Scroll or pinch to zoom<br>White: you · Gold: other drivers</p><div><button id="map-zoom-out" class="secondary" aria-label="Zoom out">−</button><button id="map-zoom-in" class="secondary" aria-label="Zoom in">+</button><button id="map-locate" class="secondary">Your car <span>⌖</span></button><button id="map-fit" class="secondary">Fit city <span>↗</span></button></div></div>
       </section>
       <div id="hud" class="hidden">
-        <button id="hud-pause" class="hud-pause glass-surface" type="button" aria-label="Pause driving (Escape)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7v10M15 7v10" /></svg><span>DriveAtBaku</span><kbd>esc</kbd></button>
-        <div class="map-panel glass-surface"><div class="map-heading"><span>BAKU</span><span>HEADING UP</span></div><canvas id="minimap" width="256" height="256" aria-label="Heading-up city map showing streets and your car, with a 100 metre scale"></canvas><div class="map-footer"><span>FREE ROAM</span><span>AZERBAIJAN</span></div></div>
+        <button id="hud-pause" class="hidden" type="button" aria-label="Pause driving (Escape)"></button>
+        <button id="minimap-button" class="map-panel" type="button" title="City map · M" aria-label="Open city map (M)"><canvas id="minimap" width="336" height="336" aria-label="Camera-up city minimap with vehicle headings"></canvas><span class="map-expand" aria-hidden="true">↗</span></button>
         <div class="telemetry-panel glass-surface"><div class="speed"><strong id="speed">0</strong><span>km/h</span><em id="gear" aria-label="Current gear">N</em></div><div class="engine-readout"><small>ENGINE</small><strong><span id="rpm">900</span> <em>rpm</em></strong><span id="transmission">AUTO</span><span id="headlight-mode">LIGHTS OFF</span></div></div>
         <div class="dynamics-panel" role="group" aria-label="Driving aids">
           <div class="aid-buttons">

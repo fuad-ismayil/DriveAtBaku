@@ -9,6 +9,7 @@ const browserSuites = new Set([
   'verify-room-lights-browser',
   'verify-graphics-settings-browser', 'verify-resolution-browser',
   'verify-interface-browser',
+  'verify-desktop-parity-browser', 'verify-mobile-download',
   'verify-weather', 'verify-vehicle-water', 'verify-vehicle-water-distance',
   'verify-indicators-browser',
 ]);

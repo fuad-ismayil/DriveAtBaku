@@ -5,10 +5,15 @@ param(
     [string]$AndroidSdk = $env:ANDROID_HOME,
     [string]$JavaSdk = $env:JAVA_HOME,
     [string]$NativeCompiler = $env:DAB_CXX,
+    [string]$CMakeBinary = $env:DAB_CMAKE,
+    [string]$NinjaBinary = $env:DAB_NINJA,
+    [string]$DesktopOutput = '',
     [string]$Device = '',
     [ValidateSet('Vulkan', 'OpenGL')]
     [string]$Renderer = 'Vulkan',
-    [switch]$Install
+    [switch]$Install,
+    [switch]$Release,
+    [switch]$RebuildAssets
 )
 $ErrorActionPreference = 'Stop'
 $repository = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -46,7 +51,7 @@ try {
             if (Test-Path -LiteralPath $candidate) { $AndroidSdk = $candidate; break }
         }
     }
-    if (-not $AndroidSdk -or -not (Test-Path -LiteralPath $AndroidSdk)) { throw 'Set -AndroidSdk / ANDROID_HOME to the Android SDK directory.' }
+    if ($Target -in @('Android', 'All') -and (-not $AndroidSdk -or -not (Test-Path -LiteralPath $AndroidSdk))) { throw 'Set -AndroidSdk / ANDROID_HOME to the Android SDK directory.' }
     if (-not $JavaSdk) {
         $javaCommand = Get-Command java -ErrorAction SilentlyContinue
         if ($javaCommand) { $JavaSdk = Split-Path (Split-Path $javaCommand.Source) }
@@ -55,17 +60,26 @@ try {
     if (-not (Test-Path -LiteralPath $NativeCompiler)) { throw 'Set -NativeCompiler / DAB_CXX to an LLVM-MinGW clang++.exe, or run setup_tools.ps1.' }
     $NativeCompiler = $NativeCompiler.Replace('\', '/')
     $env:PATH = "$(Split-Path $NativeCompiler);$env:PATH"
-    $cmakeRoot = Get-ChildItem -LiteralPath (Join-Path $AndroidSdk 'cmake') -Directory | Sort-Object Name -Descending | Select-Object -First 1
-    if (-not $cmakeRoot) { throw 'Install CMake in the Android SDK.' }
-    $cmake = Join-Path $cmakeRoot.FullName 'bin\cmake.exe'
-    $ninja = (Join-Path $cmakeRoot.FullName 'bin\ninja.exe').Replace('\', '/')
+    $cmakeRoot = $null
+    if ($AndroidSdk -and (Test-Path -LiteralPath (Join-Path $AndroidSdk 'cmake'))) {
+        $cmakeRoot = Get-ChildItem -LiteralPath (Join-Path $AndroidSdk 'cmake') -Directory | Sort-Object Name -Descending | Select-Object -First 1
+    }
+    if (-not $CMakeBinary -and $cmakeRoot) { $CMakeBinary = Join-Path $cmakeRoot.FullName 'bin\cmake.exe' }
+    if (-not $NinjaBinary -and $cmakeRoot) { $NinjaBinary = Join-Path $cmakeRoot.FullName 'bin\ninja.exe' }
+    if (-not $CMakeBinary) { $CMakeBinary = (Get-Command cmake -ErrorAction SilentlyContinue).Source }
+    if (-not $NinjaBinary) { $NinjaBinary = (Get-Command ninja -ErrorAction SilentlyContinue).Source }
+    if (-not $CMakeBinary -or -not (Test-Path -LiteralPath $CMakeBinary)) { throw 'Install CMake or set -CMakeBinary / DAB_CMAKE.' }
+    if (-not $NinjaBinary -or -not (Test-Path -LiteralPath $NinjaBinary)) { throw 'Install Ninja or set -NinjaBinary / DAB_NINJA.' }
+    $cmake = $CMakeBinary
+    $ninja = $NinjaBinary.Replace('\', '/')
     New-Item -ItemType Directory -Force 'artifacts\android', 'android\build' | Out-Null
     if (-not (Test-Path 'artifacts/android/godot-cpp/CMakeLists.txt')) {
         Invoke-Checked git @('clone', '--branch', '4.5', 'https://github.com/godotengine/godot-cpp.git', 'artifacts/android/godot-cpp')
         Invoke-Checked git @('-C', 'artifacts/android/godot-cpp', 'checkout', '--detach', '27d9dd23c83871e0619fca5dc2cddfbfd69e926a')
     }
+    Invoke-Checked node @('scripts/sync_release.mjs')
     Invoke-Checked node @('android/tools/prepare_physics.mjs')
-    if ($Target -in @('Prepare', 'All') -or -not (Test-Path 'android/game/assets/world/baku.glb')) {
+    if ($RebuildAssets -or $Target -in @('Prepare', 'All') -or -not (Test-Path 'android/game/assets/world/baku.glb')) {
         Invoke-Checked node @('android/tools/prepare_assets.mjs')
         Invoke-Checked node @('android/tools/prepare_vehicles.mjs')
         Invoke-Checked node @('android/tools/prepare_city_effects.mjs')
@@ -76,7 +90,8 @@ try {
     Invoke-Checked node @('android/tools/prepare_sky_shader.mjs')
     Invoke-Checked node @('android/tools/prepare_presentation_reference.mjs')
     Invoke-Checked node @('android/tools/prepare_interface.mjs')
-    Invoke-Checked $cmake @('-S', 'android/native', '-B', 'android/native/build-desktop', '-G', 'Ninja', '-DCMAKE_BUILD_TYPE=Release', "-DCMAKE_CXX_COMPILER=$NativeCompiler", "-DCMAKE_MAKE_PROGRAM=$ninja", '-DCMAKE_SYSTEM_NAME=Windows', '-DCMAKE_SYSTEM_PROCESSOR=AMD64')
+    $nativeTarget = if ($Release) { 'template_release' } else { 'template_debug' }
+    Invoke-Checked $cmake @('-S', 'android/native', '-B', 'android/native/build-desktop', '-G', 'Ninja', '-DCMAKE_BUILD_TYPE=Release', "-DGODOTCPP_TARGET=$nativeTarget", "-DCMAKE_CXX_COMPILER=$NativeCompiler", "-DCMAKE_MAKE_PROGRAM=$ninja", '-DCMAKE_SYSTEM_NAME=Windows', '-DCMAKE_SYSTEM_PROCESSOR=AMD64')
     Invoke-Checked $cmake @('--build', 'android/native/build-desktop', '-j', '8')
     Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', '--editor', '--import', '--quit')
     Invoke-Checked node @('android/tools/configure_imports.mjs')
@@ -100,7 +115,11 @@ try {
         Invoke-Checked node @('android/tools/verify_network.mjs')
     }
     if ($Target -in @('Desktop', 'All')) {
-        Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', '--export-debug', 'Windows Preview', (Join-Path $repository 'android/build/DriveAtBaku-native.exe'))
+        if (-not $DesktopOutput) { $DesktopOutput = Join-Path $repository 'android/build/DriveAtBaku-native.exe' }
+        $DesktopOutput = [IO.Path]::GetFullPath($DesktopOutput)
+        New-Item -ItemType Directory -Force (Split-Path $DesktopOutput) | Out-Null
+        $exportMode = if ($Release) { '--export-release' } else { '--export-debug' }
+        Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', $exportMode, 'Windows Preview', $DesktopOutput)
     }
     if ($Target -in @('Android', 'All')) {
         $ndk = Get-ChildItem -LiteralPath (Join-Path $AndroidSdk 'ndk') -Directory | Sort-Object Name -Descending | Select-Object -First 1
@@ -112,6 +131,9 @@ try {
         $apk = Join-Path $repository $(if ($Renderer -eq 'Vulkan') { 'android/build/DriveAtBaku-native-debug.apk' } else { 'android/build/DriveAtBaku-native-opengl.apk' })
         $preset = if ($Renderer -eq 'Vulkan') { 'Android S9' } else { 'Android OpenGL Fallback' }
         Invoke-Checked $GodotBinary @('--headless', '--path', 'android/game', '--export-debug', $preset, $apk)
+        $releaseVersion = (Get-Content -LiteralPath 'public/release.json' -Raw | ConvertFrom-Json).version
+        $versionedApk = Join-Path $repository "android/build/DriveAtBaku-Android-v$releaseVersion.apk"
+        if ($Renderer -eq 'Vulkan') { Copy-Item -LiteralPath $apk -Destination $versionedApk -Force }
         if ($Install) {
             $adb = Join-Path $AndroidSdk 'platform-tools/adb.exe'
             $selector = @()

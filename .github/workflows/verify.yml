@@ -38,3 +38,27 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:8788/health
           SERVER_URL=ws://127.0.0.1:8788 CLIENTS=4 DURATION=3 npm run loadtest --prefix server
+
+  mobile-download:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run build
+      - name: Check production mobile and tablet download gate
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 5197 > preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid"' EXIT
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:5197/ > /dev/null; then break; fi
+            sleep 1
+          done
+          GAME_URL=http://127.0.0.1:5197 npm run verify-mobile-download

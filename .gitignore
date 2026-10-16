@@ -67,6 +67,13 @@ android/native/compile_commands.json
 android/native/CMakeUserPresets.json
 android/.tools/
 android/build/
+windows/build/
+# Native packages and signing stores must not enter source commits.
+*.apk
+*.aab
+*.pck
+*.keystore
+*.jks
 android/local.properties
 android/.gradle/
 android/game/android/build/

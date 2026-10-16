@@ -2,12 +2,14 @@ extends Node3D
 
 const VehicleView = preload("res://scripts/vehicle_view.gd")
 const Interface = preload("res://scripts/interface.gd")
+const DesktopInterface = preload("res://scripts/desktop_interface.gd")
 const Multiplayer = preload("res://scripts/multiplayer.gd")
 const EngineSound = preload("res://scripts/engine_audio.gd")
+const GraphicsProfile = preload("res://scripts/graphics_profile.gd")
 const IDS = ["ferrari", "elantra", "amg", "prado"]
 
 var simulation
-var interface = Interface.new()
+var interface = Interface.new() if OS.has_feature("mobile") else DesktopInterface.new()
 var session = Multiplayer.new()
 var sound = EngineSound.new()
 var tire_effects = preload("res://scripts/tire_effects.gd").new()
@@ -27,6 +29,7 @@ var camera_ready = false
 var hood_camera = false
 var camera_yaw = 0.0
 var camera_pitch = 0.0
+var camera_input_idle = 2.0
 var camera_position = Vector3.ZERO
 var camera_look = Vector3.ZERO
 var camera_velocity = Vector3.ZERO
@@ -51,6 +54,8 @@ var reflection_elapsed = 0.0
 var switch_timings: Dictionary = {}
 
 func _ready():
+	_apply_display()
+	AudioServer.set_bus_mute(0, Preferences.values.audio_muted)
 	add_child(interface)
 	add_child(session)
 	add_child(sound)
@@ -62,6 +67,11 @@ func _ready():
 	camera.near = 0.15
 	camera.far = 3000
 	_setup_environment()
+	get_window().size_changed.connect(func():
+		_apply_display()
+		if ready_to_drive: _apply_graphics())
+	if GraphicsProfile.desktop() and Preferences.values.fullscreen:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	interface.requested.connect(_action)
 	interface.vehicle_selected.connect(_select_vehicle)
 	interface.setting_changed.connect(_setting_changed)
@@ -112,6 +122,7 @@ func _ready():
 			world_meshes.append(mesh)
 			for surface in mesh.mesh.get_surface_count():
 				var material = mesh.get_active_material(surface)
+				if material != null and ("TREE" in material.resource_name or "GRASS" in material.resource_name or "HEDGE" in material.resource_name): mesh.set_meta("desktop_prop", true)
 				if material is StandardMaterial3D and not lighting_materials.has(material.get_instance_id()):
 					lighting_materials[material.get_instance_id()] = {"material": material, "color": material.albedo_color, "roughness": material.roughness}
 		await get_tree().process_frame
@@ -253,7 +264,8 @@ func _process(dt):
 			if session.server_time() - remote.buffer[-1].time > 3000: continue
 			var forward = -remote.root.basis.z
 			map_drivers.append({"position": Vector2(remote.root.position.x, -remote.root.position.z), "heading": atan2(-forward.x, -forward.z)})
-		interface.update_map(state, map_drivers)
+		var facing = -camera.global_basis.z
+		interface.update_map(state, map_drivers, atan2(-facing.x, -facing.z))
 
 func _present(alpha: float):
 	if state.is_empty(): return
@@ -279,11 +291,24 @@ func _update_camera(dt: float):
 			camera.fov = 48
 			camera_ready = false
 			return
+	if not OS.has_feature("mobile") and interface.menu.visible and interface.page == "garage":
+		var forward = -player.basis.z
+		forward.y = 0
+		forward = forward.normalized()
+		var right = player.basis.x.normalized()
+		var sway = sin(Time.get_ticks_msec() * .0003) * .45
+		var desired = player.position + forward * 6.1 + right * (-2.4 + sway) + Vector3.UP * 2.05
+		camera.position = camera.position.lerp(desired, 1 - exp(-dt * 3.7))
+		camera.look_at(player.position + right * 2.3 + Vector3.UP * .8)
+		camera.fov = lerpf(camera.fov, 58, 1 - exp(-dt * 3))
+		camera_ready = false
+		return
 	var drag: Vector2 = interface.controls.camera_delta
 	interface.controls.camera_delta = Vector2.ZERO
 	camera_yaw -= drag.x * 0.004
 	camera_pitch = clampf(camera_pitch + drag.y * 0.003, -0.3, 0.5)
-	var return_blend = preload("res://scripts/camera_return.gd").blend(Vector2(state.velocity.x, state.velocity.z).length() * 3.6, dt, interface.controls.camera_drag != -1)
+	camera_input_idle = 0.0 if not drag.is_zero_approx() else camera_input_idle + dt
+	var return_blend = preload("res://scripts/camera_return.gd").blend(Vector2(state.velocity.x, state.velocity.z).length() * 3.6, dt, interface.controls.camera_drag != -1 or camera_input_idle < 2.0)
 	camera_yaw = lerpf(camera_yaw, 0, return_blend)
 	camera_pitch = lerpf(camera_pitch, 0, return_blend * 0.6)
 	var forward = -player.basis.z
@@ -296,7 +321,7 @@ func _update_camera(dt: float):
 	var id = player.vehicle_id
 	var distance = {"ferrari": 5.85, "elantra": 6.1, "amg": 6.35, "prado": 7.0}[id] + camera_pullback
 	var height = (2.9 if id == "prado" else 2.35) + 0.1 * smoothstep(0, 150, speed_kmh) + 0.1 * clampf(absf(state.angular_velocity.y) / 1.2, 0, 1) + 0.08 * camera_pullback
-	var desired = player.position - forward.rotated(Vector3.UP, camera_yaw) * distance + Vector3.UP * (height + sin(camera_pitch) * distance)
+	var desired = player.position - forward.rotated(Vector3.UP, camera_yaw + (PI if interface.controls.rear_look else 0.0)) * distance + Vector3.UP * (height + sin(camera_pitch) * distance)
 	desired.y = maxf(desired.y, simulation.road_height(desired + Vector3.UP * 6) + 1.2)
 	var look = player.position + forward * (-0.45 if state.speed < -1.3 else 1.45) + Vector3.UP * (1.08 + 0.25 * camera_pitch)
 	var movement = player.position - tracked_car
@@ -335,9 +360,15 @@ func _action(action: String):
 		return
 	if action == "quit":
 		Preferences.save()
+		is_driving = false
 		ready_to_drive = false
+		interface.controls.clear()
+		interface.controls.active = false
+		session.disconnect_from_relay()
+		_clear_remotes()
 		city_effects.set_process(false)
 		sound.shutdown()
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		get_tree().quit()
 		return
 	if not ready_to_drive: return
@@ -368,6 +399,10 @@ func _action(action: String):
 			state = simulation.snapshot()
 			interface.update_state(state, session.status, remotes.size() + 1)
 		"lights": player.headlight_mode = (player.headlight_mode + 1) % 3
+		"aid_abs", "aid_tcs", "aid_esc":
+			var aid = action.trim_prefix("aid_")
+			Preferences.update(aid, not Preferences.values[aid])
+			_setting_changed(aid)
 		"signal_left", "signal_right", "signal_hazard":
 			var mode = action.trim_prefix("signal_")
 			indicator.mode = "off" if indicator.mode == mode else mode
@@ -399,8 +434,14 @@ func _setting_changed(key: String):
 		state = simulation.snapshot()
 		interface.update_state(state, session.status, remotes.size() + 1)
 	if key in ["abs", "tcs", "esc"]: simulation.set_aids(Preferences.values.abs, Preferences.values.tcs, Preferences.values.esc)
-	if key in ["quality", "resolution", "render_distance"]: _apply_graphics()
-	if key in ["night", "weather"]: _apply_weather()
+	if key in ["quality", "resolution", "render_scale", "render_distance", "props_distance", "ambient_occlusion", "frame_limit", "vsync", "precipitation"]: _apply_graphics()
+	if key == "aspect_ratio": _apply_display(); _apply_graphics()
+	if key == "audio_muted": AudioServer.set_bus_mute(0, Preferences.values.audio_muted)
+	if key == "fullscreen" and GraphicsProfile.desktop():
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if Preferences.values.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
+		if interface.fields.has("fullscreen") and is_instance_valid(interface.fields.fullscreen):
+			interface.fields.fullscreen.set_pressed_no_signal(Preferences.values.fullscreen)
+	if key in ["night", "weather", "precipitation"]: _apply_weather()
 	if key == "paint": player.paint(Preferences.values.paint)
 	if key.begins_with("plate_"): player.registration(Preferences.plate_settings())
 
@@ -411,7 +452,8 @@ func _setup_environment():
 	env.background_mode = Environment.BG_SKY
 	env.sky = Sky.new()
 	var sky_material = ShaderMaterial.new()
-	sky_material.shader = load("res://shaders/sky.gdshader")
+	sky_material.shader = load("res://shaders/desktop_sky.gdshader" if GraphicsProfile.desktop() else "res://shaders/sky.gdshader")
+	if GraphicsProfile.desktop(): sky_material.set_shader_parameter("cloud_texture", load("res://shaders/desktop_clouds.tres"))
 	env.sky.sky_material = sky_material
 	env.sky.radiance_size = Sky.RADIANCE_SIZE_128
 	env.sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
@@ -472,13 +514,29 @@ func _setup_occlusion():
 	get_viewport().use_occlusion_culling = true
 
 func _apply_graphics():
-	var viewport = get_viewport()
-	var display_height = float(get_window().size.y)
-	viewport.scaling_3d_scale = minf(1.0, float(Preferences.values.resolution) / maxf(display_height, 1))
-	viewport.msaa_3d = Viewport.MSAA_2X if Preferences.values.quality == "balanced" else Viewport.MSAA_DISABLED
-	for mesh in world_meshes:
-		mesh.visibility_range_end = Preferences.values.render_distance
-	Engine.max_fps = 60
+	GraphicsProfile.apply(self)
+
+func _apply_display():
+	if not GraphicsProfile.desktop(): return
+	var window = get_window()
+	var available = Vector2(window.size)
+	var ratio: String = Preferences.values.aspect_ratio
+	window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+	if ratio == "auto":
+		window.content_scale_size = window.size
+	else:
+		var parts = ratio.split(":")
+		var aspect = float(parts[0]) / float(parts[1])
+		var width = minf(available.x, available.y * aspect)
+		window.content_scale_size = Vector2i(roundi(width), roundi(width / aspect))
+
+func _unhandled_key_input(event):
+	if not GraphicsProfile.desktop() or not event is InputEventKey or not event.pressed or event.echo: return
+	if event.physical_keycode == KEY_F11 or (event.physical_keycode == KEY_ENTER and event.alt_pressed):
+		Preferences.update("fullscreen", not Preferences.values.fullscreen)
+		_setting_changed("fullscreen")
+		get_viewport().set_input_as_handled()
 
 func _apply_weather():
 	var night = Preferences.values.night
@@ -491,6 +549,7 @@ func _apply_weather():
 			item.material.set_shader_parameter("wetness", 1.0 if weather in ["wet", "rain"] else (0.25 if weather == "snow" else 0.0))
 			item.material.set_shader_parameter("rainfall", 1.0 if weather == "rain" else 0.0)
 			item.material.set_shader_parameter("snow", 0.9 if weather == "snow" else 0.0)
+		elif item.kind == "foliage": item.material.set_shader_parameter("snow", 1.0 if weather == "snow" else 0.0)
 		else: item.material.set_shader_parameter("night", 1.0 if night else 0.0)
 	local_probe.position += Vector3(0.001, 0, 0)
 	var preset_sun = {"sunny": 1.0, "overcast": 0.16, "wet": 0.55, "rain": 0.09, "snow": 0.12}[weather]
@@ -514,7 +573,7 @@ func _apply_weather():
 	env.fog_light_color = Color("263b56") if night else fog_colors[weather]
 	# Godot's exponential extinction differs from Three's squared distance fog.
 	env.fog_density = fog_density * 0.35 * (1.25 if night else 1.0)
-	precipitation.emitting = weather in ["rain", "snow"]
+	precipitation.emitting = weather in ["rain", "snow"] and Preferences.values.precipitation > 0
 	precipitation.initial_velocity_min = 2 if weather == "snow" else 12
 	precipitation.initial_velocity_max = 4 if weather == "snow" else 18
 	precipitation.mesh.size = Vector2(0.065, 0.065) if weather == "snow" else Vector2(0.018, 0.25)
@@ -530,6 +589,7 @@ func _apply_weather():
 			material.roughness = 0.16
 		elif weather == "snow" and ground:
 			material.albedo_color = item.color.lerp(Color(0.9, 0.93, 0.96), 0.55)
+	GraphicsProfile.apply_atmosphere(self)
 
 func _setup_surface_materials():
 	var converter = preload("res://scripts/surface_material.gd")
@@ -539,7 +599,11 @@ func _setup_surface_materials():
 			if not source is StandardMaterial3D: continue
 			var key = source.get_instance_id()
 			if not surface_materials.has(key):
-				if converter.is_road(source.resource_name):
+				if GraphicsProfile.desktop() and source.resource_name == "BAK_TREE_LIGHTS_A_01-material":
+					surface_materials[key] = {"kind": "decoration", "material": converter.create(source, "res://shaders/tree_lights.gdshader")}
+				elif GraphicsProfile.desktop() and source.resource_name in ["TREEC-material", "BAK_FEATURE_P_HEDGES_A_01-material"]:
+					surface_materials[key] = {"kind": "foliage", "material": converter.create(source, "res://shaders/foliage.gdshader")}
+				elif converter.is_road(source.resource_name):
 					surface_materials[key] = {"kind": "road", "material": converter.create(source, "res://shaders/road.gdshader")}
 				elif city_effects.stats.houseMasks.has(source.resource_name):
 					var material = converter.create(source, "res://shaders/government_house.gdshader")
@@ -577,13 +641,19 @@ func _remote_joined(info: Dictionary):
 	var root = Node3D.new()
 	add_child(root)
 	var label = Label3D.new()
-	label.text = str(info.get("nick", "Player")).substr(0, 16)
-	label.position.y = 2.2
+	var label_spec = preload("res://scripts/presentation_spec.gd").data.nameplate
+	label.text = str(info.get("nick", "Player")).substr(0, int(label_spec.maxCharacters))
+	label.position.y = label_spec.height
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.font_size = 48
-	label.pixel_size = 0.008
-	label.visibility_range_end = 150
-	label.outline_size = 5
+	var label_font = SystemFont.new()
+	label_font.font_names = PackedStringArray([label_spec.font, "sans-serif"])
+	label.font = label_font
+	label.font_size = int(label_spec.fontSize)
+	label.pixel_size = label_spec.pixelSize
+	label.visibility_range_end = label_spec.fadeEnd
+	label.outline_size = int(label_spec.outline)
+	label.modulate = Color.WHITE
+	label.outline_modulate = Color.BLACK
 	root.add_child(label)
 	var effects = preload("res://scripts/tire_effects.gd").new()
 	add_child(effects)
@@ -662,7 +732,8 @@ func _update_remotes(dt: float):
 			p = _from_wire(b.state.p) + _from_wire(b.state.v) * clampf((target - b.time) / 1000, 0, 0.15)
 		remote.root.position = p
 		remote.root.quaternion = _rotation_from_wire(a.state.q).slerp(_rotation_from_wire(b.state.q), alpha)
-		var name_opacity = 1.0 - smoothstep(120.0, 150.0, remote.root.position.distance_to(camera.position))
+		var label_spec = preload("res://scripts/presentation_spec.gd").data.nameplate
+		var name_opacity = 1.0 - smoothstep(label_spec.fadeStart, label_spec.fadeEnd, remote.root.position.distance_to(camera.position))
 		remote.label.modulate.a = name_opacity
 		remote.label.outline_modulate.a = name_opacity
 		if not is_instance_valid(remote.view): continue

@@ -21,6 +21,8 @@ var camera_delta = Vector2.ZERO
 var safe_insets = Vector4.ZERO
 var blocked_regions: Array = []
 var automatic = true
+var mouse_look = false
+var rear_look = false
 
 func set_automatic(value: bool):
 	if automatic == value: return
@@ -47,7 +49,10 @@ func _layout():
 	var horn_side = maxf(88, 88.0 * factor)
 	var horn_y = h - (240.0 if Preferences.values.control_mode == "sliders" else 140.0) * factor
 	var steering_width = maxf(350 * factor, 3 * 88 + 32)
+	# Keep enlarged steering controls out of the shared 264px center readout.
+	steering_width = minf(steering_width, maxf(296, w * .5 - 132 - 24 - 48 - maxf(safe_insets.x, safe_insets.z)))
 	var arrow_width = maxf(88, 118 * factor)
+	arrow_width = minf(arrow_width, (steering_width - 16) * .5)
 	regions = {
 		"steering": Rect2(48, h - 136 * factor, steering_width, maxf(88, 92 * factor)),
 		"left": Rect2(48, h - 150 * factor, arrow_width, maxf(88, 108 * factor)),
@@ -90,11 +95,19 @@ func clear():
 	finger_speed = 0
 	camera_drag = -1
 	camera_delta = Vector2.ZERO
+	mouse_look = false
+	rear_look = false
 	queue_redraw()
 
 func _input(event):
 	if not active:
 		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		mouse_look = event.pressed
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_MIDDLE:
+		rear_look = event.pressed
+	elif event is InputEventMouseMotion and (mouse_look or Input.mouse_mode == Input.MOUSE_MODE_CAPTURED):
+		camera_delta += event.relative
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.physical_keycode:
 			KEY_E: shifts.append("shift_up")
@@ -102,9 +115,24 @@ func _input(event):
 			KEY_T: action_requested.emit("transmission")
 			KEY_C: action_requested.emit("camera")
 			KEY_ESCAPE: action_requested.emit("pause")
-			KEY_R: action_requested.emit("recover")
+			KEY_R: action_requested.emit("restart" if event.shift_pressed else "recover")
 			KEY_L: action_requested.emit("lights")
+			KEY_M: action_requested.emit("map")
+			KEY_Z: action_requested.emit("signal_left")
+			KEY_V: action_requested.emit("signal_right")
+			KEY_B: action_requested.emit("signal_hazard")
+			KEY_COMMA: action_requested.emit("signal_left")
+			KEY_PERIOD: action_requested.emit("signal_right")
+			KEY_SLASH: action_requested.emit("signal_hazard")
+			KEY_1: action_requested.emit("aid_abs")
+			KEY_2: action_requested.emit("aid_tcs")
+			KEY_3: action_requested.emit("aid_esc")
+		if event.physical_keycode in [KEY_E, KEY_Q, KEY_T, KEY_C, KEY_ESCAPE, KEY_R, KEY_L, KEY_M, KEY_Z, KEY_V, KEY_B, KEY_COMMA, KEY_PERIOD, KEY_SLASH, KEY_1, KEY_2, KEY_3]:
+			# Pause can open a menu during this event. Consume it before the
+			# menu's Back handler sees the same Escape and resumes immediately.
+			get_viewport().set_input_as_handled()
 	if event is InputEventScreenTouch:
+		if not Preferences.values.touch_controls: return
 		if event.pressed and not event.canceled:
 			for blocked in blocked_regions:
 				if blocked.has_point(event.position): return
@@ -197,7 +225,7 @@ func sample(dt: float) -> Dictionary:
 	return result
 
 func _draw():
-	if not active: return
+	if not active or not Preferences.values.touch_controls: return
 	var sliders = Preferences.values.control_mode == "sliders"
 	for key in regions:
 		if sliders and key in ["left", "right"]: continue

@@ -7,13 +7,14 @@ import { VEHICLES } from '../vehicleCatalog.js';
 import { remoteEngineState } from './engineState.js';
 import { INTERP_DELAY_MS } from './protocol.js';
 import { updateVehicleIndicators, disposeVehicleIndicators, isNewerSequence } from '../vehicleIndicators.js';
+import presentation from '../../shared/ui-spec.json' with { type: 'json' };
 
 export class RemotePlayer {
   constructor(info, options) {
     this.id = info.id;
     this.disposed = false;
     this.getServerTime = options.getServerTime;
-    this.nick = info.nick || 'Player';
+    this.nick = (info.nick || 'Player').slice(0, presentation.nameplate.maxCharacters);
     this.color = info.color || '#e6194b';
     this.scene = options.scene;
     this.baseAssetScene = options.baseAssetScene;
@@ -194,20 +195,21 @@ export class RemotePlayer {
 
   _initNameplate() {
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 128;
+    const spec = presentation.nameplate;
+    canvas.height = 96;
     const ctx = canvas.getContext('2d');
-
-    ctx.font = 'bold 50px "Space Grotesk", system-ui, sans-serif';
+    ctx.font = `${spec.fontSize}px "${spec.font}", sans-serif`;
+    canvas.width = Math.ceil(ctx.measureText(this.nick).width + spec.outline * 4);
+    ctx.font = `${spec.fontSize}px "${spec.font}", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     // A narrow text outline preserves readability without a background panel.
-    ctx.lineWidth = 5;
+    ctx.lineWidth = spec.outline * 2;
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = 'rgba(9, 13, 18, 0.85)';
-    ctx.strokeText(this.nick, canvas.width / 2, canvas.height / 2, canvas.width - 24);
+    ctx.strokeStyle = '#000000';
+    ctx.strokeText(this.nick, canvas.width / 2, canvas.height / 2);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(this.nick, canvas.width / 2, canvas.height / 2, canvas.width - 24);
+    ctx.fillText(this.nick, canvas.width / 2, canvas.height / 2);
 
     this.nameplateTexture = new THREE.CanvasTexture(canvas);
     this.nameplateTexture.minFilter = THREE.LinearFilter;
@@ -216,10 +218,11 @@ export class RemotePlayer {
       transparent: true,
       depthTest: true,
       depthWrite: false,
+      toneMapped: false,
     });
     this.nameplate = new THREE.Sprite(spriteMaterial);
-    this.nameplate.scale.set(2.4, 0.6, 1);
-    this.nameplate.center.set(0.5, 0);
+    this.nameplate.scale.set(canvas.width * spec.pixelSize, canvas.height * spec.pixelSize, 1);
+    this.nameplate.center.set(0.5, 0.5);
     this.scene.add(this.nameplate);
   }
 
@@ -484,12 +487,12 @@ export class RemotePlayer {
     if (!this.nameplate) return;
 
     this.nameplate.position.copy(this.currentPosition);
-    this.nameplate.position.z += 2.1;
+    this.nameplate.position.z += presentation.nameplate.height;
 
     if (cameraPosition) {
       const dist = this.currentPosition.distanceTo(cameraPosition);
-      this.nameplate.visible = dist < 150;
-      this.nameplate.material.opacity = 1 - THREE.MathUtils.smoothstep(dist, 120, 150);
+      this.nameplate.visible = dist < presentation.nameplate.fadeEnd;
+      this.nameplate.material.opacity = 1 - THREE.MathUtils.smoothstep(dist, presentation.nameplate.fadeStart, presentation.nameplate.fadeEnd);
     }
   }
 

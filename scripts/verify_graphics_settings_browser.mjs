@@ -135,7 +135,7 @@ try {
       writeFileSync(`${output}/layout.json`, JSON.stringify(layouts, null, 2));
     }
     const scenarios = process.env.UI_ONLY === '1' ? [] : variant === 'before' ? [[6000,3000]] : [[6000,3000], [6000,250], [1200,250], [400,100]];
-    for (const quality of ['performance', 'balanced', 'cinematic']) for (const [renderDistance, propsDistance] of scenarios) {
+    for (const quality of ['performance', 'balanced', 'high', 'ultra']) for (const [renderDistance, propsDistance] of scenarios) {
       await page.evaluate(args => window.__settingsProbe.prepare(...args), [quality, renderDistance, propsDistance]);
       await page.evaluate(() => window.__settingsProbe.measure(60));
       const result = await page.evaluate(() => window.__settingsProbe.measure(120));

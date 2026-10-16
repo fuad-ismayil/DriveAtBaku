@@ -4,13 +4,14 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 
 | Guide | Contents |
 | --- | --- |
-| [Unreleased change review](UNRELEASED_CHANGES.md) | Analysis of all source/docs changes since 03bb820, current verification, remaining limits and approved A1 branding |
+| [Unreleased change review](UNRELEASED_CHANGES.md) | v1.0.0 changes since 62f3a26, release review, current checks and limits |
 | [Brand identity](branding/README.md) | Approved A1 meaning, masters, platform icons, regeneration and proposal history |
 | [Rendering](RENDERING.md) | Current presets, resolution, post-processing, visibility, shadows and reflections |
 | [Verification](VERIFICATION.md) | Repeatable automated checks, browser prerequisites and profiling |
 | [Multiplayer](MULTIPLAYER.md) | State replication, interpolation and known limits |
 | [Relay setup](../server/README.md) | Local server, configuration, tunnels and load testing |
 | [Native Android preview](../android/README.md) | Windows toolchain, asset preparation, ARM64/desktop exports and touch controls |
+| [Native Windows game](../windows/README.md) | Forward+ graphics, desktop controls, quality presets and portable release builds |
 | [Android implementation](android/IMPLEMENTATION.md) | Original simulation port, native presentation, effects and protocol integration |
 | [Android device verification](android/DEVICE_RESULTS.md) | S9 results, exact physics fixtures, audio/lighting checks and measurement limits |
 | [Android audio and plate fixes](android/AUDIO_AND_PLATE_FIXES.md) | Real plate lamps, PCM boundary correction, remote braking audio and bidirectional tests |
@@ -34,6 +35,13 @@ Start with the [root README](../README.md) to run the game and [contributing gui
 
 [history/](history/README.md) preserves earlier rendering research, model-fitting decisions and measured investigations. These reports describe particular development stages and hardware, rather than the current defaults or universal performance guarantees. Screenshots, raw measurements and comparison baselines referenced there are local files under ignored `artifacts/`; they are not published evidence in this repository.
 
-The selected gameplay and menu previews in `images/` show the current interface. Runtime collision audits in `src/` are executable data used to validate the supplied map, rather than temporary reports.
+The selected gameplay and menu previews in `images/` record earlier interface revisions. Current v1.0.0 validation is described in the release review. Runtime collision audits in `src/` are executable data used to validate the supplied map, rather than temporary reports.
 
 Android recordings, raw device logs, APKs and generated assets likewise remain local and ignored. Selected screenshots and compact functional verification summaries are committed under `android/` alongside the guides and reproduction commands. They do not imply that a local build has been published to the public website.
+
+## v1.0.0 release
+
+- [Release and installation](RELEASE.md)
+- [Changes reviewed since 62f3a26](UNRELEASED_CHANGES.md)
+- [Mobile and tablet download restriction](MOBILE_DOWNLOAD_GATE.md)
+- [Windows build and graphics checks](../windows/VERIFICATION.md)

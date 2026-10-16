@@ -3,9 +3,19 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { collectMinimapSurfaces, createMinimap, drawMinimap, minimapSurface, minimapView } from '../src/minimap.js';
 import { readMapGeometry } from './lib/readMapGeometry.mjs';
+import { markerAngle } from '../src/mapView.js';
 
 const near = (actual, expected, message) => assert.ok(Math.abs(actual - expected) < 1e-6, message);
 const position = { x: 25, y: -10 };
+for (const cameraHeading of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+  for (const vehicleHeading of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+    const view = minimapView(position, cameraHeading);
+    const nose = view.project(position.x - Math.sin(vehicleHeading) * 10, position.y + Math.cos(vehicleHeading) * 10);
+    const projectedAngle = Math.atan2(nose[0] - view.center, view.center - nose[1]);
+    near(Math.cos(projectedAngle), Math.cos(markerAngle(vehicleHeading, cameraHeading)), 'independent vehicle heading aligns with its world nose');
+    near(Math.sin(projectedAngle), Math.sin(markerAngle(vehicleHeading, cameraHeading)), 'backward and side cameras preserve local and peer directions');
+  }
+}
 for (const heading of [0, Math.PI / 2, Math.PI, -Math.PI / 2, -1.1289]) {
   for (const speed of [0, 30, 65, 120]) {
     const view = minimapView(position, heading, speed);

@@ -1,0 +1,18 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+const version = JSON.parse(readFileSync('package.json')).version;
+if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Use a numeric major.minor.patch release version');
+const [major, minor, patch] = version.split('.').map(Number);
+const code = major * 10000 + minor * 100 + patch;
+if (minor > 99 || patch > 99 || !Number.isSafeInteger(code) || code < 1 || code > 2100000000) throw new Error('Version must fit the Android major*10000 + minor*100 + patch scheme (minor/patch < 100)');
+const writeIfChanged = (path, value) => { if (readFileSync(path, 'utf8') !== value) writeFileSync(path, value); };
+const release = { version, releaseUrl: 'https://github.com/fuad-ismayil/DriveAtBaku/releases/latest' };
+for (const path of ['shared/release.json', 'public/release.json']) writeIfChanged(path, JSON.stringify(release) + '\n');
+const projectPath = 'android/game/project.godot';
+let project = readFileSync(projectPath, 'utf8');
+project = project.replace(/^config\/version=.*\r?\n/m, '');
+project = project.replace('[application]', `[application]\nconfig/version="${version}"`);
+writeIfChanged(projectPath, project);
+const presets = 'android/game/export_presets.cfg';
+writeIfChanged(presets, readFileSync(presets, 'utf8').replace(/^version\/name=".*"/gm, `version/name="${version}"`).replace(/^version\/code=\d+/gm, `version/code=${code}`));
+writeIfChanged('android/game/scripts/build_info.gd', `extends RefCounted\n\nconst VERSION = "${version}"\nconst LABEL = "v${version}"\nconst RELEASE_URL = "${release.releaseUrl}"\n`);
+console.log(`Shared release version: v${version}`);

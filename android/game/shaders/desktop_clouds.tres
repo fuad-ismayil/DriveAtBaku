@@ -1,0 +1,15 @@
+[gd_resource type="NoiseTexture2D" load_steps=2 format=3]
+
+[sub_resource type="FastNoiseLite" id="CloudNoise"]
+seed = 1705
+frequency = 0.012
+fractal_octaves = 5
+fractal_lacunarity = 2.1
+fractal_gain = 0.48
+
+[resource]
+width = 512
+height = 512
+seamless = true
+generate_mipmaps = true
+noise = SubResource("CloudNoise")

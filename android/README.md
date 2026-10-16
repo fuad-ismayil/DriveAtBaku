@@ -14,7 +14,11 @@ default, following substantially better driving performance reported on that
 device. The Android manifest minimum is API 24; other devices and Android
 versions have not been validated.
 
-The current primary export is **0.7.2-native-preview** (code 11). The
+The current shared test export is **1.0.0** (code 10000), available as
+`build/DriveAtBaku-Android-v1.0.0.apk`. This update awaits device testing.
+Quit game is available in both the main and pause menus and closes the app
+after saving preferences and disconnecting multiplayer. Downloads appear only
+on the Web. Android retains its 152px mobile minimap and touch layout. The
 [UI and switching report](../docs/android/UI_POLISH_AND_SWITCHING.md) describes
 the refined settings, web-style registration editor, bounded vehicle cache and
 measured loading/switching behavior.
@@ -31,7 +35,7 @@ compact top-left buttons sit closely together. Normal gameplay omits repeated
 vehicle/connection labels; enabled driving aids are subtle and brighten when
 active. The HUD is checked against the projected body bounds of all four cars.
 
-The north-up minimap includes live multiplayer markers. Tap it for the
+The camera-up minimap includes independently oriented multiplayer markers. Tap it for the
 expanded map, then drag/pinch or use zoom, Your car and Fit city. Android Back
 closes the map. Driving input is released while it is open; peer positions
 continue updating. Speed, RPM, transmission, gear and driving aids share the
@@ -107,6 +111,11 @@ release signing and store distribution are not configured.
 Open `game/project.godot` in Godot after Prepare to edit the native project.
 `-Target Desktop` exports a Windows preview. `-Target All` prepares resources,
 runs verification and exports both platforms.
+
+For the enhanced Windows release and portable ZIP, use
+[`windows/build.ps1`](../windows/README.md). The shared project selects Forward+
+and desktop graphics on Windows; Android retains Mobile rendering and its
+existing Performance/Balanced options. Desktop preferences use a separate file.
 
 ## Implementation and verification
 

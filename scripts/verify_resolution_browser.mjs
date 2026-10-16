@@ -33,11 +33,11 @@ try{
   }
   for(const dpr of [1,1.25,1.5,2]){
     await cdp.send('Emulation.setDeviceMetricsOverride',{width:1920,height:1080,deviceScaleFactor:dpr,mobile:false});
-    for(const quality of ['performance','balanced','cinematic']){
+    for(const quality of ['performance','balanced','high','ultra']){
       await page.selectOption('#graphics-quality',quality);
       for(const resolution of ['native','1920x1080','1600x900','1280x720']){
         await page.selectOption('#rendering-resolution',resolution);await settle();const state=await page.evaluate(()=>window.__resolutionProbe.state());
-        const ratio=resolution==='native'?Math.min(dpr,{performance:1,balanced:1.5,cinematic:2}[quality]):({ '1920x1080':1,'1600x900':900/1080,'1280x720':720/1080 })[resolution];
+        const ratio=resolution==='native'?Math.min(dpr,{performance:1,balanced:1.5,high:2,ultra:2}[quality]):({ '1920x1080':1,'1600x900':900/1080,'1280x720':720/1080 })[resolution];
         assert.deepEqual(state.buffer,[Math.floor(1920*ratio),Math.floor(1080*ratio)]);
         assert.deepEqual(state.canvas,[1920,1080]);assert.equal(state.aspect,1920/1080);
         if(quality!=='performance')assert.deepEqual(state.graphics.aoSize,state.buffer.map(v=>Math.round(v/2)));

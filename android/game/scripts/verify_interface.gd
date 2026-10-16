@@ -40,6 +40,13 @@ func run():
 	interface = load("res://scripts/interface.gd").new()
 	add_child(interface)
 	interface.requested.connect(func(action): actions.append(action))
+	interface.show_menu()
+	var quit_buttons = interface.root.find_children("Quit game", "Button", true, false)
+	check(quit_buttons.size() == 1, "Mobile main menu must offer Quit game")
+	check(interface.root.find_children("Download", "Button", true, false).is_empty(), "Native mobile menu must not offer downloads")
+	if not quit_buttons.is_empty():
+		quit_buttons[0].pressed.emit()
+		check(actions.back() == "quit", "Quit game must request application shutdown")
 	interface.show_loading("Preparing the skyline…", 0.42)
 	await capture("loading")
 	check(interface.loading_screen.progress_bar.value == 42, "Loading must display reported progress")

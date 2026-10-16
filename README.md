@@ -2,7 +2,7 @@
 
 A fan-made browser driving game set on Baku's streets. Explore the city in four vehicles, change the weather and time of day, or drive alongside other players through a WebSocket relay.
 
-**[Play DriveAtBaku](https://www.driveatbaku.games/)** · [Vercel mirror](https://driveatbaku.vercel.app/) · [Documentation](docs/README.md)
+**[Play DriveAtBaku](https://www.driveatbaku.games/)** · [Download Windows & Android](https://github.com/fuad-ismayil/DriveAtBaku/releases/latest) · [Vercel mirror](https://driveatbaku.vercel.app/) · [Documentation](docs/README.md)
 
 ![Mercedes-AMG on Baku's boulevard with the Liquid Glass driving HUD and assist indicators visible](docs/images/baku-gameplay.webp)
 
@@ -21,10 +21,13 @@ A fan-made browser driving game set on Baku's streets. Explore the city in four 
 - Performance, Balanced and Cinematic graphics presets, independent render/props distances, ambient occlusion and rendering-resolution controls. Balanced/Cinematic use HDR, SMAA and supported scene MSAA, cached shadows and local car reflections.
 - Multiplayer with interpolated remote vehicles, player names and replicated vehicle appearance/effects. Remote cars are visual ghosts and do not collide with one another; a separate relay is required.
 - An [ARM64 Android development preview](android/README.md) built with Godot, using the original driving equations, packaged assets, mobile Liquid Glass menus/loading, touch controls and compatible web/Android multiplayer.
+- A [native Windows build](windows/README.md) using Godot Forward+, with four graphics presets, cascaded city shadows, ambient occlusion, screen-space reflections, keyboard/mouse controls and portable x64 packaging. Build it with `.\windows\build.ps1`.
 
 ## Getting started
 
-Use **Node.js 22.12+ or 24+**, npm, and a modern browser with hardware-accelerated WebGL 2. Browser verification targets Google Chrome. The first load downloads roughly 240 MiB of map and vehicle data; loading time depends on the connection and device.
+Use **Node.js 22.12+ or 24+**, npm, and a modern desktop browser with hardware-accelerated WebGL 2. Desktop game checks use Google Chrome. The first desktop load downloads over 200 MiB of map and vehicle data; loading time depends on the connection and device.
+
+Phones and tablets receive a lightweight download page and do **not** load the Web game or its assets. Detection includes Android desktop mode and iPadOS’s Mac-style identity, independently of screen size or orientation. iPhone/iPad visitors are told that the native packages support Windows and Android; there is no iOS app. See the [mobile download restriction](docs/MOBILE_DOWNLOAD_GATE.md).
 
 ```sh
 git clone https://github.com/fuad-ismayil/DriveAtBaku.git
@@ -48,11 +51,13 @@ See [map conversion](docs/MAP_CONVERSION.md) for optional asset regeneration and
 
 For the native Android client, follow the separate [Windows setup and build guide](android/README.md). Android assets, downloaded tools, native binaries and APKs are regenerated locally and excluded from Git; retain the source scripts, Godot resource UIDs and import/export settings. The [device results](docs/android/DEVICE_RESULTS.md) record the Galaxy S9 checks and limits. The [0.4 audio/plate report](docs/android/AUDIO_AND_PLATE_FIXES.md) explains the idle-loop correction, real registration lamps and measured bidirectional audio. Deploy the matching web client for public rooms; the latest recorded public relay probe already preserves the required audio state.
 
-The current local native preview, **0.7.2 (code 11)**, uses compact background-free driving readouts, a circular multiplayer minimap and closely spaced glass controls to keep the car visible. Settings are grouped and aligned; registration inputs sit inside the plate preview, with per-car persistence and front/rear inspection. The Prado's front Toyota badge preserves its authored two-sided material. See the [UI and switching report](docs/android/UI_POLISH_AND_SWITCHING.md) for screenshots, the 67-check S9 flow and known limits.
+The **v1.0.0** release includes one portable Windows x64 ZIP and one Android ARM64 APK in the [same GitHub release](https://github.com/fuad-ismayil/DriveAtBaku/releases/tag/v1.0.0). Both share the displayed version. Windows uses the desktop interface, Forward+ graphics, display/aspect controls and a visible pause cursor; Android retains its mobile renderer and touch interface. Both native clients offer Quit game. See the [release guide](docs/RELEASE.md).
+
+Web and Windows share a 176px camera-up minimap with independently oriented car markers, an interactive full map and a compact background-free readout at bottom center. Multiplayer names are white text with matching size, height and fading. The Web menu links to native downloads; native menus do not include Download. Version labels appear on loading/main-menu screens only.
 
 Prepared models, immutable shader definitions, plate geometry and PCM loops are reused within bounded caches. Measured cached switching is much faster; cold loading, renderer stalls and sustained memory behavior remain separate concerns. The [mobile interface guide](docs/android/MOBILE_INTERFACE.md) records the original menu/loading architecture. [Multiplayer horn verification](docs/android/HORN_MULTIPLAYER.md) covers both sound directions, release, pause and stale peers. Pushing source alone does not install an Android build.
 
-The [unreleased review](docs/UNRELEASED_CHANGES.md) covers the working tree since `03bb820`. The approved [A1 branding](docs/branding/README.md) unifies the web favicon/menu, Android adaptive and themed icons, native boot screen and Windows executable. See [final validation](docs/branding/VERIFICATION.md) for export checks and current hashes.
+The [v1.0.0 review](docs/UNRELEASED_CHANGES.md) covers changes since `62f3a26`; the [0.7.2 review](docs/history/ANDROID_0_7_2_REVIEW.md) preserves earlier phone evidence. The approved [A1 branding](docs/branding/README.md) unifies the web favicon/menu, Android adaptive and themed icons, native boot screen and Windows executable. See [final validation](docs/branding/VERIFICATION.md) for export checks and current hashes.
 
 ## Controls
 
@@ -72,7 +77,7 @@ The [unreleased review](docs/UNRELEASED_CHANGES.md) covers the working tree sinc
 
 Gamepad input supports steering, throttle, brake, handbrake, clutch and horn through the browser Gamepad API. The in-game **Controls** panel lists keyboard and mouse inputs. Graphics, atmosphere and audio settings are available in the pause menu and saved locally.
 
-The driving HUD also has a pause button. ABS, TCS and ESC icons retain their keyboard shortcuts and indicate enabled, disabled and active intervention states. Suspension graphs are no longer displayed; vehicle suspension behavior is unchanged.
+Desktop players use Esc to pause. Android retains its on-screen pause button. ABS, TCS and ESC appear as subtle text in the readout and can be changed with shortcuts or settings. Suspension graphs are no longer displayed; vehicle suspension behavior is unchanged.
 
 Turn signals toggle off when pressed again. Selecting the other side or hazards replaces the current mode. All lamps on a car blink together (400 ms on / 400 ms off). Signals continue through pause, garage visits and recovery; changing cars clears them. Typing and held-key repeats do not toggle signals. Multiplayer needs the updated relay as well as the client; it shares the mode and blink reference with joining and existing players.
 
@@ -85,6 +90,8 @@ The client uses JavaScript modules, Three.js r180, `three-mesh-bvh`, WebGL and W
 | `src/main.js`, `src/startup.js` | Game loop, UI integration and startup |
 | `src/glass.css`, `src/style.css`, `src/licensePlate.css` | Shared glass material, responsive interface and garage plate editor styling |
 | `src/loadingScreen.js`, `src/loading.css` | Loading scenes, slideshow controls, progress and failure states |
+| `src/deviceGate.js`, `shared/` | Device download policy, shared version metadata and UI dimensions |
+| `windows/`, `android/` | Native Godot builds, platform interfaces and verification |
 | `src/` | Vehicle dynamics, graphics, weather, cameras, audio, maps and collision modules |
 | `src/net/` | Multiplayer transport, state replication and remote vehicles |
 | `src/governmentHouse.js`, `src/flagCloth.js`, `src/roomLights.js`, `src/roomLightActivity.js`, `src/foliageLighting.js` | Landmark detail, flag simulation, independent rooms and canopy shading |

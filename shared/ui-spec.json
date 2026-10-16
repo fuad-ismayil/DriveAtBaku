@@ -1,0 +1,5 @@
+{
+  "nameplate": {"font":"Segoe UI","fontSize":48,"pixelSize":0.008,"height":2.2,"outline":5,"fadeStart":120,"fadeEnd":150,"maxCharacters":16},
+  "minimap": {"diameter":176,"inset":4,"right":16,"top":12},
+  "telemetry": {"width":264,"height":62,"bottom":12,"speedSize":32,"gearSize":24,"rpmSize":15}
+}

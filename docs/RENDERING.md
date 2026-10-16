@@ -8,11 +8,12 @@ The game uses Three.js r180 and a WebGL 2 renderer. `src/graphics.js` owns the s
 | --- | --- | ---: | --- |
 | Performance | Direct rendering with canvas antialiasing; no post-processing AO | 1024 px | Sky environment |
 | Balanced | Linear HDR, supported MSAA up to 2x, SMAA, bloom/grading and optional half-resolution AO | 2048 px | 128 px local captures |
-| Cinematic | Linear HDR, supported MSAA up to 4x, SMAA, bloom/grading and optional half-resolution AO | 4096 px | 256 px local captures |
+| High | Linear HDR, supported MSAA up to 2x, SMAA, bloom/grading and optional half-resolution AO | 4096 px | 256 px local captures |
+| Ultra | Linear HDR, supported MSAA up to 4x, SMAA, bloom/grading and higher-sample half-resolution AO | 4096 px | 256 px local captures |
 
-Cinematic is the default for fresh preferences. Existing choices are retained. Unsupported floating-point rendering falls back to direct rendering; supported sample counts depend on the GPU.
+High is the default for fresh preferences. Saved Cinematic choices migrate to Ultra; the internal Cinematic alias remains for historical rendering tools. Unsupported floating-point rendering falls back to direct rendering; supported sample counts depend on the GPU.
 
-**Rendering Resolution** is independent of preset and browser size: Native, 1920×1080, 1600×900 or 1280×720. Fixed targets preserve the viewport aspect ratio within the selected bounds and fill the canvas. Native uses the preset pixel-ratio budget and optional 125%/150% scale. Menus and HUD remain at normal browser resolution. See `src/renderingResolution.js` and `npm run verify-resolution-browser`.
+**Rendering Resolution** is independent of preset and browser size: Native, 3840×2160, 2560×1440, 1920×1080, 1600×900 or 1280×720. Fixed targets preserve the viewport aspect ratio within the selected bounds and fill the canvas. Native uses the preset pixel-ratio budget and optional 125%/150% scale. Menus and HUD remain at normal browser resolution. See `src/renderingResolution.js` and `npm run verify-resolution-browser`.
 
 Render Distance (400–6,000 m) and Props Distance (100–3,000 m) are independent saved controls. Their maximum values preserve the full scene ranges. [Distance settings](GRAPHICS_SETTINGS_UPDATE.md) describes easing, prop fades and separate shadow/reflection visibility.
 
@@ -41,3 +42,14 @@ Environmental collision extraction runs before these visual additions. Window su
 Append `?graphicsDebug=1` for drawing-buffer size, geometry candidates, draw counts, CPU submission and available asynchronous GPU timings. `&occlusion=off` supports matched-view culling comparisons. GPU timings are unavailable when the timer extension is absent, disjoint or the context is lost; CPU submission and frame intervals are separate measurements.
 
 Use [verification](VERIFICATION.md) for current commands. The [1080p investigation](history/ENGINE_PERFORMANCE_INVESTIGATION.md) records the optimization methodology and historical measurements, including small regressions and hardware limits. It does not establish a frame-rate guarantee.
+
+## Native rendering and device policy
+
+Windows uses Godot Forward+ with platform-specific High/Ultra lighting, reflections,
+shadows, foliage and fog. Android retains Godot Mobile with its existing phone
+budgets. Rendering implementations have matching controls and presentation goals,
+not identical GPU pipelines. See [Windows graphics](../windows/README.md).
+
+The Web renderer runs on eligible desktops only. Phones/tablets receive a small
+download page before any graphics or game modules are requested; this includes
+large tablets and desktop-site modes. See [device policy](MOBILE_DOWNLOAD_GATE.md).
